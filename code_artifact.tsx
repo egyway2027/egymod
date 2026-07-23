@@ -459,7 +459,6 @@ function EgymodApp() {
         ::-webkit-scrollbar-thumb { background: #d0b689; border-radius: 4px; }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
-        input[type=date] { direction: ltr; text-align: right; }
         input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
       `}</style>
 
@@ -609,13 +608,8 @@ function AddClientScreen({ onSave, onBack }) {
 
           <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, gridColumn: "1 / -1" }}>
-           <Field label="تاريخ التعاقد *">
-  <input type="date" dir="ltr" style={{ ...styles.input, textAlign: "right" }} value={form.contractDate} onChange={handleContractDate} />
-</Field>
-
-<Field label="تاريخ أول قسط (تلقائي + شهر)">
-  <input type="date" dir="ltr" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", borderColor: "#333", textAlign: "right" }} value={form.firstPayDate} readOnly disabled />
-</Field>
+            <Field label="تاريخ التعاقد *"><input type="date" style={styles.input} value={form.contractDate} onChange={handleContractDate} /></Field>
+            <Field label="تاريخ أول قسط (تلقائي + شهر)"><input type="date" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", borderColor: "#333" }} value={form.firstPayDate} readOnly disabled /></Field>
           </div>
           <div style={{ gridColumn: "1 / -1" }}>
             <Field label="ملاحظات"><input style={styles.input} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></Field>
@@ -792,13 +786,8 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
                 <Field label="القسط الشهري *"><input type="number" style={styles.input} value={editForm.monthly} onChange={(e) => setEditForm({ ...editForm, monthly: e.target.value })} required /></Field>
 
                 <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
-<Field label="تاريخ التعاقد *">
-  <input type="date" dir="ltr" style={{ ...styles.input, textAlign: "right" }} value={editForm.contractDate} onChange={handleContractDateChange} required />
-</Field>
-
-<Field label="تاريخ أول قسط">
-  <input type="date" dir="ltr" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", textAlign: "right" }} value={editForm.firstPayDate} readOnly disabled />
-</Field>
+                <Field label="تاريخ التعاقد *"><input type="date" style={styles.input} value={editForm.contractDate} onChange={handleContractDateChange} required /></Field>
+                <Field label="تاريخ أول قسط"><input type="date" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4" }} value={editForm.firstPayDate} readOnly disabled /></Field>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <Field label="الملاحظات"><input style={styles.input} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></Field>
                 </div>
