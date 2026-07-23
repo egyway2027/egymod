@@ -274,12 +274,41 @@ const rows = useMemo(() => {
 
   const lateRows = useMemo(() => rows.filter((r) => r.debtAmount > 0), [rows]);
 
-  const totals = useMemo(() => {
+    const totals = useMemo(() => {
+    let totalProfit = 0;    // صافي الأرباح المحصلة فعلياً نسبة وتناسب
+    let totalPortfolio = 0; // إجمالي الأقساط المتبقية في ذمة العملاء
+
+    activeClients.forEach((c) => {
+      const sale = Number(c.sale || 0);
+      const cost = Number(c.cost || 0);
+      const down = Number(c.down || 0);
+      const totalPaid = Number(c.totalPaid || 0);
+
+      // إجمالي المحصل من العميل (المقدم + الأقساط المسددة)
+      const totalCollected = down + totalPaid;
+
+      // نسبة الربح من عقد البيع = (سعر البيع - سعر التكلفة) / سعر البيع
+      const profitRatio = sale > 0 ? (sale - cost) / sale : 0;
+
+      // الربح المحقق فعلياً نسبة وتناسب
+      totalProfit += totalCollected * profitRatio;
+
+      // إجمالي المتبقي في ذمة العميل
+      const remaining = sale - down - totalPaid;
+      if (remaining > 0) {
+        totalPortfolio += remaining;
+      }
+    });
+
     const totalDebt = rows.reduce((s, r) => s + r.debtAmount, 0);
-    const totalProfit = rows.reduce((s, r) => s + (r.sale - r.cost), 0);
-    const totalPortfolio = rows.reduce((s, r) => s + r.remaining, 0);
-    return { totalDebt, totalProfit, totalPortfolio };
-  }, [rows]);
+
+    return {
+      totalProfit: Math.round(totalProfit),
+      totalDebt: Math.round(totalDebt),
+      totalPortfolio: Math.round(totalPortfolio)
+    };
+  }, [activeClients, rows]);
+
 
   const expensesTotal = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
   const salariesPaidTotal = useMemo(() => salaryLog.reduce((s, x) => s + x.amount, 0), [salaryLog]);
