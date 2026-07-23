@@ -153,7 +153,20 @@ function EgymodApp() {
   const [clients, setClients] = useState([]);
   const [payments, setPayments] = useState([]);
   
-  const [deletedClients, setDeletedClients] = useState([]);
+  // قراءة سلة المحذوفات تلقائياً من الذاكرة المحلية
+const [deletedClients, setDeletedClients] = useState(() => {
+  try {
+    const saved = localStorage.getItem("egymod_trash");
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+});
+
+// حفظ السلة تلقائياً عند أي إضافة أو حذف أو استعادة
+useEffect(() => {
+  localStorage.setItem("egymod_trash", JSON.stringify(deletedClients));
+}, [deletedClients]);
   
   const [partners, setPartners] = useState(seedPartners);
   const [expenses] = useState(seedExpenses);
@@ -187,7 +200,7 @@ function EgymodApp() {
     loadCloudData(user.id);
   }
 
-  async function loadCloudData(userId) {
+async function loadCloudData(userId) {
     try {
       const [cRes, pRes] = await Promise.all([
         supabase.from('clients').select('*'),
