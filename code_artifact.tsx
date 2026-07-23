@@ -144,7 +144,7 @@ function NameComboBox({ items, getLabel, getSecondary, onSelect, placeholder, se
    ============================================================ */
 function EgymodApp() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [authView, setAuthView] = useState("login"); // login, register, reset
+  const [authView, setAuthView] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authName, setAuthName] = useState("");
@@ -153,20 +153,18 @@ function EgymodApp() {
   const [clients, setClients] = useState([]);
   const [payments, setPayments] = useState([]);
   
-  // قراءة سلة المحذوفات تلقائياً من الذاكرة المحلية
-const [deletedClients, setDeletedClients] = useState(() => {
-  try {
-    const saved = localStorage.getItem("egymod_trash");
-    return saved ? JSON.parse(saved) : [];
-  } catch {
-    return [];
-  }
-});
+  const [deletedClients, setDeletedClients] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_trash");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
-// حفظ السلة تلقائياً عند أي إضافة أو حذف أو استعادة
-useEffect(() => {
-  localStorage.setItem("egymod_trash", JSON.stringify(deletedClients));
-}, [deletedClients]);
+  useEffect(() => {
+    localStorage.setItem("egymod_trash", JSON.stringify(deletedClients));
+  }, [deletedClients]);
   
   const [partners, setPartners] = useState(seedPartners);
   const [expenses] = useState(seedExpenses);
@@ -176,7 +174,6 @@ useEffect(() => {
   const [screen, setScreen] = useState("dashboard");
   const [toast, setToast] = useState(null);
 
-  // التحقق من الجلسة السحابية
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -200,7 +197,7 @@ useEffect(() => {
     loadCloudData(user.id);
   }
 
-async function loadCloudData(userId) {
+  async function loadCloudData(userId) {
     try {
       const [cRes, pRes] = await Promise.all([
         supabase.from('clients').select('*'),
@@ -255,28 +252,25 @@ async function loadCloudData(userId) {
     notify("تم تسجيل الخروج بنجاح.");
   }
 
-// 1. استبعاد أي عميل في سلة المحذوفات من القائمة النشطة فوراً
-const activeClients = useMemo(() => {
-  const trashIds = new Set(deletedClients.map((d) => d.id));
-  return clients.filter((c) => !trashIds.has(c.id));
-}, [clients, deletedClients]);
+  const activeClients = useMemo(() => {
+    const trashIds = new Set(deletedClients.map((d) => d.id));
+    return clients.filter((c) => !trashIds.has(c.id));
+  }, [clients, deletedClients]);
 
-// 2. حساب كافة البيانات والكروت العلوية بناءً على العملاء النشطين فقط
-const rows = useMemo(() => {
-  return activeClients.map((c) => {
-    const dues = computeDues(c, today);
-    const remaining = c.sale - c.down - c.totalPaid;
-    const due = nextDueDate(c);
-    return { ...c, ...dues, remaining, due };
-  }).sort((a, b) => b.debtAmount - a.debtAmount);
-}, [activeClients, today]);
-
+  const rows = useMemo(() => {
+    return activeClients.map((c) => {
+      const dues = computeDues(c, today);
+      const remaining = c.sale - c.down - c.totalPaid;
+      const due = nextDueDate(c);
+      return { ...c, ...dues, remaining, due };
+    }).sort((a, b) => b.debtAmount - a.debtAmount);
+  }, [activeClients, today]);
 
   const lateRows = useMemo(() => rows.filter((r) => r.debtAmount > 0), [rows]);
 
-    const totals = useMemo(() => {
-    let totalProfit = 0;    // صافي الأرباح المحصلة فعلياً نسبة وتناسب
-    let totalPortfolio = 0; // إجمالي الأقساط المتبقية في ذمة العملاء
+  const totals = useMemo(() => {
+    let totalProfit = 0;
+    let totalPortfolio = 0;
 
     activeClients.forEach((c) => {
       const sale = Number(c.sale || 0);
@@ -284,16 +278,10 @@ const rows = useMemo(() => {
       const down = Number(c.down || 0);
       const totalPaid = Number(c.totalPaid || 0);
 
-      // إجمالي المحصل من العميل (المقدم + الأقساط المسددة)
       const totalCollected = down + totalPaid;
-
-      // نسبة الربح من عقد البيع = (سعر البيع - سعر التكلفة) / سعر البيع
       const profitRatio = sale > 0 ? (sale - cost) / sale : 0;
-
-      // الربح المحقق فعلياً نسبة وتناسب
       totalProfit += totalCollected * profitRatio;
 
-      // إجمالي المتبقي في ذمة العميل
       const remaining = sale - down - totalPaid;
       if (remaining > 0) {
         totalPortfolio += remaining;
@@ -308,7 +296,6 @@ const rows = useMemo(() => {
       totalPortfolio: Math.round(totalPortfolio)
     };
   }, [activeClients, rows]);
-
 
   const expensesTotal = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
   const salariesPaidTotal = useMemo(() => salaryLog.reduce((s, x) => s + x.amount, 0), [salaryLog]);
@@ -393,8 +380,6 @@ const rows = useMemo(() => {
     return true;
   }
 
-
-  
   function addPartner(name, capital) {
     setPartners((prev) => [...prev, { id: Date.now(), name, capital: parseFloat(capital), profit: 0, withdrawals: 0 }]);
     notify("تم تسجيل بيانات الشريك الجديد بنجاح!");
@@ -407,7 +392,6 @@ const rows = useMemo(() => {
     setScreen("dashboard");
   }
 
-  // إذا لم يتم تسجيل الدخول، عرض شاشة المصادقة
   if (!currentUser) {
     return (
       <div dir="rtl" style={{ ...styles.page, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -493,17 +477,17 @@ const rows = useMemo(() => {
       {screen === "addPartner" && <AddPartnerScreen partners={partners.map(p => ({ ...p, net: p.capital + p.profit - p.withdrawals }))} onSave={addPartner} onBack={() => setScreen("dashboard")} />}
       {screen === "addEmployee" && <AddEmployeeScreen onSave={addEmployee} onBack={() => setScreen("dashboard")} />}
 
-     {screen === "monthlyDues" && <MonthlyDuesScreen rows={rows} payments={payments} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
+      {screen === "monthlyDues" && <MonthlyDuesScreen rows={rows} payments={payments} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
       {screen === "deleteClient" && (
-  <DeleteClientScreen
-    clients={activeClients}
-    setClients={setClients}
-    deletedClients={deletedClients}
-    setDeletedClients={setDeletedClients}
-    onBack={() => setScreen("dashboard")}
-    notify={notify}
-  />
-)}
+        <DeleteClientScreen
+          clients={activeClients}
+          setClients={setClients}
+          deletedClients={deletedClients}
+          setDeletedClients={setDeletedClients}
+          onBack={() => setScreen("dashboard")}
+          notify={notify}
+        />
+      )}
       {screen === "lateClients" && <LateClientsScreen rows={lateRows} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
       {screen === "changePassword" && <PlaceholderScreen title="تغيير كلمة السر" onBack={() => setScreen("dashboard")} />}
       {screen === "treasury" && <PlaceholderScreen title="الخزينة وتوزيع الأرباح" onBack={() => setScreen("dashboard")} />}
@@ -747,7 +731,6 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
               </button>
             </div>
 
-            {/* الوضع الأول: عرض البيانات في شبكة كروت متناسقة (Grid) */}
             {!isEditing && (
               <div style={styles.formGrid}>
                 <div style={styles.sectionLabel}>بيانات العميل والضامن</div>
@@ -785,7 +768,6 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
               </div>
             )}
 
-            {/* الوضع الثاني: نموذج تعديل بيانات العميل بالكامل */}
             {isEditing && (
               <form onSubmit={handleSaveEdit} style={styles.formGrid}>
                 <div style={styles.sectionLabel}>بيانات العميل والضامن</div>
@@ -823,24 +805,6 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
   );
 }
 
-
-
-function ProfileRow({ label, value, highlight, error }) {
-  let textColor = "#ffffff";
-  let borderColor = "#404040";
-  if (highlight) { textColor = "#d0b689"; borderColor = "#d0b689"; }
-  if (error) { textColor = "#e07a5f"; borderColor = "#e07a5f"; }
-
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-      <div style={{ width: "130px", color: "#c4c4c4", fontSize: "14px", fontWeight: 700 }}>{label}</div>
-     <div style={{ flex: 1, background: "#1b1b1d", border: `1px solid ${borderColor}`, padding: "12px 16px", borderRadius: "10px", color: textColor, fontSize: "15px", fontWeight: 800 }}>
-        {value}
-     </div>
-    </div>
-  );
-}
-
 function ProfileRow({ label, value, highlight, error }) {
   let textColor = "#ffffff";
   let borderColor = "#404040";
@@ -856,10 +820,6 @@ function ProfileRow({ label, value, highlight, error }) {
     </div>
   );
 }
-
-/* 3. إضافة شريك */
-
-
 
 /* 3. إضافة شريك */
 function AddPartnerScreen({ partners, onSave, onBack }) {
@@ -1223,7 +1183,6 @@ function LateClientsScreen({ rows, onBack, onPay }) {
   );
 }
 
-
 /* ============================================================
    شاشة مستحقات الشهر (مكون مستقل متناسق مع تصميمك)
    ============================================================ */
@@ -1310,7 +1269,7 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
         <KPI icon={TrendingUp} label="المتبقي تحصيله" sub="مستحقات جاري متابعتها" value={fmt(stats.totalRemaining)} />
       </section>
 
-      <div style={{ ...styles.card, marginBottom: 16, padding: 16, display: "flex", flexWrap: "wrap", gap: 12, items: "center", justifyContent: "space-between" }}>
+      <div style={{ ...styles.card, marginBottom: 16, padding: 16, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
         <input
           style={{ ...styles.input, maxWidth: 300 }}
           placeholder="بحث باسم العميل أو التليفون أو السلعة..."
@@ -1462,18 +1421,15 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
   );
 }
 
-
-
 /* ============================================================
    شاشة حذف عميل وسلة المحذوفات (مكون مستقل متناسق مع تصميمك)
    ============================================================ */
 function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedClients, onBack, notify }) {
-  const [activeTab, setActiveTab] = useState("search"); // search | trash
+  const [activeTab, setActiveTab] = useState("search");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClient, setSelectedClient] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  // اقتراحات البحث الحي بمجرد كتابة أي حرف
   const suggestions = useMemo(() => {
     if (!searchTerm.trim()) return [];
     const term = searchTerm.trim().toLowerCase();
@@ -1485,7 +1441,6 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
     );
   }, [clients, searchTerm]);
 
-  // نقل العميل لسلة المحذوفات
   const handleMoveToTrash = (client) => {
     const deletedItem = {
       ...client,
@@ -1498,7 +1453,6 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
     notify("تم نقل العميل إلى سلة المحذوفات بنجاح");
   };
 
-  // استعادة العميل من سلة المحذوفات
   const handleRestore = (client) => {
     const { deletedAt, ...restoredClient } = client;
     setClients((prev) => [...prev, restoredClient]);
@@ -1506,7 +1460,6 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
     notify("تمت استعادة حساب العميل إلى النظام النشط بنجاح");
   };
 
-  // الحذف النهائي من السحابة والذاكرة
   const handlePermanentDelete = async (clientId) => {
     try {
       if (supabase) {
@@ -1525,7 +1478,6 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
     <div style={styles.container}>
       <ScreenHeader title="حذف وإدارة حسابات العملاء" onBack={onBack} />
 
-      {/* تبويبات الشاشة */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
         <button
           type="button"
@@ -1564,7 +1516,6 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
         </button>
       </div>
 
-      {/* التبويب الأول: البحث والحذف */}
       {activeTab === "search" && (
         <div style={styles.card}>
           <Field label="ابحث باسم العميل أو رقم الهاتف أو السلعة">
@@ -1579,7 +1530,6 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
                 }}
               />
 
-              {/* قائمة الاقتراحات الحية */}
               {searchTerm.trim() && !selectedClient && (
                 <div style={styles.suggestBox}>
                   {suggestions.length > 0 ? (
@@ -1607,7 +1557,6 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
             </div>
           </Field>
 
-          {/* تفاصيل العميل المحدد وتأكيد الحذف */}
           {selectedClient && (
             <div style={styles.profileBox}>
               <h3 style={styles.historyTitle}>بيانات العميل المحدد: {selectedClient.name}</h3>
@@ -1633,7 +1582,6 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
         </div>
       )}
 
-      {/* التبويب الثاني: سلة المحذوفات */}
       {activeTab === "trash" && (
         <div style={styles.card}>
           {deletedClients.length === 0 ? (
@@ -1702,7 +1650,6 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
         </div>
       )}
 
-      {/* نافذة تأكيد الحذف النهائي */}
       {confirmDeleteId && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 }}>
           <div style={{ ...styles.card, width: "100%", maxWidth: 400, textAlign: "center" }}>
@@ -1732,10 +1679,6 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
     </div>
   );
 }
-
-
-
-
 
 /* أنماط التصميم */
 const styles = {
