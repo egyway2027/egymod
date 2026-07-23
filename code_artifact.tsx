@@ -365,6 +365,36 @@ const rows = useMemo(() => {
     notify("تم تسجيل السداد بنجاح!");
   }
 
+  async function updateClient(clientId, updatedData) {
+    if (!currentUser) return false;
+    const dbPayload = {
+      name: updatedData.name,
+      phone: String(updatedData.phone || ""),
+      guarantor: updatedData.guarantor || "",
+      guarantor_phone: String(updatedData.guarantorPhone || ""),
+      item: updatedData.item,
+      cost: Number(updatedData.cost),
+      sale: Number(updatedData.sale),
+      down: Number(updatedData.down),
+      monthly: Number(updatedData.monthly),
+      contract_date: updatedData.contractDate,
+      first_pay_date: updatedData.firstPayDate,
+      notes: updatedData.notes || ""
+    };
+
+    const { error } = await supabase.from('clients').update(dbPayload).eq('id', clientId);
+    if (error) {
+      notify("خطأ في تحديث البيانات بالسحابة", "error");
+      return false;
+    }
+
+    setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, ...updatedData } : c)));
+    notify("تم تحديث بيانات العميل بالسحابة بنجاح!");
+    return true;
+  }
+
+
+  
   function addPartner(name, capital) {
     setPartners((prev) => [...prev, { id: Date.now(), name, capital: parseFloat(capital), profit: 0, withdrawals: 0 }]);
     notify("تم تسجيل بيانات الشريك الجديد بنجاح!");
@@ -458,7 +488,8 @@ const rows = useMemo(() => {
       {screen === "dashboard" && <Dashboard totals={totals} lateCount={lateRows.length} onNavigate={setScreen} user={currentUser} onLogout={handleLogout} />}
       {screen === "pay" && <PayScreen rows={rows} payments={payments} onPay={recordPayment} onBack={() => setScreen("dashboard")} />}
       {screen === "addClient" && <AddClientScreen onSave={addClient} onBack={() => setScreen("dashboard")} />}
-      {screen === "search" && <SearchScreen rows={rows} onBack={() => setScreen("dashboard")} />}
+      {screen === "search" && <SearchScreen rows={rows} onUpdateClient={updateClient} onBack={() => setScreen("dashboard")} />}
+
       {screen === "addPartner" && <AddPartnerScreen partners={partners.map(p => ({ ...p, net: p.capital + p.profit - p.withdrawals }))} onSave={addPartner} onBack={() => setScreen("dashboard")} />}
       {screen === "addEmployee" && <AddEmployeeScreen onSave={addEmployee} onBack={() => setScreen("dashboard")} />}
 
@@ -613,34 +644,178 @@ function AddClientScreen({ onSave, onBack }) {
   );
 }
 
-/* 2. استعلام عن عميل */
-function SearchScreen({ rows, onBack }) {
+/* 2. استعلام وتعديل بيانات العميل (شبكي متناسق) */
+function SearchScreen({ rows, onUpdateClient, onBack }) {
   const [selected, setSelected] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState(emptyForm);
+
+  const handleSelectClient = (client) => {
+    setSelected(client);
+    setIsEditing(false);
+    if (client) {
+      setEditForm({
+        name: client.name || "",
+        phone: client.phone || "",
+        guarantor: client.guarantor || "",
+        guarantorPhone: client.guarantorPhone || "",
+        item: client.item || "",
+        cost: client.cost || "",
+        sale: client.sale || "",
+        down: client.down || "",
+        monthly: client.monthly || "",
+        contractDate: client.contractDate || "",
+        firstPayDate: client.firstPayDate || "",
+        notes: client.notes || "",
+      });
+    }
+  };
+
+  const handleContractDateChange = (e) => {
+    const cDate = e.target.value;
+    const firstPay = addOneMonth(cDate);
+    setEditForm((prev) => ({ ...prev, contractDate: cDate, firstPayDate: firstPay }));
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!selected) return;
+    const success = await onUpdateClient(selected.id, {
+      ...editForm,
+      cost: parseFloat(editForm.cost) || 0,
+      sale: parseFloat(editForm.sale) || 0,
+      down: parseFloat(editForm.down) || 0,
+      monthly: parseFloat(editForm.monthly) || 0,
+    });
+    if (success) {
+      setIsEditing(false);
+      setSelected((prev) => ({
+        ...prev,
+        ...editForm,
+        cost: parseFloat(editForm.cost) || 0,
+        sale: parseFloat(editForm.sale) || 0,
+        down: parseFloat(editForm.down) || 0,
+        monthly: parseFloat(editForm.monthly) || 0,
+      }));
+    }
+  };
+
+  const readStyle = {
+    width: "100%", background: "#1b1b1d", border: "1px solid #404040",
+    borderRadius: 10, padding: "12px 14px", color: "#ffffff", fontSize: 15, fontWeight: 800
+  };
+
   return (
     <div style={styles.container}>
-      <ScreenHeader title="استعلام عن عميل" onBack={onBack} />
+      <ScreenHeader title="استعلام وتعديل بيانات العميل" onBack={onBack} />
       <div style={styles.card}>
-        <span style={styles.fieldLabel}>ابحث بالاسم</span>
+        <span style={styles.fieldLabel}>ابحث باسم العميل أو رقم التليفون</span>
         <NameComboBox
-          items={rows} getLabel={(r) => r.name} getSecondary={(r) => `${r.item} · متبقي ${fmt(r.remaining)}`}
-          placeholder="اكتب اسم العميل..." onSelect={setSelected} selectedLabel={selected ? `${selected.name}` : null} onClear={() => setSelected(null)}
+          items={rows}
+          getLabel={(r) => r.name}
+          getSecondary={(r) => `${r.item} · متبقي ${fmt(r.remaining)}`}
+          placeholder="اكتب اسم العميل..."
+          onSelect={handleSelectClient}
+          selectedLabel={selected ? `${selected.name}` : null}
+          onClear={() => {
+            setSelected(null);
+            setIsEditing(false);
+          }}
         />
 
         {selected && (
           <div style={styles.profileBox}>
-            <h3 style={styles.historyTitle}>بيانات عقد: {selected.name}</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <ProfileRow label="التليفون" value={selected.phone} />
-              <ProfileRow label="اسم الضامن" value={selected.guarantor} />
-              <ProfileRow label="تليفون الضامن" value={selected.guarantorPhone} />
-              <ProfileRow label="السلعة" value={selected.item} />
-              <ProfileRow label="تاريخ التعاقد" value={selected.contractDate} />
-              <ProfileRow label="تاريخ أول قسط" value={selected.firstPayDate} />
-              <ProfileRow label="القسط الشهري" value={`${fmt(selected.monthly)} ج.م`} highlight />
-              <ProfileRow label="المتبقي الكلي" value={`${fmt(selected.remaining)} ج.م`} />
-              <ProfileRow label="المسدد حتى الآن" value={`${fmt(selected.totalPaid)} ج.م`} />
-              <ProfileRow label="إجمالي المتأخرات" value={`${fmt(selected.debtAmount)} ج.م`} error={selected.debtAmount > 0} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+              <h3 style={{ fontSize: 17, fontWeight: 800, color: "#e8cd9c", margin: 0 }}>
+                {isEditing ? `تعديل بيانات العميل: ${selected.name}` : `بيانات عقد العميل: ${selected.name}`}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                style={{
+                  background: isEditing ? "#3a2320" : "linear-gradient(145deg, #e8cd9c, #d0b689)",
+                  color: isEditing ? "#f0c6bb" : "#1b1b1d",
+                  border: isEditing ? "1px solid #7a4a3f" : "none",
+                  padding: "8px 16px",
+                  borderRadius: 10,
+                  fontWeight: 800,
+                  fontSize: 13,
+                  cursor: "pointer"
+                }}
+              >
+                {isEditing ? "إلغاء التعديل" : "✏️ تعديل بيانات العميل"}
+              </button>
             </div>
+
+            {/* الوضع الأول: عرض البيانات في شبكة كروت متناسقة (Grid) */}
+            {!isEditing && (
+              <div style={styles.formGrid}>
+                <div style={styles.sectionLabel}>بيانات العميل والضامن</div>
+                <Field label="اسم العميل"><div style={readStyle}>{selected.name}</div></Field>
+                <Field label="تليفون العميل"><div style={readStyle}>{selected.phone || "غير محدد"}</div></Field>
+                <Field label="اسم الضامن"><div style={readStyle}>{selected.guarantor || "لا يوجد"}</div></Field>
+                <Field label="تليفون الضامن"><div style={readStyle}>{selected.guarantorPhone || "لا يوجد"}</div></Field>
+
+                <div style={styles.sectionLabel}>بيانات السلعة والماليات</div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <Field label="السلعة"><div style={readStyle}>{selected.item}</div></Field>
+                </div>
+                <Field label="سعر التكلفة"><div style={readStyle}>{fmt(selected.cost)} ج.م</div></Field>
+                <Field label="سعر البيع"><div style={readStyle}>{fmt(selected.sale)} ج.م</div></Field>
+                <Field label="المقدم المدفوع"><div style={readStyle}>{fmt(selected.down)} ج.م</div></Field>
+                <Field label="القسط الشهري"><div style={{ ...readStyle, color: "#d0b689", borderColor: "#d0b689" }}>{fmt(selected.monthly)} ج.م</div></Field>
+
+                <div style={styles.sectionLabel}>الموقف المالي الحقيقي</div>
+                <Field label="المسدد حتى الآن"><div style={readStyle}>{fmt(selected.totalPaid)} ج.م</div></Field>
+                <Field label="المتبقي الكلي"><div style={readStyle}>{fmt(selected.remaining)} ج.م</div></Field>
+                <Field label="إجمالي المتأخرات">
+                  <div style={{ ...readStyle, color: selected.debtAmount > 0 ? "#e07a5f" : "#ffffff", borderColor: selected.debtAmount > 0 ? "#e07a5f" : "#404040" }}>
+                    {fmt(selected.debtAmount)} ج.م
+                  </div>
+                </Field>
+
+                <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
+                <Field label="تاريخ التعاقد"><div style={readStyle}>{selected.contractDate}</div></Field>
+                <Field label="تاريخ أول قسط"><div style={readStyle}>{selected.firstPayDate}</div></Field>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <Field label="الملاحظات">
+                    <div style={{ ...readStyle, minHeight: 60, whiteSpace: "pre-wrap" }}>{selected.notes || "لا توجد ملاحظات مسجلة"}</div>
+                  </Field>
+                </div>
+              </div>
+            )}
+
+            {/* الوضع الثاني: نموذج تعديل بيانات العميل بالكامل */}
+            {isEditing && (
+              <form onSubmit={handleSaveEdit} style={styles.formGrid}>
+                <div style={styles.sectionLabel}>بيانات العميل والضامن</div>
+                <Field label="اسم العميل *"><input style={styles.input} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required /></Field>
+                <Field label="تليفون العميل *"><input style={styles.input} value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required /></Field>
+                <Field label="اسم الضامن"><input style={styles.input} value={editForm.guarantor} onChange={(e) => setEditForm({ ...editForm, guarantor: e.target.value })} /></Field>
+                <Field label="تليفون الضامن"><input style={styles.input} value={editForm.guarantorPhone} onChange={(e) => setEditForm({ ...editForm, guarantorPhone: e.target.value })} /></Field>
+
+                <div style={styles.sectionLabel}>بيانات السلعة والتقسيط</div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <Field label="السلعة *"><input style={styles.input} value={editForm.item} onChange={(e) => setEditForm({ ...editForm, item: e.target.value })} required /></Field>
+                </div>
+                <Field label="سعر التكلفة *"><input type="number" style={styles.input} value={editForm.cost} onChange={(e) => setEditForm({ ...editForm, cost: e.target.value })} required /></Field>
+                <Field label="سعر البيع *"><input type="number" style={styles.input} value={editForm.sale} onChange={(e) => setEditForm({ ...editForm, sale: e.target.value })} required /></Field>
+                <Field label="المقدم *"><input type="number" style={styles.input} value={editForm.down} onChange={(e) => setEditForm({ ...editForm, down: e.target.value })} required /></Field>
+                <Field label="القسط الشهري *"><input type="number" style={styles.input} value={editForm.monthly} onChange={(e) => setEditForm({ ...editForm, monthly: e.target.value })} required /></Field>
+
+                <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
+                <Field label="تاريخ التعاقد *"><input type="date" style={styles.input} value={editForm.contractDate} onChange={handleContractDateChange} required /></Field>
+                <Field label="تاريخ أول قسط"><input type="date" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4" }} value={editForm.firstPayDate} readOnly disabled /></Field>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <Field label="الملاحظات"><input style={styles.input} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></Field>
+                </div>
+
+                <div style={{ gridColumn: "1 / -1", display: "flex", gap: 10, marginTop: 12 }}>
+                  <button type="submit" style={{ ...styles.saveBtn, flex: 1, marginTop: 0 }}>حفظ التعديلات بالسحابة</button>
+                  <button type="button" onClick={() => setIsEditing(false)} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 20px", fontWeight: 700, cursor: "pointer" }}>إلغاء</button>
+                </div>
+              </form>
+            )}
           </div>
         )}
       </div>
@@ -648,20 +823,6 @@ function SearchScreen({ rows, onBack }) {
   );
 }
 
-function ProfileRow({ label, value, highlight, error }) {
-  let textColor = "#ffffff";
-  let borderColor = "#404040";
-  if (highlight) { textColor = "#d0b689"; borderColor = "#d0b689"; }
-  if (error) { textColor = "#e07a5f"; borderColor = "#e07a5f"; }
-
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-      <div style={{ width: "130px", color: "#c4c4c4", fontSize: "14px", fontWeight: 700 }}>{label}</div>
-      <div style={{ flex: 1, background: "#1b1b1d", border: `1px solid ${borderColor}`, padding: "12px 16px", borderRadius: "10px", color: textColor, fontSize: "15px", fontWeight: 800 }}>
-        {value}
-      </div>
-    </div>
-  );
 }
 
 /* 3. إضافة شريك */
