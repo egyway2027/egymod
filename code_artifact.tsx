@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
-  CreditCard, UserPlus, CalendarClock, Search, UserX, CloudUpload,
+  CreditCard, UserPlus, CalendarClock, Search, UserX, UploadCloud,
   KeyRound, Power, Wallet, TrendingUp, Calculator, ArrowRight,
   Trash2, CheckCircle2, X, Users, UserCog
 } from "lucide-react";
@@ -435,7 +435,7 @@ function Dashboard({ totals, lateCount, onNavigate, user, onLogout }) {
     { key: "changePassword", label: "تغيير كلمة السر", icon: KeyRound, tone: "tan" },
     { key: "addPartner", label: "إضافة شريك جديد", icon: Users, tone: "copper" },
     { key: "addEmployee", label: "إضافة موظف جديد", icon: UserCog, tone: "silver" },
-    { key: "backup", label: "النسخ الاحتياطي السحابي", icon: CloudUpload, tone: "roseLight" },
+    { key: "backup", label: "النسخ الاحتياطي السحابي", icon: UploadCloud, tone: "roseLight" },
     { key: "exit", label: "تسجيل الخروج", icon: Power, tone: "dark" },
   ];
 
