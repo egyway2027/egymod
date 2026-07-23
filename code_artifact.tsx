@@ -792,8 +792,13 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
                 <Field label="القسط الشهري *"><input type="number" style={styles.input} value={editForm.monthly} onChange={(e) => setEditForm({ ...editForm, monthly: e.target.value })} required /></Field>
 
                 <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
-                <Field label="تاريخ التعاقد *"><input type="date" style={styles.input} value={editForm.contractDate} onChange={handleContractDateChange} required /></Field>
-                <Field label="تاريخ أول قسط"><input type="date" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4" }} value={editForm.firstPayDate} readOnly disabled /></Field>
+<Field label="تاريخ التعاقد *">
+  <input type="date" dir="ltr" style={{ ...styles.input, textAlign: "right" }} value={editForm.contractDate} onChange={handleContractDateChange} required />
+</Field>
+
+<Field label="تاريخ أول قسط">
+  <input type="date" dir="ltr" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", textAlign: "right" }} value={editForm.firstPayDate} readOnly disabled />
+</Field>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <Field label="الملاحظات"><input style={styles.input} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></Field>
                 </div>
