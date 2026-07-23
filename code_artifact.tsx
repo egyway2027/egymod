@@ -297,10 +297,6 @@ function EgymodApp() {
     };
   }, [activeClients, rows]);
 
-  const expensesTotal = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
-  const salariesPaidTotal = useMemo(() => salaryLog.reduce((s, x) => s + x.amount, 0), [salaryLog]);
-  void expensesTotal; void salariesPaidTotal;
-
   function notify(msg, kind = "success") {
     setToast({ msg, kind });
     setTimeout(() => setToast(null), 3000);
@@ -440,7 +436,7 @@ function EgymodApp() {
               <Field label="أدخل بريدك الإلكتروني"><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></Field>
               <button type="submit" style={styles.saveBtn}>إرسال رابط استعادة كلمة المرور</button>
               <div style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#c4c4c4" }}>
-                <span style={{ color: "#e8cd9c", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthView("login")}>العودة لتسجيل الدخول</span>
+                <span style={{ color: "#e8cd9c", cursor: "pointer", fontWeight 700 }} onClick={() => setAuthView("login")}>العودة لتسجيل الدخول</span>
               </div>
             </form>
           )}
@@ -459,7 +455,17 @@ function EgymodApp() {
         ::-webkit-scrollbar-thumb { background: #d0b689; border-radius: 4px; }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
+        input[type=date] { direction: ltr !important; text-align: right; }
         input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        input[type=date]::-webkit-datetime-edit,
+        input[type=date]::-webkit-datetime-edit-fields-wrapper,
+        input[type=date]::-webkit-datetime-edit-text,
+        input[type=date]::-webkit-datetime-edit-month-field,
+        input[type=date]::-webkit-datetime-edit-day-field,
+        input[type=date]::-webkit-datetime-edit-year-field {
+          direction: ltr !important;
+          unicode-bidi: isolate !important;
+        }
       `}</style>
 
       {toast && (
@@ -608,8 +614,8 @@ function AddClientScreen({ onSave, onBack }) {
 
           <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, gridColumn: "1 / -1" }}>
-            <Field label="تاريخ التعاقد *"><input type="date" style={styles.input} value={form.contractDate} onChange={handleContractDate} /></Field>
-            <Field label="تاريخ أول قسط (تلقائي + شهر)"><input type="date" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", borderColor: "#333" }} value={form.firstPayDate} readOnly disabled /></Field>
+            <Field label="تاريخ التعاقد *"><input type="date" dir="ltr" lang="en-US" style={{ ...styles.input, textAlign: "right" }} value={form.contractDate} onChange={handleContractDate} /></Field>
+            <Field label="تاريخ أول قسط (تلقائي + شهر)"><input type="date" dir="ltr" lang="en-US" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", borderColor: "#333", textAlign: "right" }} value={form.firstPayDate} readOnly disabled /></Field>
           </div>
           <div style={{ gridColumn: "1 / -1" }}>
             <Field label="ملاحظات"><input style={styles.input} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></Field>
@@ -786,8 +792,8 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
                 <Field label="القسط الشهري *"><input type="number" style={styles.input} value={editForm.monthly} onChange={(e) => setEditForm({ ...editForm, monthly: e.target.value })} required /></Field>
 
                 <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
-                <Field label="تاريخ التعاقد *"><input type="date" style={styles.input} value={editForm.contractDate} onChange={handleContractDateChange} required /></Field>
-                <Field label="تاريخ أول قسط"><input type="date" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4" }} value={editForm.firstPayDate} readOnly disabled /></Field>
+                <Field label="تاريخ التعاقد *"><input type="date" dir="ltr" lang="en-US" style={{ ...styles.input, textAlign: "right" }} value={editForm.contractDate} onChange={handleContractDateChange} required /></Field>
+                <Field label="تاريخ أول قسط"><input type="date" dir="ltr" lang="en-US" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", textAlign: "right" }} value={editForm.firstPayDate} readOnly disabled /></Field>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <Field label="الملاحظات"><input style={styles.input} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></Field>
                 </div>
@@ -867,7 +873,7 @@ function AddEmployeeScreen({ onSave, onBack }) {
           <Field label="التليفون"><input style={styles.input} onChange={e => setForm({ ...form, phone: e.target.value })} required /></Field>
           <Field label="الوظيفة"><input style={styles.input} onChange={e => setForm({ ...form, job: e.target.value })} required /></Field>
           <Field label="الراتب الأساسي"><input type="number" style={styles.input} onChange={e => setForm({ ...form, salary: e.target.value })} required /></Field>
-          <Field label="تاريخ التعيين"><input type="date" style={styles.input} onChange={e => setForm({ ...form, hireDate: e.target.value })} required /></Field>
+          <Field label="تاريخ التعيين"><input type="date" dir="ltr" lang="en-US" style={{ ...styles.input, textAlign: "right" }} onChange={e => setForm({ ...form, hireDate: e.target.value })} required /></Field>
           <button type="submit" style={styles.saveBtn}>حفظ بيانات الموظف</button>
         </form>
       </div>
