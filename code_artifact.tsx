@@ -152,6 +152,9 @@ function EgymodApp() {
 
   const [clients, setClients] = useState([]);
   const [payments, setPayments] = useState([]);
+  
+  const [deletedClients, setDeletedClients] = useState([]);
+  
   const [partners, setPartners] = useState(seedPartners);
   const [expenses] = useState(seedExpenses);
   const [employees, setEmployees] = useState(seedEmployees);
@@ -410,7 +413,16 @@ function EgymodApp() {
       {screen === "addEmployee" && <AddEmployeeScreen onSave={addEmployee} onBack={() => setScreen("dashboard")} />}
 
      {screen === "monthlyDues" && <MonthlyDuesScreen rows={rows} payments={payments} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
-      {screen === "deleteClient" && <PlaceholderScreen title="حذف حساب عميل" onBack={() => setScreen("dashboard")} />}
+      {screen === "deleteClient" && (
+  <DeleteClientScreen
+    clients={clients}
+    setClients={setClients}
+    deletedClients={deletedClients}
+    setDeletedClients={setDeletedClients}
+    onBack={() => setScreen("dashboard")}
+    notify={notify}
+  />
+)}
       {screen === "lateClients" && <LateClientsScreen rows={lateRows} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
       {screen === "changePassword" && <PlaceholderScreen title="تغيير كلمة السر" onBack={() => setScreen("dashboard")} />}
       {screen === "treasury" && <PlaceholderScreen title="الخزينة وتوزيع الأرباح" onBack={() => setScreen("dashboard")} />}
@@ -1205,7 +1217,274 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
 
 
 
+/* ============================================================
+   شاشة حذف عميل وسلة المحذوفات (مكون مستقل متناسق مع تصميمك)
+   ============================================================ */
+function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedClients, onBack, notify }) {
+  const [activeTab, setActiveTab] = useState("search"); // search | trash
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
+  // اقتراحات البحث الحي بمجرد كتابة أي حرف
+  const suggestions = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    const term = searchTerm.trim().toLowerCase();
+    return clients.filter(
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.phone.includes(term) ||
+        c.item.toLowerCase().includes(term)
+    );
+  }, [clients, searchTerm]);
+
+  // نقل العميل لسلة المحذوفات
+  const handleMoveToTrash = (client) => {
+    const deletedItem = {
+      ...client,
+      deletedAt: new Date().toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })
+    };
+    setDeletedClients((prev) => [...prev, deletedItem]);
+    setClients((prev) => prev.filter((c) => c.id !== client.id));
+    setSelectedClient(null);
+    setSearchTerm("");
+    notify("تم نقل العميل إلى سلة المحذوفات بنجاح");
+  };
+
+  // استعادة العميل من سلة المحذوفات
+  const handleRestore = (client) => {
+    const { deletedAt, ...restoredClient } = client;
+    setClients((prev) => [...prev, restoredClient]);
+    setDeletedClients((prev) => prev.filter((c) => c.id !== client.id));
+    notify("تمت استعادة حساب العميل إلى النظام النشط بنجاح");
+  };
+
+  // الحذف النهائي من السحابة والذاكرة
+  const handlePermanentDelete = async (clientId) => {
+    try {
+      if (supabase) {
+        await supabase.from("clients").delete().eq("id", clientId);
+      }
+      setDeletedClients((prev) => prev.filter((c) => c.id !== clientId));
+      setConfirmDeleteId(null);
+      notify("تم حذف حساب العميل نهائياً من قاعدة البيانات السحابية");
+    } catch (err) {
+      console.error(err);
+      notify("حدث خطأ أثناء الحذف النهائي", "error");
+    }
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="حذف وإدارة حسابات العملاء" onBack={onBack} />
+
+      {/* تبويبات الشاشة */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab("search")}
+          style={{
+            flex: 1,
+            padding: "12px",
+            borderRadius: 12,
+            border: "1px solid #404040",
+            background: activeTab === "search" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
+            color: activeTab === "search" ? "#1b1b1d" : "#c4c4c4",
+            fontWeight: 800,
+            fontSize: 14,
+            cursor: "pointer"
+          }}
+        >
+          البحث ونقل للسلة
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("trash")}
+          style={{
+            flex: 1,
+            padding: "12px",
+            borderRadius: 12,
+            border: "1px solid #404040",
+            background: activeTab === "trash" ? "#3a2320" : "#1b1b1d",
+            color: activeTab === "trash" ? "#f0c6bb" : "#c4c4c4",
+            borderColor: activeTab === "trash" ? "#7a4a3f" : "#404040",
+            fontWeight: 800,
+            fontSize: 14,
+            cursor: "pointer"
+          }}
+        >
+          سلة المحذوفات ({deletedClients.length})
+        </button>
+      </div>
+
+      {/* التبويب الأول: البحث والحذف */}
+      {activeTab === "search" && (
+        <div style={styles.card}>
+          <Field label="ابحث باسم العميل أو رقم الهاتف أو السلعة">
+            <div style={{ position: "relative" }}>
+              <input
+                style={styles.input}
+                placeholder="اكتب حرفاً أو اسماً للفلترة الحية..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setSelectedClient(null);
+                }}
+              />
+
+              {/* قائمة الاقتراحات الحية */}
+              {searchTerm.trim() && !selectedClient && (
+                <div style={styles.suggestBox}>
+                  {suggestions.length > 0 ? (
+                    suggestions.map((item) => (
+                      <button
+                        type="button"
+                        key={item.id}
+                        style={styles.suggestItem}
+                        onClick={() => {
+                          setSelectedClient(item);
+                          setSearchTerm(item.name);
+                        }}
+                      >
+                        <span style={styles.suggestLabel}>{item.name}</span>
+                        <span style={styles.suggestSecondary}>{item.item} · {item.phone}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div style={{ padding: 12, textAlign: "center", color: "#888", fontSize: 13 }}>
+                      لا يوجد عميل يطابق البحث
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Field>
+
+          {/* تفاصيل العميل المحدد وتأكيد الحذف */}
+          {selectedClient && (
+            <div style={styles.profileBox}>
+              <h3 style={styles.historyTitle}>بيانات العميل المحدد: {selectedClient.name}</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                <ProfileRow label="رقم الهاتف" value={selectedClient.phone} />
+                <ProfileRow label="السلعة" value={selectedClient.item} />
+                <ProfileRow label="إجمالي المتبقي" value={`${fmt(selectedClient.sale - selectedClient.down - selectedClient.totalPaid)} ج.م`} />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleMoveToTrash(selectedClient)}
+                style={{
+                  ...styles.saveBtn,
+                  background: "linear-gradient(145deg, #d69a5f, #b06a35)",
+                  color: "#ffffff"
+                }}
+              >
+                نقل العميل إلى سلة المحذوفات
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* التبويب الثاني: سلة المحذوفات */}
+      {activeTab === "trash" && (
+        <div style={styles.card}>
+          {deletedClients.length === 0 ? (
+            <div style={styles.emptyState}>سلة المحذوفات فارغة حالياً.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {deletedClients.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    background: "#1b1b1d",
+                    border: "1px solid #404040",
+                    borderRadius: 12,
+                    padding: 16,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>{item.name}</div>
+                    <div style={{ fontSize: 13, color: "#e8cd9c", marginTop: 2 }}>{item.item} · {item.phone}</div>
+                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>تاريخ النقل للسلة: {item.deletedAt}</div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => handleRestore(item)}
+                      style={{
+                        background: "#213526",
+                        border: "1px solid #3d6b4a",
+                        color: "#bfe8cd",
+                        padding: "8px 14px",
+                        borderRadius: 8,
+                        fontSize: 12.5,
+                        fontWeight: 700,
+                        cursor: "pointer"
+                      }}
+                    >
+                      استعادة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(item.id)}
+                      style={{
+                        background: "#3a2320",
+                        border: "1px solid #7a4a3f",
+                        color: "#f0c6bb",
+                        padding: "8px 14px",
+                        borderRadius: 8,
+                        fontSize: 12.5,
+                        fontWeight: 700,
+                        cursor: "pointer"
+                      }}
+                    >
+                      حذف نهائي
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* نافذة تأكيد الحذف النهائي */}
+      {confirmDeleteId && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 }}>
+          <div style={{ ...styles.card, width: "100%", maxWidth: 400, textAlign: "center" }}>
+            <h3 style={{ color: "#e07a5f", fontSize: 18, fontWeight: 800, marginBottom: 8 }}>تأكيد الحذف النهائي</h3>
+            <p style={{ color: "#c4c4c4", fontSize: 13, marginBottom: 16 }}>
+              هل أنت تأكد من مسح هذا العميل نهائياً؟ لن تتمكن من استعادته أو الوصول لبياناته مرة أخرى من السحابة.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => handlePermanentDelete(confirmDeleteId)}
+                style={{ ...styles.saveBtn, flex: 1, background: "#e07a5f", color: "#fff", marginTop: 0 }}
+              >
+                تأكيد الحذف
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 16px", cursor: "pointer", fontWeight: 700 }}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 
 
