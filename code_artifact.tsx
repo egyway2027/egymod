@@ -409,7 +409,7 @@ function EgymodApp() {
       {screen === "addPartner" && <AddPartnerScreen partners={partners.map(p => ({ ...p, net: p.capital + p.profit - p.withdrawals }))} onSave={addPartner} onBack={() => setScreen("dashboard")} />}
       {screen === "addEmployee" && <AddEmployeeScreen onSave={addEmployee} onBack={() => setScreen("dashboard")} />}
 
-      {screen === "monthlyDues" && <PlaceholderScreen title="مستحقات الشهر" onBack={() => setScreen("dashboard")} />}
+     {screen === "monthlyDues" && <MonthlyDuesScreen rows={rows} payments={payments} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
       {screen === "deleteClient" && <PlaceholderScreen title="حذف حساب عميل" onBack={() => setScreen("dashboard")} />}
       {screen === "lateClients" && <LateClientsScreen rows={lateRows} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
       {screen === "changePassword" && <PlaceholderScreen title="تغيير كلمة السر" onBack={() => setScreen("dashboard")} />}
@@ -963,6 +963,252 @@ function LateClientsScreen({ rows, onBack, onPay }) {
     </div>
   );
 }
+
+
+/* ============================================================
+   شاشة مستحقات الشهر (مكون مستقل متناسق مع تصميمك)
+   ============================================================ */
+function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [payTarget, setPayTarget] = useState(null);
+  const [payAmount, setPayAmount] = useState("");
+
+  const today = new Date();
+  const currentMonthName = today.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
+
+  const processedRows = useMemo(() => {
+    return rows
+      .filter((r) => r.remaining > 0 && r.monthly > 0)
+      .map((r) => {
+        const monthlyReq = Math.min(r.monthly, r.remaining);
+        const debt = r.debtAmount;
+        let status = "unpaid";
+        let paidThisMonth = 0;
+        let dueThisMonth = monthlyReq;
+
+        if (debt <= 0) {
+          status = "paid";
+          paidThisMonth = monthlyReq;
+        } else if (debt < monthlyReq) {
+          status = "partial";
+          paidThisMonth = monthlyReq - debt;
+        } else {
+          status = "unpaid";
+          paidThisMonth = 0;
+        }
+
+        return {
+          ...r,
+          dueThisMonth,
+          paidThisMonth,
+          remainingThisMonth: Math.max(0, dueThisMonth - paidThisMonth),
+          monthStatus: status
+        };
+      });
+  }, [rows]);
+
+  const filtered = useMemo(() => {
+    return processedRows.filter((r) => {
+      const matchSearch = r.name.includes(search.trim()) || r.phone.includes(search.trim()) || r.item.includes(search.trim());
+      if (!matchSearch) return false;
+
+      if (statusFilter === "paid") return r.monthStatus === "paid";
+      if (statusFilter === "partial") return r.monthStatus === "partial";
+      if (statusFilter === "unpaid") return r.monthStatus === "unpaid";
+      return true;
+    });
+  }, [processedRows, search, statusFilter]);
+
+  const stats = useMemo(() => {
+    const totalDue = processedRows.reduce((s, r) => s + r.dueThisMonth, 0);
+    const totalCollected = processedRows.reduce((s, r) => s + r.paidThisMonth, 0);
+    const totalRemaining = totalDue - totalCollected;
+    const progressPct = totalDue > 0 ? Math.round((totalCollected / totalDue) * 100) : 0;
+    return { totalDue, totalCollected, totalRemaining, progressPct };
+  }, [processedRows]);
+
+  const handleSendWhatsApp = (client) => {
+    const msg = `السلام عليكم ورحمة الله، أستاذ/ة ${client.name}.\nنود تذكيركم بحلول موعد قسط شهر (${currentMonthName}) لقسط (${client.item}) بقيمة ${fmt(client.dueThisMonth)} ج.م.\nبرجاء التكرم بالسداد في الموعد المحدد. شكراً لكم!`;
+    window.open(`https://wa.me/2${client.phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  const handleConfirmPay = (e) => {
+    e.preventDefault();
+    if (!payTarget || !payAmount) return;
+    onPay(payTarget.id, parseFloat(payAmount) || 0);
+    setPayTarget(null);
+    setPayAmount("");
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title={`مستحقات شهر ${currentMonthName}`} onBack={onBack} />
+
+      <section style={{ ...styles.kpiRow, marginBottom: 16 }}>
+        <KPI icon={CalendarClock} label="إجمالي المطلوب هذا الشهر" sub="مجموع الأقساط المستحقة" value={fmt(stats.totalDue)} />
+        <KPI icon={Wallet} label="تم تحصيله حتى الآن" sub={`نسبة الإنجاز ${stats.progressPct}%`} value={fmt(stats.totalCollected)} />
+        <KPI icon={TrendingUp} label="المتبقي تحصيله" sub="مستحقات جاري متابعتها" value={fmt(stats.totalRemaining)} />
+      </section>
+
+      <div style={{ ...styles.card, marginBottom: 16, padding: 16, display: "flex", flexWrap: "wrap", gap: 12, items: "center", justifyContent: "space-between" }}>
+        <input
+          style={{ ...styles.input, maxWidth: 300 }}
+          placeholder="بحث باسم العميل أو التليفون أو السلعة..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {[
+            { key: "all", label: `الكل (${processedRows.length})` },
+            { key: "unpaid", label: "لم يسدد" },
+            { key: "partial", label: "سداد جزئي" },
+            { key: "paid", label: "تم السداد" },
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              type="button"
+              onClick={() => setStatusFilter(btn.key)}
+              style={{
+                background: statusFilter === btn.key ? "#d0b689" : "#1b1b1d",
+                color: statusFilter === btn.key ? "#1b1b1d" : "#c4c4c4",
+                border: "1px solid #404040",
+                padding: "8px 14px",
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={styles.card}>
+        {filtered.length === 0 ? (
+          <div style={styles.emptyState}>لا توجد مستحقات تنطبق عليها معايير البحث.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {filtered.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  background: "#1b1b1d",
+                  border: "1px solid #404040",
+                  borderRadius: 12,
+                  padding: 16,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>{item.name}</div>
+                  <div style={{ fontSize: 13, color: "#e8cd9c", marginTop: 2 }}>{item.item} · {item.phone}</div>
+                </div>
+
+                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#c4c4c4" }}>قسط الشهر</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#d0b689" }}>{fmt(item.dueThisMonth)} ج.م</div>
+                  </div>
+
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#c4c4c4" }}>حالة السداد</div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 800,
+                        padding: "4px 8px",
+                        borderRadius: 6,
+                        background:
+                          item.monthStatus === "paid"
+                            ? "#213526"
+                            : item.monthStatus === "partial"
+                            ? "#3d3527"
+                            : "#3a2320",
+                        color:
+                          item.monthStatus === "paid"
+                            ? "#bfe8cd"
+                            : item.monthStatus === "partial"
+                            ? "#e8cd9c"
+                            : "#f0c6bb",
+                        border: `1px solid ${
+                          item.monthStatus === "paid"
+                            ? "#3d6b4a"
+                            : item.monthStatus === "partial"
+                            ? "#b6935a"
+                            : "#7a4a3f"
+                        }`,
+                      }}
+                    >
+                      {item.monthStatus === "paid" ? "تم السداد" : item.monthStatus === "partial" ? "سداد جزئي" : "لم يسدد"}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      type="button"
+                      title="واتساب"
+                      onClick={() => handleSendWhatsApp(item)}
+                      style={{ background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700 }}
+                    >
+                      واتساب
+                    </button>
+                    <a
+                      href={`tel:${item.phone}`}
+                      style={{ background: "#1b2a38", border: "1px solid #385a7c", color: "#b2d4f5", padding: "8px 12px", borderRadius: 8, textDecoration: "none", fontSize: 12, fontWeight: 700 }}
+                    >
+                      اتصال
+                    </a>
+                    {item.monthStatus !== "paid" && (
+                      <button
+                        type="button"
+                        onClick={() => { setPayTarget(item); setPayAmount(item.remainingThisMonth); }}
+                        style={{ background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 800 }}
+                      >
+                        تحصيل
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {payTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 }}>
+          <div style={{ ...styles.card, width: "100%", maxWidth: 400 }}>
+            <h3 style={{ color: "#e8cd9c", fontSize: 17, fontWeight: 800, marginBottom: 12 }}>تحصيل قسط: {payTarget.name}</h3>
+            <form onSubmit={handleConfirmPay} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Field label="المبلغ المراد تحصيله">
+                <input type="number" style={styles.input} value={payAmount} onChange={(e) => setPayAmount(e.target.value)} required />
+              </Field>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button type="submit" style={{ ...styles.saveBtn, flex: 1, marginTop: 0 }}>تأكيد التحصيل</button>
+                <button type="button" onClick={() => setPayTarget(null)} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 16px", cursor: "pointer", fontWeight: 700 }}>إلغاء</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+
+
+
+
 
 
 /* أنماط التصميم */
