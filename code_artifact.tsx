@@ -255,14 +255,22 @@ async function loadCloudData(userId) {
     notify("تم تسجيل الخروج بنجاح.");
   }
 
-  const rows = useMemo(() => {
-    return clients.map((c) => {
-      const dues = computeDues(c, today);
-      const remaining = c.sale - c.down - c.totalPaid;
-      const due = nextDueDate(c);
-      return { ...c, ...dues, remaining, due };
-    }).sort((a, b) => b.debtAmount - a.debtAmount);
-  }, [clients, today]);
+// 1. استبعاد أي عميل في سلة المحذوفات من القائمة النشطة فوراً
+const activeClients = useMemo(() => {
+  const trashIds = new Set(deletedClients.map((d) => d.id));
+  return clients.filter((c) => !trashIds.has(c.id));
+}, [clients, deletedClients]);
+
+// 2. حساب كافة البيانات والكروت العلوية بناءً على العملاء النشطين فقط
+const rows = useMemo(() => {
+  return activeClients.map((c) => {
+    const dues = computeDues(c, today);
+    const remaining = c.sale - c.down - c.totalPaid;
+    const due = nextDueDate(c);
+    return { ...c, ...dues, remaining, due };
+  }).sort((a, b) => b.debtAmount - a.debtAmount);
+}, [activeClients, today]);
+
 
   const lateRows = useMemo(() => rows.filter((r) => r.debtAmount > 0), [rows]);
 
@@ -428,7 +436,7 @@ async function loadCloudData(userId) {
      {screen === "monthlyDues" && <MonthlyDuesScreen rows={rows} payments={payments} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
       {screen === "deleteClient" && (
   <DeleteClientScreen
-    clients={clients}
+    clients={activeClients}
     setClients={setClients}
     deletedClients={deletedClients}
     setDeletedClients={setDeletedClients}
