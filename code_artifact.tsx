@@ -95,6 +95,42 @@ const seedEmployees = [{ id: 1, name: "سعيد عبد الله", phone: "010111
 const emptyForm = { name: "", phone: "", guarantor: "", guarantorPhone: "", item: "", cost: "", sale: "", down: "", monthly: "", contractDate: "", firstPayDate: "", notes: "" };
 
 /* ============================================================
+   مكون إدخال التاريخ الذكي (يعالج مشكلة قنس/رهش/موي)
+   ============================================================ */
+function DateInput({ value, onChange, disabled, required, placeholder = "سنة - شهر - يوم", style }) {
+  const [focused, setFocused] = useState(false);
+  const isDateType = focused || Boolean(value);
+
+  return (
+    <input
+      type={isDateType ? "date" : "text"}
+      value={value || ""}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      required={required}
+      dir="ltr"
+      style={{
+        width: "100%",
+        background: disabled ? "#151515" : "#1b1b1d",
+        border: "1px solid #404040",
+        borderRadius: 10,
+        padding: "12px 14px",
+        color: disabled ? "#888888" : "#ffffff",
+        fontFamily: "inherit",
+        fontSize: 15,
+        outline: "none",
+        textAlign: "right",
+        cursor: disabled ? "not-allowed" : "pointer",
+        ...style
+      }}
+    />
+  );
+}
+
+/* ============================================================
    مكون البحث الحي
    ============================================================ */
 function NameComboBox({ items, getLabel, getSecondary, onSelect, placeholder, selectedLabel, onClear }) {
@@ -436,7 +472,7 @@ function EgymodApp() {
               <Field label="أدخل بريدك الإلكتروني"><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></Field>
               <button type="submit" style={styles.saveBtn}>إرسال رابط استعادة كلمة المرور</button>
               <div style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#c4c4c4" }}>
-                <span style={{ color: "#e8cd9c", cursor: "pointer", fontWeight 700 }} onClick={() => setAuthView("login")}>العودة لتسجيل الدخول</span>
+                <span style={{ color: "#e8cd9c", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthView("login")}>العودة لتسجيل الدخول</span>
               </div>
             </form>
           )}
@@ -455,17 +491,7 @@ function EgymodApp() {
         ::-webkit-scrollbar-thumb { background: #d0b689; border-radius: 4px; }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
-        input[type=date] { direction: ltr !important; text-align: right; }
         input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-        input[type=date]::-webkit-datetime-edit,
-        input[type=date]::-webkit-datetime-edit-fields-wrapper,
-        input[type=date]::-webkit-datetime-edit-text,
-        input[type=date]::-webkit-datetime-edit-month-field,
-        input[type=date]::-webkit-datetime-edit-day-field,
-        input[type=date]::-webkit-datetime-edit-year-field {
-          direction: ltr !important;
-          unicode-bidi: isolate !important;
-        }
       `}</style>
 
       {toast && (
@@ -503,8 +529,51 @@ function EgymodApp() {
 }
 
 /* ============================================================
-   الشاشات الفرعية
+   الشاشات الفرعية ومكونات الهيدر والأزرار
    ============================================================ */
+
+function ScreenHeader({ title, onBack }) {
+  return (
+    <div style={styles.subHeader}>
+      <button style={styles.backBtn} onClick={onBack} title="رجوع للرئيسية">
+        <ArrowRight size={16} /> رجوع للرئيسية
+      </button>
+      <div style={styles.subTitle}>{title}</div>
+      <button type="button" style={styles.topCloseBtn} onClick={onBack} title="إغلاق الشاشة والعودة للرئيسية">
+        <X size={18} />
+      </button>
+    </div>
+  );
+}
+
+function BottomExitButton({ onBack }) {
+  return (
+    <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #333336" }}>
+      <button
+        type="button"
+        onClick={onBack}
+        style={{
+          width: "100%",
+          background: "#1b1b1d",
+          border: "1px solid #404040",
+          color: "#e8cd9c",
+          borderRadius: 12,
+          padding: "13px 20px",
+          fontSize: 14,
+          fontWeight: 800,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          fontFamily: "inherit"
+        }}
+      >
+        <ArrowRight size={16} /> خروج والعودة للشاشة الرئيسية
+      </button>
+    </div>
+  );
+}
 
 function Dashboard({ totals, lateCount, onNavigate, user, onLogout }) {
   const buttons = [
@@ -550,18 +619,6 @@ function Dashboard({ totals, lateCount, onNavigate, user, onLogout }) {
           }} />
         ))}
       </section>
-    </div>
-  );
-}
-
-function ScreenHeader({ title, onBack }) {
-  return (
-    <div style={styles.subHeader}>
-      <button style={styles.backBtn} onClick={onBack}>
-        <ArrowRight size={16} /> رجوع للرئيسية
-      </button>
-      <div style={styles.subTitle}>{title}</div>
-      <div style={{ width: 130 }} />
     </div>
   );
 }
@@ -614,8 +671,12 @@ function AddClientScreen({ onSave, onBack }) {
 
           <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, gridColumn: "1 / -1" }}>
-            <Field label="تاريخ التعاقد *"><input type="date" dir="ltr" lang="en-US" style={{ ...styles.input, textAlign: "right" }} value={form.contractDate} onChange={handleContractDate} /></Field>
-            <Field label="تاريخ أول قسط (تلقائي + شهر)"><input type="date" dir="ltr" lang="en-US" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", borderColor: "#333", textAlign: "right" }} value={form.firstPayDate} readOnly disabled /></Field>
+            <Field label="تاريخ التعاقد *">
+              <DateInput value={form.contractDate} onChange={handleContractDate} required />
+            </Field>
+            <Field label="تاريخ أول قسط (تلقائي + شهر)">
+              <DateInput value={form.firstPayDate} disabled readOnly />
+            </Field>
           </div>
           <div style={{ gridColumn: "1 / -1" }}>
             <Field label="ملاحظات"><input style={styles.input} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></Field>
@@ -629,12 +690,13 @@ function AddClientScreen({ onSave, onBack }) {
 
           <button type="submit" style={styles.saveBtn}>حفظ بيانات العقد</button>
         </form>
+        <BottomExitButton onBack={onBack} />
       </div>
     </div>
   );
 }
 
-/* 2. استعلام وتعديل بيانات العميل (شبكي متناسق) */
+/* 2. استعلام وتعديل بيانات العميل */
 function SearchScreen({ rows, onUpdateClient, onBack }) {
   const [selected, setSelected] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -792,8 +854,12 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
                 <Field label="القسط الشهري *"><input type="number" style={styles.input} value={editForm.monthly} onChange={(e) => setEditForm({ ...editForm, monthly: e.target.value })} required /></Field>
 
                 <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
-                <Field label="تاريخ التعاقد *"><input type="date" dir="ltr" lang="en-US" style={{ ...styles.input, textAlign: "right" }} value={editForm.contractDate} onChange={handleContractDateChange} required /></Field>
-                <Field label="تاريخ أول قسط"><input type="date" dir="ltr" lang="en-US" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", textAlign: "right" }} value={editForm.firstPayDate} readOnly disabled /></Field>
+                <Field label="تاريخ التعاقد *">
+                  <DateInput value={editForm.contractDate} onChange={handleContractDateChange} required />
+                </Field>
+                <Field label="تاريخ أول قسط">
+                  <DateInput value={editForm.firstPayDate} disabled readOnly />
+                </Field>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <Field label="الملاحظات"><input style={styles.input} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></Field>
                 </div>
@@ -806,6 +872,7 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
             )}
           </div>
         )}
+        <BottomExitButton onBack={onBack} />
       </div>
     </div>
   );
@@ -856,6 +923,7 @@ function AddPartnerScreen({ partners, onSave, onBack }) {
 
           <button type="submit" style={styles.saveBtn}>حفظ وإضافة الشريك</button>
         </form>
+        <BottomExitButton onBack={onBack} />
       </div>
     </div>
   );
@@ -873,9 +941,12 @@ function AddEmployeeScreen({ onSave, onBack }) {
           <Field label="التليفون"><input style={styles.input} onChange={e => setForm({ ...form, phone: e.target.value })} required /></Field>
           <Field label="الوظيفة"><input style={styles.input} onChange={e => setForm({ ...form, job: e.target.value })} required /></Field>
           <Field label="الراتب الأساسي"><input type="number" style={styles.input} onChange={e => setForm({ ...form, salary: e.target.value })} required /></Field>
-          <Field label="تاريخ التعيين"><input type="date" dir="ltr" lang="en-US" style={{ ...styles.input, textAlign: "right" }} onChange={e => setForm({ ...form, hireDate: e.target.value })} required /></Field>
+          <Field label="تاريخ التعيين">
+            <DateInput value={form.hireDate} onChange={e => setForm({ ...form, hireDate: e.target.value })} required />
+          </Field>
           <button type="submit" style={styles.saveBtn}>حفظ بيانات الموظف</button>
         </form>
+        <BottomExitButton onBack={onBack} />
       </div>
     </div>
   );
@@ -932,6 +1003,7 @@ function PayScreen({ rows, payments, onPay, onBack }) {
             )}
           </form>
         )}
+        <BottomExitButton onBack={onBack} />
       </div>
     </div>
   );
@@ -941,7 +1013,10 @@ function PlaceholderScreen({ title, note, onBack }) {
   return (
     <div style={styles.container}>
       <ScreenHeader title={title} onBack={onBack} />
-      <div style={styles.card}><div style={styles.emptyState}>{note || "شاشة تحت التجهيز النهائي"}</div></div>
+      <div style={styles.card}>
+        <div style={styles.emptyState}>{note || "شاشة تحت التجهيز النهائي"}</div>
+        <BottomExitButton onBack={onBack} />
+      </div>
     </div>
   );
 }
@@ -995,7 +1070,7 @@ function LiveStat({ label, value }) {
 }
 
 /* ============================================================
-   شاشة المتأخرين عن السداد (مكون مستقل متناسق مع تصميمك)
+   شاشة المتأخرين عن السداد
    ============================================================ */
 function LateClientsScreen({ rows, onBack, onPay }) {
   const [search, setSearch] = useState("");
@@ -1167,6 +1242,7 @@ function LateClientsScreen({ rows, onBack, onPay }) {
             ))}
           </div>
         )}
+        <BottomExitButton onBack={onBack} />
       </div>
 
       {payTarget && (
@@ -1190,7 +1266,7 @@ function LateClientsScreen({ rows, onBack, onPay }) {
 }
 
 /* ============================================================
-   شاشة مستحقات الشهر (مكون مستقل متناسق مع تصميمك)
+   شاشة مستحقات الشهر
    ============================================================ */
 function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
   const [search, setSearch] = useState("");
@@ -1405,6 +1481,7 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
             ))}
           </div>
         )}
+        <BottomExitButton onBack={onBack} />
       </div>
 
       {payTarget && (
@@ -1428,7 +1505,7 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
 }
 
 /* ============================================================
-   شاشة حذف عميل وسلة المحذوفات (مكون مستقل متناسق مع تصميمك)
+   شاشة حذف عميل وسلة المحذوفات
    ============================================================ */
 function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedClients, onBack, notify }) {
   const [activeTab, setActiveTab] = useState("search");
@@ -1585,6 +1662,7 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
               </button>
             </div>
           )}
+          <BottomExitButton onBack={onBack} />
         </div>
       )}
 
@@ -1653,6 +1731,7 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
               ))}
             </div>
           )}
+          <BottomExitButton onBack={onBack} />
         </div>
       )}
 
@@ -1705,6 +1784,7 @@ const styles = {
   grid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 },
   subHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
   backBtn: { display: "flex", alignItems: "center", gap: 6, background: "#242426", border: `1px solid #404040`, color: "#e8cd9c", padding: "9px 16px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700 },
+  topCloseBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, background: "#242426", border: "1px solid #404040", cursor: "pointer", color: "#e8cd9c" },
   subTitle: { fontSize: 19, fontWeight: 800, color: "#e8cd9c" },
   card: { background: "#242426", border: `1px solid #404040`, borderRadius: 18, padding: 22 },
   formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 },
