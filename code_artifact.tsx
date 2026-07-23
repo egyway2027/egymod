@@ -187,8 +187,21 @@ function EgymodApp() {
   const [authError, setAuthError] = useState("");
 
   const [clients, setClients] = useState([]);
-  const [payments, setPayments] = useState([]);
-  
+
+  // حفظ واسترجاع جدول المدفوعات محلياً كنسخة احتياطية
+  const [payments, setPayments] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_payments");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("egymod_payments", JSON.stringify(payments));
+  }, [payments]);
+
   const [deletedClients, setDeletedClients] = useState(() => {
     try {
       const saved = localStorage.getItem("egymod_trash");
@@ -205,7 +218,6 @@ function EgymodApp() {
   const [partners, setPartners] = useState(seedPartners);
   const [expenses] = useState(seedExpenses);
   const [employees, setEmployees] = useState(seedEmployees);
-  const [salaryLog] = useState([]);
   const [today] = useState(new Date());
   const [screen, setScreen] = useState("dashboard");
   const [toast, setToast] = useState(null);
@@ -249,10 +261,15 @@ function EgymodApp() {
       }
       if (pRes.data && pRes.data.length > 0) {
         setPayments(pRes.data.map(p => ({
-          id: p.id, clientId: p.client_id, clientName: p.client_name, item: p.item,
-          amount: Number(p.amount), remainingAfter: Number(p.remaining_after || 0),
+          id: p.id,
+          clientId: p.client_id,
+          clientName: p.client_name,
+          item: p.item,
+          amount: Number(p.amount),
+          remainingAfter: Number(p.remaining_after || 0),
           payDate: p.created_at ? p.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
-          method: p.method || "نقداً / كاش", collector: p.collector || "المشرف"
+          method: p.method || "نقداً / كاش",
+          collector: p.collector || "المشرف"
         })));
       }
     } catch (err) {
@@ -366,7 +383,7 @@ function EgymodApp() {
 
   async function recordPayment(clientId, amount, payDate, method = "نقداً / كاش", collector = "المشرف") {
     if (!currentUser) return null;
-    const client = clients.find((c) => c.id === clientId);
+    const client = clients.find((c) => String(c.id) === String(clientId));
     if (!client || !amount || amount <= 0) return null;
     const remainingBefore = client.sale - client.down - client.totalPaid;
     if (amount > remainingBefore) { notify("المبلغ أكبر من المديونية!", "error"); return null; }
@@ -386,10 +403,10 @@ function EgymodApp() {
 
     const paymentDateStr = payDate || new Date().toISOString().split("T")[0];
 
-    setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, totalPaid: newTotalPaid } : c)));
+    setClients((prev) => prev.map((c) => (String(c.id) === String(clientId) ? { ...c, totalPaid: newTotalPaid } : c)));
     const newPaymentObj = {
       id: pRes ? pRes.id : Date.now(),
-      clientId, clientName: client.name, item: client.item,
+      clientId: clientId, clientName: client.name, item: client.item,
       amount, remainingAfter, payDate: paymentDateStr, method, collector
     };
     setPayments((prev) => [...prev, newPaymentObj]);
@@ -403,17 +420,19 @@ function EgymodApp() {
 
   async function deletePayment(paymentId, clientId, amount) {
     if (!currentUser) return;
-    const client = clients.find((c) => c.id === clientId);
+    const client = clients.find((c) => String(c.id) === String(clientId));
     if (!client) return;
 
     const newTotalPaid = Math.max(0, client.totalPaid - amount);
 
     try {
-      await supabase.from('payments').delete().eq('id', paymentId);
-      await supabase.from('clients').update({ total_paid: newTotalPaid }).eq('id', clientId);
+      if (supabase) {
+        await supabase.from('payments').delete().eq('id', paymentId);
+        await supabase.from('clients').update({ total_paid: newTotalPaid }).eq('id', clientId);
+      }
 
-      setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, totalPaid: newTotalPaid } : c)));
-      setPayments((prev) => prev.filter((p) => p.id !== paymentId));
+      setClients((prev) => prev.map((c) => (String(c.id) === String(clientId) ? { ...c, totalPaid: newTotalPaid } : c)));
+      setPayments((prev) => prev.filter((p) => String(p.id) !== String(paymentId)));
       notify("تم حذف القسط وتعديل رصيد العميل بالسحابة بنجاح!");
     } catch (err) {
       console.error(err);
@@ -444,7 +463,7 @@ function EgymodApp() {
       return false;
     }
 
-    setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, ...updatedData } : c)));
+    setClients((prev) => prev.map((c) => (String(c.id) === String(clientId) ? { ...c, ...updatedData } : c)));
     notify("تم تحديث بيانات العميل بالسحابة بنجاح!");
     return true;
   }
@@ -1221,7 +1240,8 @@ function PayScreen({ rows, payments, employees, onPay, onDeletePayment, onShowRe
     setAmount("");
   }
 
-  const clientPayments = selected ? payments.filter(p => p.clientId === selected.id) : [];
+  // فلترة مرنة ومطابقة حتمية
+  const clientPayments = selected ? payments.filter(p => String(p.clientId) === String(selected.id)) : [];
 
   return (
     <div style={styles.container}>
@@ -1534,15 +1554,8 @@ function LateClientsScreen({ rows, onBack, onPay }) {
               <div
                 key={item.id}
                 style={{
-                  background: "#1b1b1d",
-                  border: "1px solid #404040",
-                  borderRadius: 12,
-                  padding: 16,
-                  display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
+                  background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16,
+                  display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12,
                 }}
               >
                 <div>
@@ -1750,15 +1763,8 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
               <div
                 key={item.id}
                 style={{
-                  background: "#1b1b1d",
-                  border: "1px solid #404040",
-                  borderRadius: 12,
-                  padding: 16,
-                  display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
+                  background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16,
+                  display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12,
                 }}
               >
                 <div>
@@ -1865,7 +1871,7 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
       deletedAt: new Date().toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })
     };
     setDeletedClients((prev) => [...prev, deletedItem]);
-    setClients((prev) => prev.filter((c) => c.id !== client.id));
+    setClients((prev) => prev.filter((c) => String(c.id) !== String(client.id)));
     setSelectedClient(null);
     setSearchTerm("");
     notify("تم نقل العميل إلى سلة المحذوفات بنجاح");
@@ -1874,7 +1880,7 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
   const handleRestore = (client) => {
     const { deletedAt, ...restoredClient } = client;
     setClients((prev) => [...prev, restoredClient]);
-    setDeletedClients((prev) => prev.filter((c) => c.id !== client.id));
+    setDeletedClients((prev) => prev.filter((c) => String(c.id) !== String(client.id)));
     notify("تمت استعادة حساب العميل إلى النظام النشط بنجاح");
   };
 
@@ -1883,7 +1889,7 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
       if (supabase) {
         await supabase.from("clients").delete().eq("id", clientId);
       }
-      setDeletedClients((prev) => prev.filter((c) => c.id !== clientId));
+      setDeletedClients((prev) => prev.filter((c) => String(c.id) !== String(clientId)));
       setConfirmDeleteId(null);
       notify("تم حذف حساب العميل نهائياً من قاعدة البيانات السحابية");
     } catch (err) {
