@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   CreditCard, UserPlus, CalendarClock, Search, UserX, UploadCloud,
   KeyRound, Power, Wallet, TrendingUp, Calculator, ArrowRight,
-  Trash2, CheckCircle2, X, Users, UserCog
+  Trash2, CheckCircle2, X, Users, UserCog, Printer, Download, Share2, Award
 } from "lucide-react";
 
 const SUPABASE_URL = 'https://blijuizmqoprlrsuebgo.supabase.co';
@@ -209,6 +209,7 @@ function EgymodApp() {
   const [today] = useState(new Date());
   const [screen, setScreen] = useState("dashboard");
   const [toast, setToast] = useState(null);
+  const [activeReceipt, setActiveReceipt] = useState(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -248,7 +249,10 @@ function EgymodApp() {
       }
       if (pRes.data && pRes.data.length > 0) {
         setPayments(pRes.data.map(p => ({
-          id: p.id, clientId: p.client_id, clientName: p.client_name, item: p.item, amount: Number(p.amount), remainingAfter: Number(p.remaining_after || 0)
+          id: p.id, clientId: p.client_id, clientName: p.client_name, item: p.item,
+          amount: Number(p.amount), remainingAfter: Number(p.remaining_after || 0),
+          payDate: p.created_at ? p.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
+          method: p.method || "نقداً / كاش", collector: p.collector || "المشرف"
         })));
       }
     } catch (err) {
@@ -302,7 +306,7 @@ function EgymodApp() {
     }).sort((a, b) => b.debtAmount - a.debtAmount);
   }, [activeClients, today]);
 
-  const lateRows = useMemo(() => rows.filter((r) => r.debtAmount > 0), [rows]);
+  const lateRows = useMemo(() => rows.filter((r) => r.debtAmount > 0 && r.remaining > 0), [rows]);
 
   const totals = useMemo(() => {
     let totalProfit = 0;
@@ -324,7 +328,7 @@ function EgymodApp() {
       }
     });
 
-    const totalDebt = rows.reduce((s, r) => s + r.debtAmount, 0);
+    const totalDebt = rows.reduce((s, r) => s + (r.remaining > 0 ? r.debtAmount : 0), 0);
 
     return {
       totalProfit: Math.round(totalProfit),
@@ -360,28 +364,61 @@ function EgymodApp() {
     setScreen("dashboard");
   }
 
-  async function recordPayment(clientId, amount) {
-    if (!currentUser) return;
+  async function recordPayment(clientId, amount, payDate, method = "نقداً / كاش", collector = "المشرف") {
+    if (!currentUser) return null;
     const client = clients.find((c) => c.id === clientId);
-    if (!client || !amount || amount <= 0) return;
+    if (!client || !amount || amount <= 0) return null;
     const remainingBefore = client.sale - client.down - client.totalPaid;
-    if (amount > remainingBefore) { notify("المبلغ أكبر من المديونية!", "error"); return; }
+    if (amount > remainingBefore) { notify("المبلغ أكبر من المديونية!", "error"); return null; }
 
     const newTotalPaid = client.totalPaid + amount;
+    const remainingAfter = Math.max(0, remainingBefore - amount);
+
     const { error } = await supabase.from('clients').update({ total_paid: newTotalPaid }).eq('id', clientId);
-    if (error) { notify("خطأ في تحديث السداد بالسحابة", "error"); return; }
+    if (error) { notify("خطأ في تحديث السداد بالسحابة", "error"); return null; }
 
     const payPayload = {
       user_id: currentUser.id, client_id: clientId, client_name: client.name,
-      item: client.item, amount: amount, remaining_after: remainingBefore - amount
+      item: client.item, amount: amount, remaining_after: remainingAfter,
+      method: method, collector: collector
     };
     const { data: pRes } = await supabase.from('payments').insert([payPayload]).select().single();
 
+    const paymentDateStr = payDate || new Date().toISOString().split("T")[0];
+
     setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, totalPaid: newTotalPaid } : c)));
-    if (pRes) {
-      setPayments((prev) => [...prev, { id: pRes.id, clientId, clientName: client.name, item: client.item, amount, remainingAfter: remainingBefore - amount }]);
-    }
+    const newPaymentObj = {
+      id: pRes ? pRes.id : Date.now(),
+      clientId, clientName: client.name, item: client.item,
+      amount, remainingAfter, payDate: paymentDateStr, method, collector
+    };
+    setPayments((prev) => [...prev, newPaymentObj]);
     notify("تم تسجيل السداد بنجاح!");
+
+    const updatedClientObj = { ...client, totalPaid: newTotalPaid, remaining: remainingAfter };
+    const receiptData = { client: updatedClientObj, payment: newPaymentObj };
+    setActiveReceipt(receiptData);
+    return receiptData;
+  }
+
+  async function deletePayment(paymentId, clientId, amount) {
+    if (!currentUser) return;
+    const client = clients.find((c) => c.id === clientId);
+    if (!client) return;
+
+    const newTotalPaid = Math.max(0, client.totalPaid - amount);
+
+    try {
+      await supabase.from('payments').delete().eq('id', paymentId);
+      await supabase.from('clients').update({ total_paid: newTotalPaid }).eq('id', clientId);
+
+      setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, totalPaid: newTotalPaid } : c)));
+      setPayments((prev) => prev.filter((p) => p.id !== paymentId));
+      notify("تم حذف القسط وتعديل رصيد العميل بالسحابة بنجاح!");
+    } catch (err) {
+      console.error(err);
+      notify("حدث خطأ أثناء حذف القسط", "error");
+    }
   }
 
   async function updateClient(clientId, updatedData) {
@@ -492,6 +529,11 @@ function EgymodApp() {
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
         input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        @media print {
+          body * { visibility: hidden; }
+          #printable-receipt, #printable-receipt * { visibility: visible; }
+          #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; background: #fff !important; }
+        }
       `}</style>
 
       {toast && (
@@ -502,7 +544,17 @@ function EgymodApp() {
       )}
 
       {screen === "dashboard" && <Dashboard totals={totals} lateCount={lateRows.length} onNavigate={setScreen} user={currentUser} onLogout={handleLogout} />}
-      {screen === "pay" && <PayScreen rows={rows} payments={payments} onPay={recordPayment} onBack={() => setScreen("dashboard")} />}
+      {screen === "pay" && (
+        <PayScreen
+          rows={rows}
+          payments={payments}
+          employees={employees}
+          onPay={recordPayment}
+          onDeletePayment={deletePayment}
+          onShowReceipt={(client, payment) => setActiveReceipt({ client, payment })}
+          onBack={() => setScreen("dashboard")}
+        />
+      )}
       {screen === "addClient" && <AddClientScreen onSave={addClient} onBack={() => setScreen("dashboard")} />}
       {screen === "search" && <SearchScreen rows={rows} onUpdateClient={updateClient} onBack={() => setScreen("dashboard")} />}
 
@@ -524,6 +576,184 @@ function EgymodApp() {
       {screen === "changePassword" && <PlaceholderScreen title="تغيير كلمة السر" onBack={() => setScreen("dashboard")} />}
       {screen === "treasury" && <PlaceholderScreen title="الخزينة وتوزيع الأرباح" onBack={() => setScreen("dashboard")} />}
       {screen === "backup" && <PlaceholderScreen title="النسخ الاحتياطي السحابي" note="تم ربط النظام بقاعدة بيانات Supabase بنجاح." onBack={() => setScreen("dashboard")} />}
+
+      {activeReceipt && (
+        <ReceiptModal
+          receipt={activeReceipt}
+          onClose={() => setActiveReceipt(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   نافذة إيصال السداد المطبوع (Popup Modal)
+   ============================================================ */
+function ReceiptModal({ receipt, onClose }) {
+  const { client, payment } = receipt;
+  const totalPaidSoFar = client.totalPaid;
+  const remainingDebt = Math.max(0, client.sale - client.down - totalPaidSoFar);
+  const remainingInstallments = client.monthly > 0 ? Math.ceil(remainingDebt / client.monthly) : 0;
+  const isPaidInFull = remainingDebt <= 0;
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadImage = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 650;
+    canvas.height = 780;
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#1b1b1d";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = "#d0b689";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+
+    ctx.fillStyle = "#e8cd9c";
+    ctx.font = "bold 26px Cairo, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("إيصال استلام قسط — نظام الأقساط", canvas.width / 2, 60);
+
+    ctx.fillStyle = "#c4c4c4";
+    ctx.font = "14px Cairo, sans-serif";
+    ctx.fillText(`تاريخ الإيصال: ${payment.payDate || new Date().toISOString().split("T")[0]}`, canvas.width / 2, 90);
+
+    ctx.strokeStyle = "#404040";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40, 110); ctx.lineTo(canvas.width - 40, 110); ctx.stroke();
+
+    const drawRow = (label, val, y, isGold = false) => {
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#c4c4c4";
+      ctx.font = "16px Cairo, sans-serif";
+      ctx.fillText(label, canvas.width - 50, y);
+
+      ctx.textAlign = "left";
+      ctx.fillStyle = isGold ? "#e8cd9c" : "#ffffff";
+      ctx.font = isGold ? "bold 18px Cairo, sans-serif" : "bold 16px Cairo, sans-serif";
+      ctx.fillText(String(val), 50, y);
+    };
+
+    drawRow("اسم العميل:", client.name, 150, true);
+    drawRow("السلعة المباعة:", client.item, 190);
+    drawRow("إجمالي عقد البيع:", `${fmt(client.sale)} ج.م`, 230);
+    drawRow("المقدم المدفوع:", `${fmt(client.down)} ج.م`, 270);
+    drawRow("المسدد كلياً حتى الآن:", `${fmt(totalPaidSoFar)} ج.م`, 310);
+    drawRow("المتبقي الكلي على العميل:", `${fmt(remainingDebt)} ج.م`, 350, true);
+    drawRow("عدد الأقساط المتبقية:", `${remainingInstallments} قسط`, 390);
+
+    ctx.beginPath(); ctx.moveTo(40, 420); ctx.lineTo(canvas.width - 40, 420); ctx.stroke();
+
+    ctx.fillStyle = "#211f18";
+    ctx.fillRect(40, 440, canvas.width - 80, 140);
+    ctx.strokeStyle = "#d0b689";
+    ctx.strokeRect(40, 440, canvas.width - 80, 140);
+
+    ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
+    ctx.fillText("المبلغ المدفوع حالياً:", canvas.width - 60, 480);
+    ctx.textAlign = "left"; ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 24px Cairo, sans-serif";
+    ctx.fillText(`${fmt(payment.amount)} ج.م`, 60, 480);
+
+    ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
+    ctx.fillText("طريقة الدفع والمحصل:", canvas.width - 60, 520);
+    ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"; ctx.font = "bold 15px Cairo, sans-serif";
+    ctx.fillText(`${payment.method || "كاش"} · ${payment.collector || "المشرف"}`, 60, 520);
+
+    ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
+    ctx.fillText("المتبقي بعد هذا القسط:", canvas.width - 60, 555);
+    ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"; ctx.font = "bold 16px Cairo, sans-serif";
+    ctx.fillText(`${fmt(payment.remainingAfter)} ج.م`, 60, 555);
+
+    if (isPaidInFull) {
+      ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 20px Cairo, sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("🏆 تم مخالصة وسداد هذا العقد بالكامل 🏆", canvas.width / 2, 630);
+    }
+
+    ctx.fillStyle = "#888888"; ctx.font = "13px Cairo, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("شكراً لالتزامكم بالسداد في الموعد المحدد", canvas.width / 2, 720);
+
+    const link = document.createElement("a");
+    link.download = `إيصال_${client.name}_${payment.payDate || "سداد"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  const handleWhatsAppShare = () => {
+    const msg = `إيصال سداد قسط 🧾\nاسم العميل: ${client.name}\nالسلعة: ${client.item}\nالمبلغ المدفوع: ${fmt(payment.amount)} ج.م\nالمتبقي الحالي: ${fmt(payment.remainingAfter)} ج.م\nتاريخ السداد: ${payment.payDate}\nشكراً لالتزامكم بالتسديد!`;
+    window.open(`https://wa.me/2${client.phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+      <div style={{ background: "#242426", border: "1px solid #d0b689", borderRadius: 18, width: "100%", maxWidth: 520, padding: 24, color: "#fff", position: "relative", boxShadow: "0 20px 50px rgba(0,0,0,0.8)" }}>
+        
+        <button onClick={onClose} style={{ position: "absolute", top: 16, left: 16, background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", width: 34, height: 36, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <X size={18} />
+        </button>
+
+        <div id="printable-receipt" style={{ textAlign: "center", paddingBottom: 10 }}>
+          <div style={{ color: "#e8cd9c", fontSize: 20, fontWeight: 800, marginBottom: 4 }}>إيصال استلام قسط</div>
+          <div style={{ color: "#c4c4c4", fontSize: 12 }}>تاريخ العملية: {payment.payDate || new Date().toISOString().split("T")[0]}</div>
+          <div style={{ height: 1, background: "#404040", margin: "14px 0" }} />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "right", fontSize: 14 }}>
+            <ReceiptRow label="اسم العميل" val={client.name} highlight />
+            <ReceiptRow label="السلعة" val={client.item} />
+            <ReceiptRow label="إجمالي العقد" val={`${fmt(client.sale)} ج.م`} />
+            <ReceiptRow label="المقدم المدفوع" val={`${fmt(client.down)} ج.م`} />
+            <ReceiptRow label="المسدد كلياً" val={`${fmt(totalPaidSoFar)} ج.م`} />
+            <ReceiptRow label="المتبقي الكلي" val={`${fmt(remainingDebt)} ج.م`} highlight />
+            <ReceiptRow label="أقساط متبقية" val={`${remainingInstallments} قسط`} />
+          </div>
+
+          <div style={{ background: "#1b1b1d", border: "1px dashed #d0b689", borderRadius: 12, padding: 14, margin: "16px 0", display: "flex", flexDirection: "column", gap: 6, textAlign: "right" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ color: "#c4c4c4", fontSize: 13 }}>المبلغ المدفوع حالياً:</span>
+              <span style={{ color: "#e8cd9c", fontSize: 22, fontWeight: 800 }}>{fmt(payment.amount)} ج.م</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#888" }}>
+              <span>طريقة الدفع والمحصل:</span>
+              <span style={{ color: "#fff", fontWeight: 700 }}>{payment.method || "كاش"} · {payment.collector || "المشرف"}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#c4c4c4", marginTop: 4 }}>
+              <span>المتبقي بعد هذا القسط:</span>
+              <span style={{ color: "#fff", fontWeight: 800 }}>{fmt(payment.remainingAfter)} ج.م</span>
+            </div>
+          </div>
+
+          {isPaidInFull && (
+            <div style={{ background: "rgba(232,205,156,0.15)", border: "1px solid #e8cd9c", color: "#e8cd9c", padding: "10px", borderRadius: 10, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <Award size={18} /> تم مخالصة وسداد هذا العقد بالكامل
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginTop: 16 }}>
+          <button type="button" onClick={handlePrint} style={{ background: "linear-gradient(145deg, #e8cd9c, #d0b689)", color: "#1b1b1d", border: "none", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Printer size={16} /> طباعة الإيصال
+          </button>
+          <button type="button" onClick={handleDownloadImage} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Download size={16} /> تنزيل الصورة
+          </button>
+          <button type="button" onClick={handleWhatsAppShare} style={{ gridColumn: "1 / -1", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Share2 size={16} /> إرسال عبر الواتساب
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReceiptRow({ label, val, highlight }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #2a2a2d", paddingBottom: 4 }}>
+      <span style={{ color: "#c4c4c4" }}>{label}:</span>
+      <span style={{ color: highlight ? "#e8cd9c" : "#ffffff", fontWeight: highlight ? 800 : 600 }}>{val}</span>
     </div>
   );
 }
@@ -553,20 +783,9 @@ function BottomExitButton({ onBack }) {
         type="button"
         onClick={onBack}
         style={{
-          width: "100%",
-          background: "#1b1b1d",
-          border: "1px solid #404040",
-          color: "#e8cd9c",
-          borderRadius: 12,
-          padding: "13px 20px",
-          fontSize: 14,
-          fontWeight: 800,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          fontFamily: "inherit"
+          width: "100%", background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c",
+          borderRadius: 12, padding: "13px 20px", fontSize: 14, fontWeight: 800, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "inherit"
         }}
       >
         <ArrowRight size={16} /> خروج والعودة للشاشة الرئيسية
@@ -696,11 +915,17 @@ function AddClientScreen({ onSave, onBack }) {
   );
 }
 
-/* 2. استعلام وتعديل بيانات العميل */
+/* 2. استعلام وتعديل بيانات العميل مع سجل الأرشيف */
 function SearchScreen({ rows, onUpdateClient, onBack }) {
+  const [tab, setTab] = useState("active");
   const [selected, setSelected] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(emptyForm);
+
+  const displayedRows = useMemo(() => {
+    if (tab === "archived") return rows.filter((r) => r.remaining <= 0);
+    return rows.filter((r) => r.remaining > 0);
+  }, [rows, tab]);
 
   const handleSelectClient = (client) => {
     setSelected(client);
@@ -760,15 +985,43 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
   return (
     <div style={styles.container}>
       <ScreenHeader title="استعلام وتعديل بيانات العميل" onBack={onBack} />
+      
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <button
+          type="button"
+          onClick={() => { setTab("active"); setSelected(null); }}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: tab === "active" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
+            color: tab === "active" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer"
+          }}
+        >
+          📋 العقود النشطة
+        </button>
+        <button
+          type="button"
+          onClick={() => { setTab("archived"); setSelected(null); }}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: tab === "archived" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
+            color: tab === "archived" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer"
+          }}
+        >
+          📂 أرشيف العقود المسددة بالكامل ({rows.filter(r => r.remaining <= 0).length})
+        </button>
+      </div>
+
       <div style={styles.card}>
-        <span style={styles.fieldLabel}>ابحث باسم العميل أو رقم التليفون</span>
+        <span style={styles.fieldLabel}>
+          {tab === "archived" ? "ابحث بأسماء عملاء الأرشيف المسددين بالكامل" : "ابحث باسم العميل أو رقم التليفون"}
+        </span>
         <NameComboBox
-          items={rows}
-          getLabel={(r) => r.name}
-          getSecondary={(r) => `${r.item} · متبقي ${fmt(r.remaining)}`}
+          items={displayedRows}
+          getLabel={(r) => `${r.name} — ${r.item}`}
+          getSecondary={(r) => `متبقي ${fmt(r.remaining)} ج.م`}
           placeholder="اكتب اسم العميل..."
           onSelect={handleSelectClient}
-          selectedLabel={selected ? `${selected.name}` : null}
+          selectedLabel={selected ? `${selected.name} — ${selected.item}` : null}
           onClear={() => {
             setSelected(null);
             setIsEditing(false);
@@ -788,11 +1041,7 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
                   background: isEditing ? "#3a2320" : "linear-gradient(145deg, #e8cd9c, #d0b689)",
                   color: isEditing ? "#f0c6bb" : "#1b1b1d",
                   border: isEditing ? "1px solid #7a4a3f" : "none",
-                  padding: "8px 16px",
-                  borderRadius: 10,
-                  fontWeight: 800,
-                  fontSize: 13,
-                  cursor: "pointer"
+                  padding: "8px 16px", borderRadius: 10, fontWeight: 800, fontSize: 13, cursor: "pointer"
                 }}
               >
                 {isEditing ? "إلغاء التعديل" : "✏️ تعديل بيانات العميل"}
@@ -819,9 +1068,9 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
                 <div style={styles.sectionLabel}>الموقف المالي الحقيقي</div>
                 <Field label="المسدد حتى الآن"><div style={readStyle}>{fmt(selected.totalPaid)} ج.م</div></Field>
                 <Field label="المتبقي الكلي"><div style={readStyle}>{fmt(selected.remaining)} ج.م</div></Field>
-                <Field label="إجمالي المتأخرات">
-                  <div style={{ ...readStyle, color: selected.debtAmount > 0 ? "#e07a5f" : "#ffffff", borderColor: selected.debtAmount > 0 ? "#e07a5f" : "#404040" }}>
-                    {fmt(selected.debtAmount)} ج.م
+                <Field label="حالة العقد">
+                  <div style={{ ...readStyle, color: selected.remaining <= 0 ? "#bfe8cd" : "#d0b689", borderColor: selected.remaining <= 0 ? "#3d6b4a" : "#404040" }}>
+                    {selected.remaining <= 0 ? "مخالص ومسدد بالكامل 🏆" : "عقد جارٍ وتسديد الأقساط مستمر"}
                   </div>
                 </Field>
 
@@ -952,17 +1201,24 @@ function AddEmployeeScreen({ onSave, onBack }) {
   );
 }
 
-/* 5. سداد الأقساط */
-function PayScreen({ rows, payments, onPay, onBack }) {
+/* 5. سداد الأقساط (الشاشة الجديدة المطورة الكاملة) */
+function PayScreen({ rows, payments, employees, onPay, onDeletePayment, onShowReceipt, onBack }) {
   const [selected, setSelected] = useState(null);
   const [amount, setAmount] = useState("");
+  const [payDate, setPayDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [method, setMethod] = useState("نقداً / كاش");
+  const [collector, setCollector] = useState("المشرف");
 
-  function submit(e) {
+  const numAmount = parseFloat(amount) || 0;
+  const currentRemaining = selected ? selected.remaining : 0;
+  const remainingAfterPay = Math.max(0, currentRemaining - numAmount);
+  const isPaidOffNow = selected && currentRemaining > 0 && remainingAfterPay === 0;
+
+  async function submit(e) {
     e.preventDefault();
-    if (!selected) return;
-    onPay(selected.id, parseFloat(amount) || 0);
+    if (!selected || numAmount <= 0) return;
+    await onPay(selected.id, numAmount, payDate, method, collector);
     setAmount("");
-    setSelected(null);
   }
 
   const clientPayments = selected ? payments.filter(p => p.clientId === selected.id) : [];
@@ -971,33 +1227,131 @@ function PayScreen({ rows, payments, onPay, onBack }) {
     <div style={styles.container}>
       <ScreenHeader title="سداد الأقساط" onBack={onBack} />
       <div style={styles.card}>
-        <span style={styles.fieldLabel}>اختر العميل</span>
+        <span style={styles.fieldLabel}>اختر العميل أو العقد</span>
         <NameComboBox
-          items={rows} getLabel={(r) => r.name} getSecondary={(r) => `${r.item} · متبقي ${fmt(r.remaining)}`}
-          placeholder="اكتب اسم العميل..." onSelect={setSelected} selectedLabel={selected ? selected.name : null} onClear={() => setSelected(null)}
+          items={rows}
+          getLabel={(r) => `${r.name} — ${r.item}`}
+          getSecondary={(r) => `متبقي ${fmt(r.remaining)} ج.م`}
+          placeholder="اكتب اسم العميل..."
+          onSelect={(item) => { setSelected(item); setAmount(""); }}
+          selectedLabel={selected ? `${selected.name} — ${selected.item}` : null}
+          onClear={() => { setSelected(null); setAmount(""); }}
         />
 
         {selected && (
           <form onSubmit={submit} style={{ marginTop: 20 }}>
-            <div style={styles.liveBox}>
-              <LiveStat label="المتبقي الكلي" value={fmt(selected.remaining)} />
-              <LiveStat label="مستحق حتى الآن" value={fmt(selected.debtAmount)} />
-              <LiveStat label="القسط الشهري" value={fmt(selected.monthly)} />
-            </div>
-            <div style={{ marginTop: 16 }}>
-              <Field label="المبلغ المسدد">
-                <input type="number" style={styles.input} value={amount} onChange={e => setAmount(e.target.value)} required />
+            
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 16 }}>
+              <Field label="تاريخ السداد">
+                <DateInput value={payDate} onChange={(e) => setPayDate(e.target.value)} required />
+              </Field>
+
+              <Field label="المبلغ المدفوع (ج.م) *">
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="number"
+                    style={{ ...styles.input, fontSize: 18, fontWeight: 800, color: "#e8cd9c" }}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
+                    required
+                  />
+                  <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => setAmount(String(selected.monthly))}
+                      style={{ background: "#211f18", border: "1px solid #d0b689", color: "#e8cd9c", borderRadius: 6, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      [ 💵 قسط كامل: {fmt(selected.monthly)} ]
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAmount(String(selected.remaining))}
+                      style={{ background: "#211f18", border: "1px solid #d0b689", color: "#e8cd9c", borderRadius: 6, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      [ 🎯 تصفية العقد: {fmt(selected.remaining)} ]
+                    </button>
+                  </div>
+                </div>
               </Field>
             </div>
-            <button type="submit" style={{ ...styles.saveBtn, marginTop: 16 }}>تسجيل السداد</button>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 16 }}>
+              <Field label="طريقة الدفع">
+                <select style={styles.input} value={method} onChange={(e) => setMethod(e.target.value)}>
+                  <option value="نقداً / كاش">نقداً / كاش</option>
+                  <option value="فودافون كاش / إنستا باي">فودافون كاش / إنستا باي</option>
+                  <option value="تحويل بنكي">تحويل بنكي</option>
+                </select>
+              </Field>
+
+              <Field label="المحصل / الموظف">
+                <select style={styles.input} value={collector} onChange={(e) => setCollector(e.target.value)}>
+                  <option value="المشرف">المشرف العام</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.name}>{emp.name} ({emp.job})</option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            <div style={styles.liveBox}>
+              <LiveStat label="السلعة" value={selected.item} />
+              <LiveStat label="المتبقي الحالي" value={`${fmt(currentRemaining)} ج.م`} />
+              <LiveStat label="المتبقي بعد هذا السداد" value={`${fmt(remainingAfterPay)} ج.م`} />
+            </div>
+
+            {isPaidOffNow && (
+              <div style={{ background: "rgba(232,205,156,0.15)", border: "1px solid #e8cd9c", color: "#e8cd9c", padding: "10px", borderRadius: 10, textAlign: "center", fontWeight: 800, fontSize: 14, margin: "12px 0" }}>
+                🏆 تم مخالصة وسداد هذا العقد بالكامل عند حفظ التغييرات!
+              </div>
+            )}
+
+            <button type="submit" style={{ ...styles.saveBtn, marginTop: 14 }}>
+              تسجيل السداد وطباعة الإيصال
+            </button>
 
             {clientPayments.length > 0 && (
               <div style={styles.profileBox}>
-                <h3 style={styles.historyTitle}>سجل مدفوعات {selected.name}</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {clientPayments.slice().reverse().map(p => (
-                    <ProfileRow key={p.id} label={fmt(p.amount) + " ج.م"} value={`المتبقي بعدها: ${fmt(p.remainingAfter)} ج.م`} />
-                  ))}
+                <h3 style={styles.historyTitle}>سجل السداد لهذا العقد</h3>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 14 }}>
+                    <thead>
+                      <tr style={{ background: "#1b1b1d", color: "#e8cd9c", borderBottom: "1px solid #404040" }}>
+                        <th style={{ padding: "10px 12px" }}>التاريخ</th>
+                        <th style={{ padding: "10px 12px" }}>المبلغ</th>
+                        <th style={{ padding: "10px 12px" }}>المتبقي بعدها</th>
+                        <th style={{ padding: "10px 12px", textAlign: "center" }}>إجراء</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clientPayments.slice().reverse().map((p) => (
+                        <tr key={p.id} style={{ borderBottom: "1px solid #2d2d30" }}>
+                          <td style={{ padding: "10px 12px" }}>{p.payDate || "سداد"}</td>
+                          <td style={{ padding: "10px 12px", color: "#e8cd9c", fontWeight: 800 }}>{fmt(p.amount)} ج.م</td>
+                          <td style={{ padding: "10px 12px" }}>{fmt(p.remainingAfter)} ج.م</td>
+                          <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                              <button
+                                type="button"
+                                onClick={() => onShowReceipt(selected, p)}
+                                style={{ background: "#211f18", border: "1px solid #d0b689", color: "#e8cd9c", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                              >
+                                <Printer size={13} /> طباعة
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onDeletePayment(p.id, selected.id, p.amount)}
+                                style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                              >
+                                <Trash2 size={13} /> حذف القسط
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -1117,10 +1471,10 @@ function LateClientsScreen({ rows, onBack, onPay }) {
     window.open(`https://wa.me/2${client.phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  const handleConfirmPay = (e) => {
+  const handleConfirmPay = async (e) => {
     e.preventDefault();
     if (!payTarget || !payAmount) return;
-    onPay(payTarget.id, parseFloat(payAmount) || 0);
+    await onPay(payTarget.id, parseFloat(payAmount) || 0, new Date().toISOString().split("T")[0]);
     setPayTarget(null);
     setPayAmount("");
   };
@@ -1333,10 +1687,10 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
     window.open(`https://wa.me/2${client.phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  const handleConfirmPay = (e) => {
+  const handleConfirmPay = async (e) => {
     e.preventDefault();
     if (!payTarget || !payAmount) return;
-    onPay(payTarget.id, parseFloat(payAmount) || 0);
+    await onPay(payTarget.id, parseFloat(payAmount) || 0, new Date().toISOString().split("T")[0]);
     setPayTarget(null);
     setPayAmount("");
   };
@@ -1422,29 +1776,10 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
                     <div style={{ fontSize: 11, color: "#c4c4c4" }}>حالة السداد</div>
                     <div
                       style={{
-                        fontSize: 12,
-                        fontWeight: 800,
-                        padding: "4px 8px",
-                        borderRadius: 6,
-                        background:
-                          item.monthStatus === "paid"
-                            ? "#213526"
-                            : item.monthStatus === "partial"
-                            ? "#3d3527"
-                            : "#3a2320",
-                        color:
-                          item.monthStatus === "paid"
-                            ? "#bfe8cd"
-                            : item.monthStatus === "partial"
-                            ? "#e8cd9c"
-                            : "#f0c6bb",
-                        border: `1px solid ${
-                          item.monthStatus === "paid"
-                            ? "#3d6b4a"
-                            : item.monthStatus === "partial"
-                            ? "#b6935a"
-                            : "#7a4a3f"
-                        }`,
+                        fontSize: 12, fontWeight: 800, padding: "4px 8px", borderRadius: 6,
+                        background: item.monthStatus === "paid" ? "#213526" : item.monthStatus === "partial" ? "#3d3527" : "#3a2320",
+                        color: item.monthStatus === "paid" ? "#bfe8cd" : item.monthStatus === "partial" ? "#e8cd9c" : "#f0c6bb",
+                        border: `1px solid ${item.monthStatus === "paid" ? "#3d6b4a" : item.monthStatus === "partial" ? "#b6935a" : "#7a4a3f"}`,
                       }}
                     >
                       {item.monthStatus === "paid" ? "تم السداد" : item.monthStatus === "partial" ? "سداد جزئي" : "لم يسدد"}
@@ -1566,15 +1901,9 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
           type="button"
           onClick={() => setActiveTab("search")}
           style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: 12,
-            border: "1px solid #404040",
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
             background: activeTab === "search" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
-            color: activeTab === "search" ? "#1b1b1d" : "#c4c4c4",
-            fontWeight: 800,
-            fontSize: 14,
-            cursor: "pointer"
+            color: activeTab === "search" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer"
           }}
         >
           البحث ونقل للسلة
@@ -1583,16 +1912,10 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
           type="button"
           onClick={() => setActiveTab("trash")}
           style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: 12,
-            border: "1px solid #404040",
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
             background: activeTab === "trash" ? "#3a2320" : "#1b1b1d",
-            color: activeTab === "trash" ? "#f0c6bb" : "#c4c4c4",
-            borderColor: activeTab === "trash" ? "#7a4a3f" : "#404040",
-            fontWeight: 800,
-            fontSize: 14,
-            cursor: "pointer"
+            color: activeTab === "trash" ? "#f0c6bb" : "#c4c4c4", borderColor: activeTab === "trash" ? "#7a4a3f" : "#404040",
+            fontWeight: 800, fontSize: 14, cursor: "pointer"
           }}
         >
           سلة المحذوفات ({deletedClients.length})
@@ -1652,11 +1975,7 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
               <button
                 type="button"
                 onClick={() => handleMoveToTrash(selectedClient)}
-                style={{
-                  ...styles.saveBtn,
-                  background: "linear-gradient(145deg, #d69a5f, #b06a35)",
-                  color: "#ffffff"
-                }}
+                style={{ ...styles.saveBtn, background: "linear-gradient(145deg, #d69a5f, #b06a35)", color: "#ffffff" }}
               >
                 نقل العميل إلى سلة المحذوفات
               </button>
@@ -1676,15 +1995,8 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
                 <div
                   key={item.id}
                   style={{
-                    background: "#1b1b1d",
-                    border: "1px solid #404040",
-                    borderRadius: 12,
-                    padding: 16,
-                    display: "flex",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 12
+                    background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16,
+                    display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12
                   }}
                 >
                   <div>
@@ -1697,32 +2009,14 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
                     <button
                       type="button"
                       onClick={() => handleRestore(item)}
-                      style={{
-                        background: "#213526",
-                        border: "1px solid #3d6b4a",
-                        color: "#bfe8cd",
-                        padding: "8px 14px",
-                        borderRadius: 8,
-                        fontSize: 12.5,
-                        fontWeight: 700,
-                        cursor: "pointer"
-                      }}
+                      style={{ background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
                     >
                       استعادة
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmDeleteId(item.id)}
-                      style={{
-                        background: "#3a2320",
-                        border: "1px solid #7a4a3f",
-                        color: "#f0c6bb",
-                        padding: "8px 14px",
-                        borderRadius: 8,
-                        fontSize: 12.5,
-                        fontWeight: 700,
-                        cursor: "pointer"
-                      }}
+                      style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
                     >
                       حذف نهائي
                     </button>
