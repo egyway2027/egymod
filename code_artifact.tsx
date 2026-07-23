@@ -823,7 +823,7 @@ function SearchScreen({ rows, onUpdateClient, onBack }) {
   );
 }
 
-}
+
 
 function ProfileRow({ label, value, highlight, error }) {
   let textColor = "#ffffff";
