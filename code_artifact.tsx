@@ -834,12 +834,30 @@ function ProfileRow({ label, value, highlight, error }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
       <div style={{ width: "130px", color: "#c4c4c4", fontSize: "14px", fontWeight: 700 }}>{label}</div>
-      <div style={{ flex: 1, background: "#1b1b1d", border: `1px solid ${borderColor}`, padding: "12px 16px", borderRadius: "10px", color: textColor, fontSize: "15px", fontWeight 800 }}>
+     <div style={{ flex: 1, background: "#1b1b1d", border: `1px solid ${borderColor}`, padding: "12px 16px", borderRadius: "10px", color: textColor, fontSize: "15px", fontWeight: 800 }}>
+        {value}
+     </div>
+    </div>
+  );
+}
+
+function ProfileRow({ label, value, highlight, error }) {
+  let textColor = "#ffffff";
+  let borderColor = "#404040";
+  if (highlight) { textColor = "#d0b689"; borderColor = "#d0b689"; }
+  if (error) { textColor = "#e07a5f"; borderColor = "#e07a5f"; }
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ width: "130px", color: "#c4c4c4", fontSize: "14px", fontWeight: 700 }}>{label}</div>
+      <div style={{ flex: 1, background: "#1b1b1d", border: `1px solid ${borderColor}`, padding: "12px 16px", borderRadius: "10px", color: textColor, fontSize: "15px", fontWeight: 800 }}>
         {value}
       </div>
     </div>
   );
 }
+
+/* 3. إضافة شريك */
 
 
 
