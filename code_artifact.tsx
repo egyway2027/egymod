@@ -609,8 +609,13 @@ function AddClientScreen({ onSave, onBack }) {
 
           <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, gridColumn: "1 / -1" }}>
-            <Field label="تاريخ التعاقد *"><input type="date" style={styles.input} value={form.contractDate} onChange={handleContractDate} /></Field>
-            <Field label="تاريخ أول قسط (تلقائي + شهر)"><input type="date" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", borderColor: "#333" }} value={form.firstPayDate} readOnly disabled /></Field>
+           <Field label="تاريخ التعاقد *">
+  <input type="date" dir="ltr" style={{ ...styles.input, textAlign: "right" }} value={form.contractDate} onChange={handleContractDate} />
+</Field>
+
+<Field label="تاريخ أول قسط (تلقائي + شهر)">
+  <input type="date" dir="ltr" style={{ ...styles.input, backgroundColor: "#151515", color: "#c4c4c4", borderColor: "#333", textAlign: "right" }} value={form.firstPayDate} readOnly disabled />
+</Field>
           </div>
           <div style={{ gridColumn: "1 / -1" }}>
             <Field label="ملاحظات"><input style={styles.input} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></Field>
