@@ -459,6 +459,7 @@ function EgymodApp() {
         ::-webkit-scrollbar-thumb { background: #d0b689; border-radius: 4px; }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
+        input[type=date] { direction: ltr; text-align: right; }
         input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
       `}</style>
 
