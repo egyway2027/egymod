@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   CreditCard, UserPlus, CalendarClock, Search, UserX, UploadCloud,
   KeyRound, Power, Wallet, TrendingUp, Calculator, ArrowRight,
-  Trash2, CheckCircle2, X, Users, UserCog, Printer, Download, Share2, Award, DollarSign, Plus, FileText
+  Trash2, CheckCircle2, X, Users, UserCog, Printer, Download, Share2, Award
 } from "lucide-react";
 
 const SUPABASE_URL = 'https://blijuizmqoprlrsuebgo.supabase.co';
@@ -86,10 +86,10 @@ function addOneMonth(dateString) {
 }
 
 const seedPartners = [
-  { id: 1, name: "مصطفى جمال", capital: 100000, profit: 0, withdrawals: 0 },
-  { id: 2, name: "خالد فتحي", capital: 50000, profit: 0, withdrawals: 0 },
+  { id: 1, name: "مصطفى جمال", capital: 100000, profit: 12000, withdrawals: 5000 },
+  { id: 2, name: "خالد فتحي", capital: 50000, profit: 6000, withdrawals: 0 },
 ];
-const seedExpenses = [{ id: 1, date: "2026-07-01", category: "إيجار المحل", amount: 3000, notes: "إيجار شهر يوليو" }];
+const seedExpenses = [{ id: 1, date: "2026-07-01", category: "إيجار المحل", amount: 3000, notes: "" }];
 const seedEmployees = [{ id: 1, name: "سعيد عبد الله", phone: "01011112222", job: "محصل", salary: 3500, hireDate: "2025-01-01" }];
 
 const emptyForm = { name: "", phone: "", guarantor: "", guarantorPhone: "", item: "", cost: "", sale: "", down: "", monthly: "", contractDate: "", firstPayDate: "", notes: "" };
@@ -202,37 +202,14 @@ function EgymodApp() {
     localStorage.setItem("egymod_trash", JSON.stringify(deletedClients));
   }, [deletedClients]);
   
-  const [partners, setPartners] = useState(() => {
-    try {
-      const saved = localStorage.getItem("egymod_partners");
-      return saved ? JSON.parse(saved) : seedPartners;
-    } catch { return seedPartners; }
-  });
-
-  const [expenses, setExpenses] = useState(() => {
-    try {
-      const saved = localStorage.getItem("egymod_expenses");
-      return saved ? JSON.parse(saved) : seedExpenses;
-    } catch { return seedExpenses; }
-  });
-
-  const [withdrawalsLog, setWithdrawalsLog] = useState(() => {
-    try {
-      const saved = localStorage.getItem("egymod_withdrawals");
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-
-  useEffect(() => { localStorage.setItem("egymod_partners", JSON.stringify(partners)); }, [partners]);
-  useEffect(() => { localStorage.setItem("egymod_expenses", JSON.stringify(expenses)); }, [expenses]);
-  useEffect(() => { localStorage.setItem("egymod_withdrawals", JSON.stringify(withdrawalsLog)); }, [withdrawalsLog]);
-
+  const [partners, setPartners] = useState(seedPartners);
+  const [expenses] = useState(seedExpenses);
   const [employees, setEmployees] = useState(seedEmployees);
+  const [salaryLog] = useState([]);
   const [today] = useState(new Date());
   const [screen, setScreen] = useState("dashboard");
   const [toast, setToast] = useState(null);
   const [activeReceipt, setActiveReceipt] = useState(null);
-  const [treasuryReportModal, setTreasuryReportModal] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -554,8 +531,8 @@ function EgymodApp() {
         input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
         @media print {
           body * { visibility: hidden; }
-          #printable-receipt, #printable-receipt *, #printable-treasury, #printable-treasury * { visibility: visible; }
-          #printable-receipt, #printable-treasury { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; background: #fff !important; }
+          #printable-receipt, #printable-receipt * { visibility: visible; }
+          #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; background: #fff !important; }
         }
       `}</style>
 
@@ -597,24 +574,7 @@ function EgymodApp() {
       )}
       {screen === "lateClients" && <LateClientsScreen rows={lateRows} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
       {screen === "changePassword" && <PlaceholderScreen title="تغيير كلمة السر" onBack={() => setScreen("dashboard")} />}
-      
-      {screen === "treasury" && (
-        <TreasuryScreen
-          partners={partners}
-          setPartners={setPartners}
-          expenses={expenses}
-          setExpenses={setExpenses}
-          withdrawalsLog={withdrawalsLog}
-          setWithdrawalsLog={setWithdrawalsLog}
-          clients={activeClients}
-          payments={payments}
-          totals={totals}
-          onBack={() => setScreen("dashboard")}
-          notify={notify}
-          onShowTreasuryReport={() => setTreasuryReportModal(true)}
-        />
-      )}
-      
+      {screen === "treasury" && <PlaceholderScreen title="الخزينة وتوزيع الأرباح" onBack={() => setScreen("dashboard")} />}
       {screen === "backup" && <PlaceholderScreen title="النسخ الاحتياطي السحابي" note="تم ربط النظام بقاعدة بيانات Supabase بنجاح." onBack={() => setScreen("dashboard")} />}
 
       {activeReceipt && (
@@ -623,481 +583,6 @@ function EgymodApp() {
           onClose={() => setActiveReceipt(null)}
         />
       )}
-
-      {treasuryReportModal && (
-        <TreasuryReportModal
-          partners={partners}
-          expenses={expenses}
-          withdrawalsLog={withdrawalsLog}
-          clients={activeClients}
-          totals={totals}
-          onClose={() => setTreasuryReportModal(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-/* ============================================================
-   شاشة الخزينة وتوزيع الأرباح المطورة كلياً (TreasuryScreen)
-   ============================================================ */
-function TreasuryScreen({ partners, setPartners, expenses, setExpenses, withdrawalsLog, setWithdrawalsLog, clients, totals, onBack, notify, onShowTreasuryReport }) {
-  const [expCategory, setExpCategory] = useState("إيجار المحل");
-  const [expAmount, setExpAmount] = useState("");
-  const [expNotes, setExpNotes] = useState("");
-  const [expDate, setExpDate] = useState(() => new Date().toISOString().split("T")[0]);
-
-  const [payPartnerModal, setPayPartnerModal] = useState(null);
-  const [payPartnerAmount, setPayPartnerModalAmount] = useState("");
-  const [payPartnerNotes, setPayPartnerNotes] = useState("");
-
-  const totalCollectedCash = useMemo(() => {
-    return clients.reduce((sum, c) => sum + Number(c.down || 0) + Number(c.totalPaid || 0), 0);
-  }, [clients]);
-
-  const totalExpenses = useMemo(() => {
-    return expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-  }, [expenses]);
-
-  const totalWithdrawals = useMemo(() => {
-    return withdrawalsLog.reduce((sum, w) => sum + Number(w.amount || 0), 0);
-  }, [withdrawalsLog]);
-
-  const treasuryCashBalance = totalCollectedCash - totalExpenses - totalWithdrawals;
-
-  const totalCapital = useMemo(() => {
-    return partners.reduce((sum, p) => sum + Number(p.capital || 0), 0);
-  }, [partners]);
-
-  const netDistributableProfit = Math.max(0, totals.totalProfit - totalExpenses);
-
-  const partnersCalculated = useMemo(() => {
-    return partners.map((p) => {
-      const cap = Number(p.capital || 0);
-      const sharePct = totalCapital > 0 ? (cap / totalCapital) * 100 : 0;
-      const profitShare = Math.round(netDistributableProfit * (sharePct / 100));
-      const withdrawn = withdrawalsLog.filter(w => w.partnerId === p.id).reduce((sum, w) => sum + Number(w.amount), 0);
-      const remainingProfit = Math.max(0, profitShare - withdrawn);
-
-      return {
-        ...p,
-        sharePct: sharePct.toFixed(2),
-        profitShare,
-        withdrawn,
-        remainingProfit
-      };
-    });
-  }, [partners, totalCapital, netDistributableProfit, withdrawalsLog]);
-
-  const handleAddExpense = (e) => {
-    e.preventDefault();
-    const num = parseFloat(expAmount) || 0;
-    if (num <= 0) return;
-
-    const newExp = {
-      id: Date.now(),
-      date: expDate,
-      category: expCategory,
-      amount: num,
-      notes: expNotes
-    };
-
-    setExpenses((prev) => [...prev, newExp]);
-    setExpAmount("");
-    setExpNotes("");
-    notify("تم تسجيل المصروف الخزيني بنجاح!");
-  };
-
-  const handleDeleteExpense = (id) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
-    notify("تم حذف المصروف وإعادة قيمته للخزينة والصافي بنجاح!");
-  };
-
-  const handleConfirmPayPartner = (e) => {
-    e.preventDefault();
-    const num = parseFloat(payPartnerAmount) || 0;
-    if (!payPartnerModal || num <= 0) return;
-
-    const newLog = {
-      id: Date.now(),
-      partnerId: payPartnerModal.id,
-      partnerName: payPartnerModal.name,
-      amount: num,
-      date: new Date().toISOString().split("T")[0],
-      notes: payPartnerNotes || "سحب أرباح"
-    };
-
-    setWithdrawalsLog((prev) => [...prev, newLog]);
-    setPayPartnerModal(null);
-    setPayPartnerModalAmount("");
-    setPayPartnerNotes("");
-    notify(`تم صرف أرباح بمبلغ ${fmt(num)} ج.م للشريك ${payPartnerModal.name} بنجاح!`);
-  };
-
-  const handleDeleteWithdrawal = (id) => {
-    setWithdrawalsLog((prev) => prev.filter((w) => w.id !== id));
-    notify("تم حذف عملية سحب الأرباح وإعادة قيمتها لحساب الشريك والخزينة!");
-  };
-
-  return (
-    <div style={styles.container}>
-      <ScreenHeader title="الخزينة وتوزيع الأرباح" onBack={onBack} />
-
-      <section style={{ ...styles.kpiRow, marginBottom: 16 }}>
-        <KPI icon={Wallet} label="السيولة النقدية (الخزينة)" sub="النقد المتاح بالخزينة حالياً" value={fmt(treasuryCashBalance)} />
-        <KPI icon={TrendingUp} label="صافي الأرباح المتاحة للشركاء" sub="الأرباح المحصلة بعد خصم المصروفات" value={fmt(netDistributableProfit)} />
-        <KPI icon={Calculator} label="إجمالي رأس المال" sub="مجموع استثمارات الشركاء" value={fmt(totalCapital)} />
-        <KPI icon={DollarSign} label="إجمالي أرباح المسحوبة" sub="مسحوبات الشركاء السابقة" value={fmt(totalWithdrawals)} />
-      </section>
-
-      <div style={{ marginBottom: 16, display: "flex", justifyContent: "flex-end" }}>
-        <button
-          type="button"
-          onClick={onShowTreasuryReport}
-          style={{ background: "linear-gradient(145deg, #e8cd9c, #d0b689)", color: "#1b1b1d", border: "none", borderRadius: 12, padding: "12px 20px", fontWeight: 800, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
-        >
-          <Printer size={18} /> طباعة تقرير الخزينة وتوزيع الأرباح
-        </button>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        
-        {/* قسم توزيع الأرباح على الشركاء */}
-        <div style={styles.card}>
-          <div style={{ ...styles.sectionLabel, marginTop: 0 }}>توزيع أرباح الشركاء ونسب الملكية</div>
-          <div style={{ overflowX: "auto", marginTop: 12 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 14 }}>
-              <thead>
-                <tr style={{ background: "#1b1b1d", color: "#e8cd9c", borderBottom: "1px solid #404040" }}>
-                  <th style={{ padding: "10px 12px" }}>اسم الشريك</th>
-                  <th style={{ padding: "10px 12px" }}>رأس المال</th>
-                  <th style={{ padding: "10px 12px" }}>نسبة الشراكة</th>
-                  <th style={{ padding: "10px 12px" }}>نصيبه من الصافي</th>
-                  <th style={{ padding: "10px 12px" }}>المسحوب سابقاً</th>
-                  <th style={{ padding: "10px 12px" }}>المتبقي للسحب</th>
-                  <th style={{ padding: "10px 12px", textAlign: "center" }}>إجراء</th>
-                </tr>
-              </thead>
-              <tbody>
-                {partnersCalculated.map((p) => (
-                  <tr key={p.id} style={{ borderBottom: "1px solid #2d2d30" }}>
-                    <td style={{ padding: "12px", fontWeight: 800, color: "#fff" }}>{p.name}</td>
-                    <td style={{ padding: "12px" }}>{fmt(p.capital)} ج.م</td>
-                    <td style={{ padding: "12px", color: "#e8cd9c", fontWeight: 700 }}>{p.sharePct}%</td>
-                    <td style={{ padding: "12px", color: "#bfe8cd", fontWeight: 800 }}>{fmt(p.profitShare)} ج.م</td>
-                    <td style={{ padding: "12px", color: "#f0c6bb" }}>{fmt(p.withdrawn)} ج.م</td>
-                    <td style={{ padding: "12px", color: "#e8cd9c", fontWeight: 800 }}>{fmt(p.remainingProfit)} ج.م</td>
-                    <td style={{ padding: "12px", textAlign: "center" }}>
-                      <button
-                        type="button"
-                        onClick={() => { setPayPartnerModal(p); setPayPartnerModalAmount(String(p.remainingProfit)); }}
-                        style={{ background: "#211f18", border: "1px solid #d0b689", color: "#e8cd9c", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
-                      >
-                        <DollarSign size={13} /> صرف أرباح
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* قسم المصروفات العمومية */}
-        <div style={styles.card}>
-          <div style={{ ...styles.sectionLabel, marginTop: 0 }}>تسجيل وإدارة المصروفات العمومية والإدارية</div>
-          <form onSubmit={handleAddExpense} style={{ ...styles.formGrid, marginTop: 12 }}>
-            <Field label="تاريخ المصروف">
-              <DateInput value={expDate} onChange={(e) => setExpDate(e.target.value)} required />
-            </Field>
-
-            <Field label="بند المصروف">
-              <select style={styles.input} value={expCategory} onChange={(e) => setExpCategory(e.target.value)}>
-                <option value="إيجار المحل">إيجار المحل</option>
-                <option value="كهرباء ومياه وغاز">كهرباء ومياه وغاز</option>
-                <option value="رواتب وأجور">رواتب وأجور</option>
-                <option value="صيانة وإصلاحات">صيانة وإصلاحات</option>
-                <option value="نثريات ومطبوعات">نثريات ومطبوعات</option>
-                <option value="مصروفات أخرى">أخرى</option>
-              </select>
-            </Field>
-
-            <Field label="المبلغ (ج.م) *">
-              <input type="number" style={styles.input} value={expAmount} onChange={(e) => setExpAmount(e.target.value)} placeholder="0" required />
-            </Field>
-
-            <div style={{ gridColumn: "1 / -1" }}>
-              <Field label="ملاحظات وتفاصيل المصروف">
-                <input style={styles.input} value={expNotes} onChange={(e) => setExpNotes(e.target.value)} placeholder="اكتب تفاصيل المصروف..." />
-              </Field>
-            </div>
-
-            <button type="submit" style={{ ...styles.saveBtn, marginTop: 4 }}>
-              <Plus size={16} /> إضافة المصروف للخزينة
-            </button>
-          </form>
-
-          {expenses.length > 0 && (
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #404040" }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#e8cd9c", marginBottom: 10 }}>سجل المصروفات المسجلة</div>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ background: "#1b1b1d", color: "#c4c4c4", borderBottom: "1px solid #404040" }}>
-                      <th style={{ padding: "8px 10px" }}>التاريخ</th>
-                      <th style={{ padding: "8px 10px" }}>البند</th>
-                      <th style={{ padding: "8px 10px" }}>المبلغ</th>
-                      <th style={{ padding: "8px 10px" }}>ملاحظات</th>
-                      <th style={{ padding: "8px 10px", textAlign: "center" }}>إجراء</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {expenses.slice().reverse().map((exp) => (
-                      <tr key={exp.id} style={{ borderBottom: "1px solid #2d2d30" }}>
-                        <td style={{ padding: "8px 10px" }}>{exp.date}</td>
-                        <td style={{ padding: "8px 10px", fontWeight: 700, color: "#e8cd9c" }}>{exp.category}</td>
-                        <td style={{ padding: "8px 10px", fontWeight: 800, color: "#e07a5f" }}>{fmt(exp.amount)} ج.م</td>
-                        <td style={{ padding: "8px 10px", color: "#888" }}>{exp.notes || "-"}</td>
-                        <td style={{ padding: "8px 10px", textAlign: "center" }}>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteExpense(exp.id)}
-                            style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "4px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 700 }}
-                          >
-                            <Trash2 size={12} /> حذف
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* سجل مسحوبات الشركاء */}
-        {withdrawalsLog.length > 0 && (
-          <div style={styles.card}>
-            <div style={{ ...styles.sectionLabel, marginTop: 0 }}>سجل مسحوبات أرباح الشركاء</div>
-            <div style={{ overflowX: "auto", marginTop: 10 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 13 }}>
-                <thead>
-                  <tr style={{ background: "#1b1b1d", color: "#c4c4c4", borderBottom: "1px solid #404040" }}>
-                    <th style={{ padding: "8px 10px" }}>التاريخ</th>
-                    <th style={{ padding: "8px 10px" }}>اسم الشريك</th>
-                    <th style={{ padding: "8px 10px" }}>المبلغ المسحوب</th>
-                    <th style={{ padding: "8px 10px" }}>ملاحظات</th>
-                    <th style={{ padding: "8px 10px", textAlign: "center" }}>إجراء</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {withdrawalsLog.slice().reverse().map((w) => (
-                    <tr key={w.id} style={{ borderBottom: "1px solid #2d2d30" }}>
-                      <td style={{ padding: "8px 10px" }}>{w.date}</td>
-                      <td style={{ padding: "8px 10px", fontWeight: 700, color: "#e8cd9c" }}>{w.partnerName}</td>
-                      <td style={{ padding: "8px 10px", fontWeight: 800, color: "#f0c6bb" }}>{fmt(w.amount)} ج.م</td>
-                      <td style={{ padding: "8px 10px", color: "#888" }}>{w.notes || "سحب أرباح"}</td>
-                      <td style={{ padding: "8px 10px", textAlign: "center" }}>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteWithdrawal(w.id)}
-                          style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "4px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 700 }}
-                        >
-                          <Trash2 size={12} /> إلغاء العملية
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-      </div>
-
-      {/* نافذة صرف الأرباح لشريك */}
-      {payPartnerModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div style={{ ...styles.card, width: "100%", maxWidth: 420 }}>
-            <h3 style={{ color: "#e8cd9c", fontSize: 17, fontWeight: 800, marginBottom: 12 }}>
-              صرف أرباح للشريك: {payPartnerModal.name}
-            </h3>
-            <form onSubmit={handleConfirmPayPartner} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Field label="المبلغ المراد صرفه (ج.م) *">
-                <input
-                  type="number"
-                  style={{ ...styles.input, fontSize: 18, fontWeight: 800, color: "#e8cd9c" }}
-                  value={payPartnerAmount}
-                  onChange={(e) => setPayPartnerModalAmount(e.target.value)}
-                  required
-                />
-              </Field>
-
-              <Field label="ملاحظات وإيضاحات">
-                <input style={styles.input} value={payPartnerNotes} onChange={(e) => setPayPartnerNotes(e.target.value)} placeholder="مثال: دفعة أرباح من حساب الأقساط" />
-              </Field>
-
-              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                <button type="submit" style={{ ...styles.saveBtn, flex: 1, marginTop: 0 }}>تأكيد الصرف وتخصيم الخزينة</button>
-                <button type="button" onClick={() => setPayPartnerModal(null)} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 16px", cursor: "pointer", fontWeight: 700 }}>إلغاء</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <BottomExitButton onBack={onBack} />
-    </div>
-  );
-}
-
-/* ============================================================
-   نافذة تقرير الميزانية والخزينة المطبوع (TreasuryReportModal)
-   ============================================================ */
-function TreasuryReportModal({ partners, expenses, withdrawalsLog, clients, totals, onClose }) {
-  const totalCollectedCash = clients.reduce((sum, c) => sum + Number(c.down || 0) + Number(c.totalPaid || 0), 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-  const totalWithdrawals = withdrawalsLog.reduce((sum, w) => sum + Number(w.amount || 0), 0);
-  const treasuryCashBalance = totalCollectedCash - totalExpenses - totalWithdrawals;
-  const totalCapital = partners.reduce((sum, p) => sum + Number(p.capital || 0), 0);
-  const netDistributableProfit = Math.max(0, totals.totalProfit - totalExpenses);
-
-  const handlePrint = () => { window.print(); };
-
-  const handleDownloadImage = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 650;
-    canvas.height = 820;
-    const ctx = canvas.getContext("2d");
-
-    ctx.fillStyle = "#1b1b1d"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#d0b689"; ctx.lineWidth = 4; ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
-
-    ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 24px Cairo, sans-serif"; ctx.textAlign = "center";
-    ctx.fillText("تقرير ميزانية الخزينة وتوزيع الأرباح", canvas.width / 2, 55);
-
-    ctx.fillStyle = "#c4c4c4"; ctx.font = "13px Cairo, sans-serif";
-    ctx.fillText(`تاريخ التقرير: ${new Date().toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })}`, canvas.width / 2, 80);
-
-    ctx.strokeStyle = "#404040"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(40, 95); ctx.lineTo(canvas.width - 40, 95); ctx.stroke();
-
-    const drawLine = (lbl, val, y, isGold = false) => {
-      ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
-      ctx.fillText(lbl, canvas.width - 50, y);
-      ctx.textAlign = "left"; ctx.fillStyle = isGold ? "#e8cd9c" : "#ffffff"; ctx.font = isGold ? "bold 17px Cairo, sans-serif" : "bold 15px Cairo, sans-serif";
-      ctx.fillText(String(val), 50, y);
-    };
-
-    drawLine("السيولة النقدية بالخزينة:", `${fmt(treasuryCashBalance)} ج.م`, 130, true);
-    drawLine("إجمالي رأس مال الشركة:", `${fmt(totalCapital)} ج.م`, 165);
-    drawLine("إجمالي المحصل من العملاء:", `${fmt(totalCollectedCash)} ج.م`, 200);
-    drawLine("إجمالي المصروفات العمومية:", `${fmt(totalExpenses)} ج.م`, 235);
-    drawLine("صافي الأرباح المتاحة للتوزيع:", `${fmt(netDistributableProfit)} ج.م`, 270, true);
-    drawLine("إجمالي المسحوبات للشركاء:", `${fmt(totalWithdrawals)} ج.م`, 305);
-
-    ctx.beginPath(); ctx.moveTo(40, 330); ctx.lineTo(canvas.width - 40, 330); ctx.stroke();
-
-    ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 16px Cairo, sans-serif"; ctx.textAlign = "right";
-    ctx.fillText("بيان الشركاء والأرباح والمسحوبات:", canvas.width - 50, 360);
-
-    let yPos = 395;
-    partners.forEach((p) => {
-      const cap = Number(p.capital || 0);
-      const sharePct = totalCapital > 0 ? (cap / totalCapital) * 100 : 0;
-      const profitShare = Math.round(netDistributableProfit * (sharePct / 100));
-      const withdrawn = withdrawalsLog.filter(w => w.partnerId === p.id).reduce((sum, w) => sum + Number(w.amount), 0);
-      const remaining = Math.max(0, profitShare - withdrawn);
-
-      ctx.fillStyle = "#211f18"; ctx.fillRect(40, yPos - 20, canvas.width - 80, 60);
-      ctx.strokeStyle = "#333333"; ctx.strokeRect(40, yPos - 20, canvas.width - 80, 60);
-
-      ctx.textAlign = "right"; ctx.fillStyle = "#ffffff"; ctx.font = "bold 15px Cairo, sans-serif";
-      ctx.fillText(`${p.name} (${sharePct.toFixed(1)}%)`, canvas.width - 55, yPos);
-      ctx.fillStyle = "#888888"; ctx.font = "12px Cairo, sans-serif";
-      ctx.fillText(`رأس المال: ${fmt(p.capital)} ج.م`, canvas.width - 55, yPos + 20);
-
-      ctx.textAlign = "left"; ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 14px Cairo, sans-serif";
-      ctx.fillText(`المستحق: ${fmt(profitShare)} ج.م`, 55, yPos);
-      ctx.fillStyle = "#c4c4c4"; ctx.font = "12px Cairo, sans-serif";
-      ctx.fillText(`مسحوب: ${fmt(withdrawn)} | متبقي: ${fmt(remaining)} ج.م`, 55, yPos + 20);
-
-      yPos += 70;
-    });
-
-    const link = document.createElement("a");
-    link.download = `تقرير_الخزينة_${new Date().toISOString().split("T")[0]}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  };
-
-  const handleWhatsAppShare = () => {
-    const msg = `تقرير الميزانية والخزينة 📊\nالسيولة بالنقدية: ${fmt(treasuryCashBalance)} ج.م\nرأس المال: ${fmt(totalCapital)} ج.م\nصافي الأرباح الصافية: ${fmt(netDistributableProfit)} ج.م\nالمصروفات: ${fmt(totalExpenses)} ج.م\nمسحوبات الشركاء: ${fmt(totalWithdrawals)} ج.م`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-  };
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-      <div style={{ background: "#242426", border: "1px solid #d0b689", borderRadius: 18, width: "100%", maxWidth: 560, padding: 24, color: "#fff", position: "relative", boxShadow: "0 20px 50px rgba(0,0,0,0.8)" }}>
-        
-        <button onClick={onClose} style={{ position: "absolute", top: 16, left: 16, background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", width: 34, height: 36, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <X size={18} />
-        </button>
-
-        <div id="printable-treasury" style={{ textAlign: "center" }}>
-          <div style={{ color: "#e8cd9c", fontSize: 20, fontWeight: 800, marginBottom: 4 }}>تقرير الميزانية وتوزيع الأرباح</div>
-          <div style={{ color: "#c4c4c4", fontSize: 12 }}>تاريخ التقرير: {new Date().toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })}</div>
-          <div style={{ height: 1, background: "#404040", margin: "14px 0" }} />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "right", fontSize: 14 }}>
-            <ReceiptRow label="السيولة النقدية بالخزينة" val={`${fmt(treasuryCashBalance)} ج.م`} highlight />
-            <ReceiptRow label="صافي الأرباح القابلة للتوزيع" val={`${fmt(netDistributableProfit)} ج.م`} highlight />
-            <ReceiptRow label="إجمالي رأس المال" val={`${fmt(totalCapital)} ج.م`} />
-            <ReceiptRow label="المحصل الكلي من الأقساط" val={`${fmt(totalCollectedCash)} ج.م`} />
-            <ReceiptRow label="المصروفات العمومية" val={`${fmt(totalExpenses)} ج.م`} />
-            <ReceiptRow label="إجمالي المسحوبات للشركاء" val={`${fmt(totalWithdrawals)} ج.م`} />
-          </div>
-
-          <div style={{ height: 1, background: "#404040", margin: "14px 0" }} />
-          <div style={{ textAlign: "right", fontSize: 14, fontWeight: 800, color: "#e8cd9c", marginBottom: 8 }}>ملخص الشركاء والأرباح:</div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {partners.map((p) => {
-              const cap = Number(p.capital || 0);
-              const sharePct = totalCapital > 0 ? (cap / totalCapital) * 100 : 0;
-              const profitShare = Math.round(netDistributableProfit * (sharePct / 100));
-              const withdrawn = withdrawalsLog.filter(w => w.partnerId === p.id).reduce((sum, w) => sum + Number(w.amount), 0);
-              const remaining = Math.max(0, profitShare - withdrawn);
-
-              return (
-                <div key={p.id} style={{ background: "#1b1b1d", border: "1px solid #333", borderRadius: 10, padding: 10, textAlign: "right", fontSize: 13 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, color: "#fff" }}>
-                    <span>{p.name} ({sharePct.toFixed(1)}%)</span>
-                    <span style={{ color: "#e8cd9c" }}>صافي الربح: {fmt(profitShare)} ج.م</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", color: "#888", marginTop: 4, fontSize: 12 }}>
-                    <span>رأس المال: {fmt(p.capital)} ج.م</span>
-                    <span>مسحوب: {fmt(withdrawn)} | متبقي: {fmt(remaining)} ج.م</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginTop: 18 }}>
-          <button type="button" onClick={handlePrint} style={{ background: "linear-gradient(145deg, #e8cd9c, #d0b689)", color: "#1b1b1d", border: "none", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            <Printer size={16} /> طباعة التقرير
-          </button>
-          <button type="button" onClick={handleDownloadImage} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            <Download size={16} /> تنزيل الصورة
-          </button>
-          <button type="button" onClick={handleWhatsAppShare} style={{ gridColumn: "1 / -1", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            <Share2 size={16} /> إرسال عبر الواتساب
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -1112,7 +597,9 @@ function ReceiptModal({ receipt, onClose }) {
   const remainingInstallments = client.monthly > 0 ? Math.ceil(remainingDebt / client.monthly) : 0;
   const isPaidInFull = remainingDebt <= 0;
 
-  const handlePrint = () => { window.print(); };
+  const handlePrint = () => {
+    window.print();
+  };
 
   const handleDownloadImage = () => {
     const canvas = document.createElement("canvas");
@@ -1120,21 +607,35 @@ function ReceiptModal({ receipt, onClose }) {
     canvas.height = 780;
     const ctx = canvas.getContext("2d");
 
-    ctx.fillStyle = "#1b1b1d"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#d0b689"; ctx.lineWidth = 4; ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+    ctx.fillStyle = "#1b1b1d";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 26px Cairo, sans-serif"; ctx.textAlign = "center";
+    ctx.strokeStyle = "#d0b689";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+
+    ctx.fillStyle = "#e8cd9c";
+    ctx.font = "bold 26px Cairo, sans-serif";
+    ctx.textAlign = "center";
     ctx.fillText("إيصال استلام قسط — نظام الأقساط", canvas.width / 2, 60);
 
-    ctx.fillStyle = "#c4c4c4"; ctx.font = "14px Cairo, sans-serif";
+    ctx.fillStyle = "#c4c4c4";
+    ctx.font = "14px Cairo, sans-serif";
     ctx.fillText(`تاريخ الإيصال: ${payment.payDate || new Date().toISOString().split("T")[0]}`, canvas.width / 2, 90);
 
-    ctx.strokeStyle = "#404040"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(40, 110); ctx.lineTo(canvas.width - 40, 110); ctx.stroke();
+    ctx.strokeStyle = "#404040";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40, 110); ctx.lineTo(canvas.width - 40, 110); ctx.stroke();
 
     const drawRow = (label, val, y, isGold = false) => {
-      ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "16px Cairo, sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#c4c4c4";
+      ctx.font = "16px Cairo, sans-serif";
       ctx.fillText(label, canvas.width - 50, y);
-      ctx.textAlign = "left"; ctx.fillStyle = isGold ? "#e8cd9c" : "#ffffff"; ctx.font = isGold ? "bold 18px Cairo, sans-serif" : "bold 16px Cairo, sans-serif";
+
+      ctx.textAlign = "left";
+      ctx.fillStyle = isGold ? "#e8cd9c" : "#ffffff";
+      ctx.font = isGold ? "bold 18px Cairo, sans-serif" : "bold 16px Cairo, sans-serif";
       ctx.fillText(String(val), 50, y);
     };
 
@@ -1148,8 +649,10 @@ function ReceiptModal({ receipt, onClose }) {
 
     ctx.beginPath(); ctx.moveTo(40, 420); ctx.lineTo(canvas.width - 40, 420); ctx.stroke();
 
-    ctx.fillStyle = "#211f18"; ctx.fillRect(40, 440, canvas.width - 80, 140);
-    ctx.strokeStyle = "#d0b689"; ctx.strokeRect(40, 440, canvas.width - 80, 140);
+    ctx.fillStyle = "#211f18";
+    ctx.fillRect(40, 440, canvas.width - 80, 140);
+    ctx.strokeStyle = "#d0b689";
+    ctx.strokeRect(40, 440, canvas.width - 80, 140);
 
     ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
     ctx.fillText("المبلغ المدفوع حالياً:", canvas.width - 60, 480);
@@ -1698,7 +1201,7 @@ function AddEmployeeScreen({ onSave, onBack }) {
   );
 }
 
-/* 5. سداد الأقساط */
+/* 5. سداد الأقساط (الشاشة الجديدة المطورة الكاملة) */
 function PayScreen({ rows, payments, employees, onPay, onDeletePayment, onShowReceipt, onBack }) {
   const [selected, setSelected] = useState(null);
   const [amount, setAmount] = useState("");
@@ -2031,8 +1534,15 @@ function LateClientsScreen({ rows, onBack, onPay }) {
               <div
                 key={item.id}
                 style={{
-                  background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16,
-                  display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12,
+                  background: "#1b1b1d",
+                  border: "1px solid #404040",
+                  borderRadius: 12,
+                  padding: 16,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
                 }}
               >
                 <div>
@@ -2240,8 +1750,15 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
               <div
                 key={item.id}
                 style={{
-                  background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16,
-                  display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12,
+                  background: "#1b1b1d",
+                  border: "1px solid #404040",
+                  borderRadius: 12,
+                  padding: 16,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
                 }}
               >
                 <div>
@@ -2553,7 +2070,7 @@ const styles = {
   dashTitle: { fontSize: 22, fontWeight: 800, color: "#2c2211" },
   dashSub: { fontSize: 12.5, color: "#5a4a2c", marginTop: 2 },
   calcIcon: { width: 44, height: 44, borderRadius: 12, background: "#1b1b1d", display: "flex", alignItems: "center", justifyContent: "center" },
-  kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 },
+  kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14, marginBottom: 20 },
   kpiCard: { background: "#242426", border: `1px solid #404040`, borderRadius: 16, padding: "20px 20px" },
   kpiValue: { fontSize: 24, fontWeight: 800, color: "#ffffff", fontVariantNumeric: "tabular-nums" },
   kpiLabel: { fontSize: 13.5, color: "#e8cd9c", fontWeight: 700, marginTop: 8 },
@@ -2569,7 +2086,7 @@ const styles = {
   input: { width: "100%", background: "#1b1b1d", border: "1px solid #404040", borderRadius: 10, padding: "12px 14px", color: "#ffffff", fontFamily: "inherit", fontSize: 15, outline: "none" },
   sectionLabel: { gridColumn: "1 / -1", fontSize: 13.5, fontWeight: 800, color: "#d0b689", marginTop: 12, paddingBottom: 8, borderBottom: `1px solid #404040` },
   liveBox: { gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: "#211f18", border: "1px dashed rgba(208,182,137,0.5)", borderRadius: 12, padding: 14, margin: "6px 0" },
-  saveBtn: { gridColumn: "1 / -1", background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", borderRadius: 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 8, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 },
+  saveBtn: { gridColumn: "1 / -1", background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", borderRadius: 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 8, fontFamily: "inherit" },
   errorBox: { background: "rgba(224,122,95,0.12)", border: "1px solid rgba(224,122,95,0.5)", color: "#e8a996", borderRadius: 10, padding: "12px 14px", fontSize: 14, marginBottom: 16 },
   emptyState: { textAlign: "center", color: "#c4c4c4", padding: "30px 10px", fontSize: 15 },
   historyTitle: { fontSize: 16, fontWeight: 800, color: "#e8cd9c", marginTop: 22, marginBottom: 16, paddingTop: 16, borderTop: `1px solid #404040` },
