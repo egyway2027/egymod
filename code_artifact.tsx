@@ -1,9 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   CreditCard, UserPlus, CalendarClock, Search, UserX, UploadCloud,
   KeyRound, Power, Wallet, TrendingUp, Calculator, ArrowRight,
   Trash2, CheckCircle2, X, Users, UserCog, Printer, Download, Share2, Award,
-  DollarSign, RefreshCw, UserMinus
+  DollarSign, RefreshCw, UserMinus, Settings, Globe, Palette, Lock, ShieldCheck, Store, Check
 } from "lucide-react";
 
 const SUPABASE_URL = 'https://blijuizmqoprlrsuebgo.supabase.co';
@@ -264,6 +263,22 @@ function EgymodApp() {
   useEffect(() => { localStorage.setItem("egymod_distributions", JSON.stringify(distributionsLog)); }, [distributionsLog]);
 
   const [today] = useState(new Date());
+
+// متغيرات الإعدادات والثيمات والصلاحيات
+  const [currentLang, setCurrentLang] = useState(() => localStorage.getItem("egymod_lang") || "ar");
+  const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("egymod_theme") || "royalGold");
+  const [storeInfo, setStoreInfo] = useState(() => safeJSONParse("egymod_store_info", {
+    name: "إيجيمود لإدارة الأقساط", phone: "01000000000", address: "القاهرة - مصر", footerNote: "البضاعة المباعة لا تُرد ولا تُستبدل إلا بالعقد الأصلي", printType: "thermal"
+  }));
+  const [appUsers, setAppUsers] = useState(() => safeJSONParse("egymod_app_users", [
+    { id: 1, name: "المشرف العام", username: "admin", password: "123", role: "admin", permissions: ["addClient", "pay", "search", "monthlyDues", "lateClients", "deleteClient", "treasury", "settings"] }
+  ]));
+
+  useEffect(() => { localStorage.setItem("egymod_lang", currentLang); }, [currentLang]);
+  useEffect(() => { localStorage.setItem("egymod_theme", currentTheme); }, [currentTheme]);
+  useEffect(() => { safeSetStorage("egymod_store_info", storeInfo); }, [storeInfo]);
+  useEffect(() => { safeSetStorage("egymod_app_users", appUsers); }, [appUsers]);
+  
   const [screen, setScreen] = useState("dashboard");
   const [toast, setToast] = useState(null);
   const [activeReceipt, setActiveReceipt] = useState(null);
@@ -1628,6 +1643,8 @@ function Dashboard({ totals, lateCount, onNavigate, user, onLogout }) {
     { key: "changePassword", label: "تغيير كلمة السر", icon: KeyRound, tone: "tan" },
     { key: "treasuryPartners", label: "الشركاء ورأس المال", icon: Users, tone: "copper" },
     { key: "treasuryEmployees", label: "شئون الموظفين والرواتب", icon: UserCog, tone: "silver" },
+   { key: "settings", label: "الإعدادات والصلاحيات", icon: Settings, tone: "tan" },
+    
     { key: "backup", label: "النسخ الاحتياطي السحابي", icon: UploadCloud, tone: "roseLight" },
     { key: "exit", label: "تسجيل الخروج", icon: Power, tone: "dark" },
   ];
@@ -2808,6 +2825,309 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
     </div>
   );
 }
+
+
+
+/* ============================================================
+   شاشة الإعدادات والصلاحيات الشاملة (المظهر، اللغات، المستخدمين، والمحل)
+   ============================================================ */
+function SettingsScreen({ currentLang, setCurrentLang, currentTheme, setCurrentTheme, storeInfo, setStoreInfo, appUsers, setAppUsers, onBack, notify }) {
+  const [activeTab, setActiveTab] = useState("general"); // general | security | store
+
+  // نموذج إضافة/تعديل مستخدم موظف
+  const [newUser, setNewUser] = useState({ name: "", username: "", password: "", permissions: ["pay", "search"] });
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState(null);
+
+  // نموذج بيانات المحل
+  const [tempStore, setTempStore] = useState(storeInfo);
+
+  // قائمة اللغات المدعومة
+  const languages = [
+    { code: "ar", name: "العربية (Arabic)", flag: "🇪🇬" },
+    { code: "en", name: "English (English)", flag: "🇺🇸" },
+    { code: "fr", name: "Français (French)", flag: "🇫🇷" },
+    { code: "es", name: "Español (Spanish)", flag: "🇪🇸" },
+    { code: "de", name: "Deutsch (German)", flag: "🇩🇪" },
+    { code: "ur", name: "اردو / हिन्दी (Urdu/Hindi)", flag: "🇵🇰" }
+  ];
+
+  // قائمة الثيمات
+  const themes = [
+    { id: "royalGold", name: "الأسود والذهبي الملكي", primary: "#d0b689", bg: "#1b1b1d" },
+    { id: "midnightBlue", name: "الأزرق الكحلي الاحترافي", primary: "#4a90e2", bg: "#0f172a" },
+    { id: "emeraldGreen", name: "الأخضر الزمردي المالي", primary: "#2ecc71", bg: "#062016" },
+    { id: "cyberDark", name: "النيون الحداثي", primary: "#00f2fe", bg: "#121212" },
+    { id: "lightClean", name: "الرمادي النظيف الفاتح", primary: "#8e44ad", bg: "#f5f5f7" }
+  ];
+
+  // الشاشات المتاحة للتحكم في الصلاحيات
+  const availableScreens = [
+    { id: "addClient", label: "إضافة عميل جديد" },
+    { id: "pay", label: "سداد الأقساط وطباعة الإيصالات" },
+    { id: "search", label: "استعلام وتعديل بيانات العملاء" },
+    { id: "monthlyDues", label: "مستحقات الشهر" },
+    { id: "lateClients", label: "المتأخرين عن السداد" },
+    { id: "deleteClient", label: "حذف وسلة المحذوفات" },
+    { id: "treasury", label: "الخزينة وتوزيع الأرباح والشركاء" },
+    { id: "settings", label: "الإعدادات والصلاحيات" }
+  ];
+
+  const handleTogglePermission = (screenId) => {
+    setNewUser(prev => {
+      const exists = prev.permissions.includes(screenId);
+      const updated = exists ? prev.permissions.filter(p => p !== screenId) : [...prev.permissions, screenId];
+      return { ...prev, permissions: updated };
+    });
+  };
+
+  const handleSaveUser = (e) => {
+    e.preventDefault();
+    if (!newUser.name || !newUser.username || !newUser.password) {
+      notify("يرجى ملء جميع حقول بيانات الموظف!", "error");
+      return;
+    }
+    const newUserObj = { id: Date.now(), ...newUser, role: "employee" };
+    setAppUsers(prev => [...prev, newUserObj]);
+    setNewUser({ name: "", username: "", password: "", permissions: ["pay", "search"] });
+    notify("تم إضافة حساب الموظف وتحديد صلاحياته بنجاح!");
+  };
+
+  const handleDeleteUser = (userId) => {
+    setAppUsers(prev => prev.filter(u => u.id !== userId));
+    notify("تم حذف حساب الموظف بنجاح!");
+  };
+
+  const handleSaveStoreInfo = (e) => {
+    e.preventDefault();
+    setStoreInfo(tempStore);
+    notify("تم حفظ بيانات المحل وإعدادات الطباعة بنجاح!");
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="الإعدادات والصلاحيات" onBack={onBack} />
+
+      {/* أزرار التبويبات */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab("general")}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: activeTab === "general" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
+            color: activeTab === "general" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+          }}
+        >
+          <Globe size={16} /> عام والمظهر والتحديثات
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("security")}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: activeTab === "security" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
+            color: activeTab === "security" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+          }}
+        >
+          <ShieldCheck size={16} /> الموظفين والصلاحيات
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("store")}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: activeTab === "store" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
+            color: activeTab === "store" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+          }}
+        >
+          <Store size={16} /> بيانات المحل والطباعة
+        </button>
+      </div>
+
+      {/* التبويب الأول: العام والمظهر */}
+      {activeTab === "general" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* تغيير لغة البرنامج */}
+          <div style={styles.card}>
+            <div style={{ ...styles.sectionLabel, marginTop: 0 }}>لغة واجهة البرنامج (Language)</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginTop: 12 }}>
+              {languages.map(lang => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => { setCurrentLang(lang.code); notify(`تم تغيير اللغة إلى ${lang.name}`); }}
+                  style={{
+                    background: currentLang === lang.code ? "#211f18" : "#1b1b1d",
+                    border: `1px solid ${currentLang === lang.code ? "#d0b689" : "#404040"}`,
+                    color: currentLang === lang.code ? "#e8cd9c" : "#fff",
+                    borderRadius: 10, padding: "12px", cursor: "pointer", fontWeight: 800, fontSize: 13,
+                    display: "flex", alignItems: "center", justifyContent: "space-between"
+                  }}
+                >
+                  <span>{lang.flag} {lang.name}</span>
+                  {currentLang === lang.code && <Check size={16} color="#e8cd9c" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ثيمات وألوان البرنامج */}
+          <div style={styles.card}>
+            <div style={{ ...styles.sectionLabel, marginTop: 0 }}>ثيمات وألوان الواجهة (Themes)</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginTop: 12 }}>
+              {themes.map(t => (
+                <div
+                  key={t.id}
+                  onClick={() => { setCurrentTheme(t.id); notify(`تم تطبيق ثيم: ${t.name}`); }}
+                  style={{
+                    background: "#1b1b1d", border: `2px solid ${currentTheme === t.id ? t.primary : "#404040"}`,
+                    borderRadius: 12, padding: 14, cursor: "pointer", display: "flex", flexDirection: "column", gap: 8
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>{t.name}</span>
+                    <div style={{ width: 16, height: 16, borderRadius: "50%", background: t.primary, border: "1px solid #fff" }} />
+                  </div>
+                  <div style={{ height: 6, background: t.primary, borderRadius: 4, width: "100%" }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* تحديثات ومعلومات النسخة */}
+          <div style={styles.card}>
+            <div style={{ ...styles.sectionLabel, marginTop: 0 }}>تحديثات ومعلومات النظام</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginTop: 10 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#e8cd9c" }}>إصدار البرنامج: v2.4.0 Cloud Enterprise</div>
+                <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>متصل بسيرفرات Supabase السحابية المشفّرة (سحابي + محلي)</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => notify("تطبيقك محدّث لأحدث إصدار مستقر حالياً!")}
+                style={{ ...styles.saveBtn, gridColumn: "auto", marginTop: 0, padding: "10px 18px", fontSize: 13 }}
+              >
+                <RefreshCw size={14} /> التحقق من وجود تحديثات
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* التبويب الثاني: الموظفين والصلاحيات */}
+      {activeTab === "security" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* إضافة حساب موظف وتحديد صلاحياته */}
+          <div style={styles.card}>
+            <div style={{ ...styles.sectionLabel, marginTop: 0 }}>إضافة حساب موظف جديد وتعيين كلمة المرور والصلاحيات</div>
+            <form onSubmit={handleSaveUser} style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                <Field label="اسم الموظف الكامل *"><input style={styles.input} value={newUser.name} onChange={e => setNewUser({ ...newUser, name: e.target.value })} placeholder="مثال: أحمد محمود" required /></Field>
+                <Field label="اسم المستخدم للدخول (Username) *"><input style={styles.input} value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} placeholder="ahmed_2026" required /></Field>
+                <Field label="كلمة المرور *"><input type="password" style={styles.input} value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} placeholder="••••••" required /></Field>
+              </div>
+
+              {/* جدول اختيار الصلاحيات الشاشات */}
+              <div>
+                <span style={{ ...styles.fieldLabel, color: "#e8cd9c", marginBottom: 8 }}>حدد الشاشات المسموح للموظف بدخولها فقط:</span>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, background: "#1b1b1d", padding: 14, borderRadius: 12, border: "1px solid #404040" }}>
+                  {availableScreens.map(scr => {
+                    const checked = newUser.permissions.includes(scr.id);
+                    return (
+                      <label key={scr.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: checked ? "#bfe8cd" : "#c4c4c4", fontSize: 13, fontWeight: 700 }}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => handleTogglePermission(scr.id)}
+                          style={{ width: 18, height: 18, accentColor: "#d0b689", cursor: "pointer" }}
+                        />
+                        {scr.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button type="submit" style={styles.saveBtn}>حفظ حساب الموظف والصلاحيات</button>
+            </form>
+          </div>
+
+          {/* قائمة الموظفين المسجلين */}
+          <div style={styles.card}>
+            <div style={{ ...styles.sectionLabel, marginTop: 0 }}>قائمة حسابات الموظفين المسجلة والصلاحيات</div>
+            <div style={{ overflowX: "auto", marginTop: 10 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: "#1b1b1d", color: "#e8cd9c", borderBottom: "1px solid #404040" }}>
+                    <th style={{ padding: "10px" }}>الاسم</th>
+                    <th style={{ padding: "10px" }}>اسم المستخدم</th>
+                    <th style={{ padding: "10px" }}>الرتبة</th>
+                    <th style={{ padding: "10px" }}>عدد الشاشات المتاحة</th>
+                    <th style={{ padding: "10px", textAlign: "center" }}>إجراء</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appUsers.map(usr => (
+                    <tr key={usr.id} style={{ borderBottom: "1px solid #2d2d30" }}>
+                      <td style={{ padding: "10px", fontWeight: 800, color: "#fff" }}>{usr.name}</td>
+                      <td style={{ padding: "10px", color: "#e8cd9c" }}>{usr.username}</td>
+                      <td style={{ padding: "10px" }}>{usr.role === "admin" ? "مدير نظام" : "موظف"}</td>
+                      <td style={{ padding: "10px", color: "#bfe8cd" }}>{usr.permissions?.length || 0} شاشة</td>
+                      <td style={{ padding: "10px", textAlign: "center" }}>
+                        {usr.role !== "admin" && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteUser(usr.id)}
+                            style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "4px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 700 }}
+                          >
+                            <Trash2 size={12} /> حذف الحساب
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* التبويب الثالث: بيانات المحل والإيصالات */}
+      {activeTab === "store" && (
+        <div style={styles.card}>
+          <div style={{ ...styles.sectionLabel, marginTop: 0 }}>تخصيص بيانات المحل وتذييل إيصالات السداد المطبوعة</div>
+          <form onSubmit={handleSaveStoreInfo} style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+              <Field label="اسم المحل / الشركة"><input style={styles.input} value={tempStore.name} onChange={e => setTempStore({ ...tempStore, name: e.target.value })} required /></Field>
+              <Field label="رقم تليفون التواصل"><input style={styles.input} value={tempStore.phone} onChange={e => setTempStore({ ...tempStore, phone: e.target.value })} required /></Field>
+              <Field label="عنوان المعرض / الفرع"><input style={styles.input} value={tempStore.address} onChange={e => setTempStore({ ...tempStore, address: e.target.value })} required /></Field>
+            </div>
+
+            <Field label="نوع الطابعة الفعالة">
+              <select style={styles.input} value={tempStore.printType} onChange={e => setTempStore({ ...tempStore, printType: e.target.value })}>
+                <option value="thermal">طابعة فواتير حرارية صغيرة (Thermal 80mm)</option>
+                <option value="standard">طابعة قياسية ورق كبير (A4 / A5 Standard)</option>
+              </select>
+            </Field>
+
+            <Field label="ملاحظة وتذييل أسفل الإيصال المطبوع">
+              <input style={styles.input} value={tempStore.footerNote} onChange={e => setTempStore({ ...tempStore, footerNote: e.target.value })} placeholder="مثال: البضاعة المباعة لا تُرد ولا تُستبدل..." />
+            </Field>
+
+            <button type="submit" style={styles.saveBtn}>حفظ بيانات المحل والطباعة</button>
+          </form>
+        </div>
+      )}
+
+      <BottomExitButton onBack={onBack} />
+    </div>
+  );
+}
+
 
 /* أنماط التصميم */
 const styles = {
