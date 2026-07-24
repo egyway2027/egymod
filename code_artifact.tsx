@@ -10,51 +10,21 @@ const SUPABASE_URL = 'https://blijuizmqoprlrsuebgo.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rw8Rym37iQoFRWkLXaDbfw_MaKL65Tc';
 let supabase = null;
 
-// دالة آمنة لقراءة الذاكرة بدون أخطاء تسبب شاشة بيضاء
-function safeJSONParse(key, fallback) {
-  try {
-    const saved = localStorage.getItem(key);
-    if (!saved || saved === "undefined" || saved === "null") return fallback;
-    return JSON.parse(saved);
-  } catch (e) {
-    console.error(`Error parsing ${key}:`, e);
-    return fallback;
-  }
-}
-
-function safeSetStorage(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.error(`Error saving ${key}:`, e);
-  }
-}
-
 export default function AppLoader() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      if (window.supabase) {
+    if (window.supabase) {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      setReady(true);
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+      script.onload = () => {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         setReady(true);
-      } else {
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-        script.onload = () => {
-          try {
-            if (window.supabase) {
-              supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-          } catch (e) { console.error(e); }
-          setReady(true);
-        };
-        script.onerror = () => setReady(true);
-        document.head.appendChild(script);
-      }
-    } catch (err) {
-      console.error(err);
-      setReady(true);
+      };
+      document.head.appendChild(script);
     }
   }, []);
 
@@ -62,7 +32,7 @@ export default function AppLoader() {
     return (
       <div dir="rtl" className="flex flex-col items-center justify-center min-h-screen bg-[#1b1b1d] text-[#d0b689] font-['Cairo']">
         <div className="w-12 h-12 border-4 border-[#d0b689] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <h2 className="text-xl font-bold">جاري تحميل نظام إدارة الأقساط...</h2>
+        <h2 className="text-xl font-bold">جاري تأمين الاتصال بقاعدة البيانات السحابية...</h2>
       </div>
     );
   }
@@ -117,19 +87,16 @@ function addOneMonth(dateString) {
 }
 
 const seedPartners = [
-  { id: 1, name: "مصطفى جمال", capital: 112000, profit: 12000, withdrawals: 5000 },
-  { id: 2, name: "خالد فتحي", capital: 56000, profit: 6000, withdrawals: 0 },
+  { id: 1, name: "مصطفى جمال", capital: 100000, profit: 12000, withdrawals: 5000 },
+  { id: 2, name: "خالد فتحي", capital: 50000, profit: 6000, withdrawals: 0 },
 ];
-const seedExpenses = [
-  { id: 1, date: "2026-07-01", category: "إيجار المحل", amount: 3000, notes: "إيجار الشراكة" },
-  { id: 2, date: "2026-07-10", category: "كهرباء ومياه وغاز", amount: 450, notes: "فاتورة يوليو" }
-];
+const seedExpenses = [{ id: 1, date: "2026-07-01", category: "إيجار المحل", amount: 3000, notes: "" }];
 const seedEmployees = [{ id: 1, name: "سعيد عبد الله", phone: "01011112222", job: "محصل", salary: 3500, hireDate: "2025-01-01", status: "نشط" }];
 
 const emptyForm = { name: "", phone: "", guarantor: "", guarantorPhone: "", item: "", cost: "", sale: "", down: "", monthly: "", contractDate: "", firstPayDate: "", notes: "" };
 
 /* ============================================================
-   مكون إدخال التاريخ الذكي
+   مكون إدخال التاريخ الذكي (يعالج مشكلة قنس/رهش/موي)
    ============================================================ */
 function DateInput({ value, onChange, disabled, required, placeholder = "سنة - شهر - يوم", style }) {
   const [focused, setFocused] = useState(false);
@@ -147,10 +114,18 @@ function DateInput({ value, onChange, disabled, required, placeholder = "سنة 
       required={required}
       dir="ltr"
       style={{
-        width: "100%", background: disabled ? "#151515" : "#1b1b1d",
-        border: "1px solid #404040", borderRadius: 10, padding: "12px 14px",
-        color: disabled ? "#888888" : "#ffffff", fontFamily: "inherit", fontSize: 15,
-        outline: "none", textAlign: "right", cursor: disabled ? "not-allowed" : "pointer", ...style
+        width: "100%",
+        background: disabled ? "#151515" : "#1b1b1d",
+        border: "1px solid #404040",
+        borderRadius: 10,
+        padding: "12px 14px",
+        color: disabled ? "#888888" : "#ffffff",
+        fontFamily: "inherit",
+        fontSize: 15,
+        outline: "none",
+        textAlign: "right",
+        cursor: disabled ? "not-allowed" : "pointer",
+        ...style
       }}
     />
   );
@@ -202,10 +177,10 @@ function NameComboBox({ items, getLabel, getSecondary, onSelect, placeholder, se
 }
 
 /* ============================================================
-   المكون الرئيسي للتطبيق
+   المكون الرئيسي للتطبيق مع دعم سحابي ومصادقة
    ============================================================ */
 function EgymodApp() {
-  const [currentUser, setCurrentUser] = useState({ id: "admin", name: "المشرف العام", email: "admin@egymod.com" });
+  const [currentUser, setCurrentUser] = useState(null);
   const [authView, setAuthView] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -213,25 +188,84 @@ function EgymodApp() {
   const [authError, setAuthError] = useState("");
 
   const [clients, setClients] = useState([]);
-  const [payments, setPayments] = useState(() => safeJSONParse("egymod_payments", []));
-  const [deletedClients, setDeletedClients] = useState(() => safeJSONParse("egymod_trash", []));
-  const [partners, setPartners] = useState(() => safeJSONParse("egymod_partners", seedPartners));
-  const [expenses, setExpenses] = useState(() => safeJSONParse("egymod_expenses", seedExpenses));
-  const [employees, setEmployees] = useState(() => safeJSONParse("egymod_employees", seedEmployees));
-  const [salaryLog, setSalaryLog] = useState(() => safeJSONParse("egymod_salary_log", []));
-  const [withdrawalsLog, setWithdrawalsLog] = useState(() => safeJSONParse("egymod_withdrawals", [
-    { id: 1, partnerId: 1, partnerName: "مصطفى جمال", amount: 5000, date: "2026-07-15", notes: "مسحوبات أرباح" }
-  ]));
-  const [distributionsLog, setDistributionsLog] = useState(() => safeJSONParse("egymod_distributions", []));
 
-  useEffect(() => { safeSetStorage("egymod_payments", payments); }, [payments]);
-  useEffect(() => { safeSetStorage("egymod_trash", deletedClients); }, [deletedClients]);
-  useEffect(() => { safeSetStorage("egymod_partners", partners); }, [partners]);
-  useEffect(() => { safeSetStorage("egymod_expenses", expenses); }, [expenses]);
-  useEffect(() => { safeSetStorage("egymod_employees", employees); }, [employees]);
-  useEffect(() => { safeSetStorage("egymod_salary_log", salaryLog); }, [salaryLog]);
-  useEffect(() => { safeSetStorage("egymod_withdrawals", withdrawalsLog); }, [withdrawalsLog]);
-  useEffect(() => { safeSetStorage("egymod_distributions", distributionsLog); }, [distributionsLog]);
+  // حفظ واسترجاع جدول المدفوعات محلياً كنسخة احتياطية
+  const [payments, setPayments] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_payments");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("egymod_payments", JSON.stringify(payments));
+  }, [payments]);
+
+  const [deletedClients, setDeletedClients] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_trash");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("egymod_trash", JSON.stringify(deletedClients));
+  }, [deletedClients]);
+  
+  const [partners, setPartners] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_partners");
+      return saved ? JSON.parse(saved) : seedPartners;
+    } catch { return seedPartners; }
+  });
+
+  const [expenses, setExpenses] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_expenses");
+      return saved ? JSON.parse(saved) : seedExpenses;
+    } catch { return seedExpenses; }
+  });
+
+  const [employees, setEmployees] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_employees");
+      return saved ? JSON.parse(saved) : seedEmployees;
+    } catch { return seedEmployees; }
+  });
+
+  const [salaryLog, setSalaryLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_salary_log");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const [withdrawalsLog, setWithdrawalsLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_withdrawals");
+      return saved ? JSON.parse(saved) : [
+        { id: 1, partnerId: 1, partnerName: "مصطفى جمال", amount: 5000, date: "2026-07-15", notes: "مسحوبات أرباح" }
+      ];
+    } catch { return []; }
+  });
+
+  const [distributionsLog, setDistributionsLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_distributions");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => { localStorage.setItem("egymod_partners", JSON.stringify(partners)); }, [partners]);
+  useEffect(() => { localStorage.setItem("egymod_expenses", JSON.stringify(expenses)); }, [expenses]);
+  useEffect(() => { localStorage.setItem("egymod_employees", JSON.stringify(employees)); }, [employees]);
+  useEffect(() => { localStorage.setItem("egymod_salary_log", JSON.stringify(salaryLog)); }, [salaryLog]);
+  useEffect(() => { localStorage.setItem("egymod_withdrawals", JSON.stringify(withdrawalsLog)); }, [withdrawalsLog]);
+  useEffect(() => { localStorage.setItem("egymod_distributions", JSON.stringify(distributionsLog)); }, [distributionsLog]);
 
   const [today] = useState(new Date());
   const [screen, setScreen] = useState("dashboard");
@@ -240,22 +274,20 @@ function EgymodApp() {
 
   useEffect(() => {
     if (!supabase) return;
-    try {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) handleUserSession(session.user);
-      });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) handleUserSession(session.user);
+    });
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          handleUserSession(session.user);
-        } else if (event === 'SIGNED_OUT') {
-          setCurrentUser(null);
-          setAuthView("login");
-        }
-      });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        handleUserSession(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        setAuthView("login");
+      }
+    });
 
-      return () => subscription?.unsubscribe();
-    } catch (e) { console.error(e); }
+    return () => subscription.unsubscribe();
   }, []);
 
   async function handleUserSession(user) {
@@ -264,7 +296,6 @@ function EgymodApp() {
   }
 
   async function loadCloudData(userId) {
-    if (!supabase) return;
     try {
       const [cRes, pRes] = await Promise.all([
         supabase.from('clients').select('*'),
@@ -279,10 +310,15 @@ function EgymodApp() {
       }
       if (pRes.data && pRes.data.length > 0) {
         setPayments(pRes.data.map(p => ({
-          id: p.id, clientId: p.client_id, clientName: p.client_name, item: p.item,
-          amount: Number(p.amount), remainingAfter: Number(p.remaining_after || 0),
+          id: p.id,
+          clientId: p.client_id,
+          clientName: p.client_name,
+          item: p.item,
+          amount: Number(p.amount),
+          remainingAfter: Number(p.remaining_after || 0),
           payDate: p.created_at ? p.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
-          method: p.method || "نقداً / كاش", collector: p.collector || "المشرف"
+          method: p.method || "نقداً / كاش",
+          collector: p.collector || "المشرف"
         })));
       }
     } catch (err) {
@@ -291,25 +327,33 @@ function EgymodApp() {
   }
 
   async function handleLogin(e) {
-    e.preventDefault(); setAuthError("");
-    if (!supabase) {
-      setCurrentUser({ id: "offline", email: authEmail || "admin@egymod.com", name: "المشرف العام" });
-      notify("تم الدخول بنجاح!");
-      return;
-    }
+    e.preventDefault();
+    setAuthError("");
     const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
-    if (error) {
-      setCurrentUser({ id: "offline", email: authEmail || "admin@egymod.com", name: "المشرف العام" });
-      notify("تم الدخول بالوضع المحلي بنجاح!");
-    } else {
-      notify("تم تسجيل الدخول بنجاح!");
-    }
+    if (error) setAuthError(error.message);
+    else notify("تم تسجيل الدخول بنجاح!");
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    setAuthError("");
+    const { error } = await supabase.auth.signUp({
+      email: authEmail, password: authPassword, options: { data: { name: authName } }
+    });
+    if (error) setAuthError(error.message);
+    else { notify("تم إنشاء الحساب بنجاح! يمكنك الدخول الآن."); setAuthView("login"); }
+  }
+
+  async function handleReset(e) {
+    e.preventDefault();
+    setAuthError("");
+    const { error } = await supabase.auth.resetPasswordForEmail(authEmail);
+    if (error) setAuthError(error.message);
+    else notify("تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.");
   }
 
   async function handleLogout() {
-    if (supabase) {
-      try { await supabase.auth.signOut(); } catch (e) {}
-    }
+    await supabase.auth.signOut();
     setCurrentUser(null);
     notify("تم تسجيل الخروج بنجاح.");
   }
@@ -365,39 +409,29 @@ function EgymodApp() {
   }
 
   async function addClient(data) {
+    if (!currentUser) return;
     const dbPayload = {
-      user_id: currentUser ? currentUser.id : "offline", name: data.name, phone: String(data.phone || ""),
+      user_id: currentUser.id, name: data.name, phone: String(data.phone || ""),
       guarantor: data.guarantor || "", guarantor_phone: String(data.guarantorPhone || ""),
       item: data.item, cost: Number(data.cost), sale: Number(data.sale), down: Number(data.down),
       monthly: Number(data.monthly), contract_date: data.contractDate, first_pay_date: data.firstPayDate,
       total_paid: 0, notes: data.notes || ""
     };
+    const { data: res, error } = await supabase.from('clients').insert([dbPayload]).select().single();
+    if (error) { notify("خطأ في حفظ العقد بالسحابة", "error"); return; }
 
-    if (supabase && currentUser && currentUser.id !== "offline") {
-      try {
-        const { data: res, error } = await supabase.from('clients').insert([dbPayload]).select().single();
-        if (!error && res) {
-          const newObj = {
-            id: res.id, name: res.name, phone: res.phone, guarantor: res.guarantor, guarantorPhone: res.guarantor_phone,
-            item: res.item, cost: Number(res.cost), sale: Number(res.sale), down: Number(res.down), monthly: Number(res.monthly),
-            contractDate: res.contract_date, firstPayDate: res.first_pay_date, totalPaid: 0, notes: res.notes
-          };
-          setClients((prev) => [...prev, newObj]);
-        } else {
-          setClients((prev) => [...prev, { id: Date.now(), ...data, totalPaid: 0 }]);
-        }
-      } catch (e) {
-        setClients((prev) => [...prev, { id: Date.now(), ...data, totalPaid: 0 }]);
-      }
-    } else {
-      setClients((prev) => [...prev, { id: Date.now(), ...data, totalPaid: 0 }]);
-    }
-
-    notify("تم حفظ العقد بنجاح!");
+    const newObj = {
+      id: res.id, name: res.name, phone: res.phone, guarantor: res.guarantor, guarantorPhone: res.guarantor_phone,
+      item: res.item, cost: Number(res.cost), sale: Number(res.sale), down: Number(res.down), monthly: Number(res.monthly),
+      contractDate: res.contract_date, firstPayDate: res.first_pay_date, totalPaid: 0, notes: res.notes
+    };
+    setClients((prev) => [...prev, newObj]);
+    notify("تم حفظ العقد بالسحابة بنجاح!");
     setScreen("dashboard");
   }
 
   async function recordPayment(clientId, amount, payDate, method = "نقداً / كاش", collector = "المشرف") {
+    if (!currentUser) return null;
     const client = clients.find((c) => String(c.id) === String(clientId));
     if (!client || !amount || amount <= 0) return null;
     const remainingBefore = client.sale - client.down - client.totalPaid;
@@ -406,23 +440,22 @@ function EgymodApp() {
     const newTotalPaid = client.totalPaid + amount;
     const remainingAfter = Math.max(0, remainingBefore - amount);
 
-    if (supabase && currentUser && currentUser.id !== "offline") {
-      try {
-        await supabase.from('clients').update({ total_paid: newTotalPaid }).eq('id', clientId);
-        const payPayload = {
-          user_id: currentUser.id, client_id: clientId, client_name: client.name,
-          item: client.item, amount: amount, remaining_after: remainingAfter,
-          method: method, collector: collector
-        };
-        await supabase.from('payments').insert([payPayload]);
-      } catch (e) { console.error(e); }
-    }
+    const { error } = await supabase.from('clients').update({ total_paid: newTotalPaid }).eq('id', clientId);
+    if (error) { notify("خطأ في تحديث السداد بالسحابة", "error"); return null; }
+
+    const payPayload = {
+      user_id: currentUser.id, client_id: clientId, client_name: client.name,
+      item: client.item, amount: amount, remaining_after: remainingAfter,
+      method: method, collector: collector
+    };
+    const { data: pRes } = await supabase.from('payments').insert([payPayload]).select().single();
 
     const paymentDateStr = payDate || new Date().toISOString().split("T")[0];
+
     setClients((prev) => prev.map((c) => (String(c.id) === String(clientId) ? { ...c, totalPaid: newTotalPaid } : c)));
-    
     const newPaymentObj = {
-      id: Date.now(), clientId: clientId, clientName: client.name, item: client.item,
+      id: pRes ? pRes.id : Date.now(),
+      clientId: clientId, clientName: client.name, item: client.item,
       amount, remainingAfter, payDate: paymentDateStr, method, collector
     };
     setPayments((prev) => [...prev, newPaymentObj]);
@@ -435,20 +468,21 @@ function EgymodApp() {
   }
 
   async function deletePayment(paymentId, clientId, amount) {
+    if (!currentUser) return;
     const client = clients.find((c) => String(c.id) === String(clientId));
     if (!client) return;
 
     const newTotalPaid = Math.max(0, client.totalPaid - amount);
 
     try {
-      if (supabase && currentUser && currentUser.id !== "offline") {
+      if (supabase) {
         await supabase.from('payments').delete().eq('id', paymentId);
         await supabase.from('clients').update({ total_paid: newTotalPaid }).eq('id', clientId);
       }
 
       setClients((prev) => prev.map((c) => (String(c.id) === String(clientId) ? { ...c, totalPaid: newTotalPaid } : c)));
       setPayments((prev) => prev.filter((p) => String(p.id) !== String(paymentId)));
-      notify("تم حذف القسط وتعديل رصيد العميل بنجاح!");
+      notify("تم حذف القسط وتعديل رصيد العميل بالسحابة بنجاح!");
     } catch (err) {
       console.error(err);
       notify("حدث خطأ أثناء حذف القسط", "error");
@@ -456,23 +490,30 @@ function EgymodApp() {
   }
 
   async function updateClient(clientId, updatedData) {
+    if (!currentUser) return false;
     const dbPayload = {
-      name: updatedData.name, phone: String(updatedData.phone || ""),
-      guarantor: updatedData.guarantor || "", guarantor_phone: String(updatedData.guarantorPhone || ""),
-      item: updatedData.item, cost: Number(updatedData.cost), sale: Number(updatedData.sale),
-      down: Number(updatedData.down), monthly: Number(updatedData.monthly),
-      contract_date: updatedData.contractDate, first_pay_date: updatedData.firstPayDate,
+      name: updatedData.name,
+      phone: String(updatedData.phone || ""),
+      guarantor: updatedData.guarantor || "",
+      guarantor_phone: String(updatedData.guarantorPhone || ""),
+      item: updatedData.item,
+      cost: Number(updatedData.cost),
+      sale: Number(updatedData.sale),
+      down: Number(updatedData.down),
+      monthly: Number(updatedData.monthly),
+      contract_date: updatedData.contractDate,
+      first_pay_date: updatedData.firstPayDate,
       notes: updatedData.notes || ""
     };
 
-    if (supabase && currentUser && currentUser.id !== "offline") {
-      try {
-        await supabase.from('clients').update(dbPayload).eq('id', clientId);
-      } catch (e) { console.error(e); }
+    const { error } = await supabase.from('clients').update(dbPayload).eq('id', clientId);
+    if (error) {
+      notify("خطأ في تحديث البيانات بالسحابة", "error");
+      return false;
     }
 
     setClients((prev) => prev.map((c) => (String(c.id) === String(clientId) ? { ...c, ...updatedData } : c)));
-    notify("تم تحديث بيانات العميل بنجاح!");
+    notify("تم تحديث بيانات العميل بالسحابة بنجاح!");
     return true;
   }
 
@@ -501,16 +542,46 @@ function EgymodApp() {
         <div style={{ background: "#242426", border: "1px solid #404040", borderRadius: 18, padding: 30, width: "100%", maxWidth: 420, boxShadow: "0 12px 30px rgba(0,0,0,0.6)" }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
             <h2 style={{ color: "#e8cd9c", fontSize: 22, fontWeight: 800 }}>نظام إدارة الأقساط السحابي</h2>
-            <p style={{ color: "#c4c4c4", fontSize: 13, marginTop: 4 }}>يرجى تسجيل الدخول للوصول للنظام</p>
+            <p style={{ color: "#c4c4c4", fontSize: 13, marginTop: 4 }}>يرجى تسجيل الدخول للوصول لقاعدة البيانات</p>
           </div>
 
           {authError && <div style={{ background: "rgba(224,122,95,0.15)", border: "1px solid #e07a5f", color: "#e07a5f", padding: 10, borderRadius: 8, fontSize: 13, marginBottom: 16 }}>{authError}</div>}
 
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Field label="البريد الإلكتروني"><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="ادخل بريدك..." required /></Field>
-            <Field label="كلمة المرور"><input type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder="••••••••" required /></Field>
-            <button type="submit" style={styles.saveBtn}>تسجيل الدخول للنظام</button>
-          </form>
+          {authView === "login" && (
+            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <Field label="البريد الإلكتروني"><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></Field>
+              <Field label="كلمة المرور"><input type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} required /></Field>
+              <button type="submit" style={styles.saveBtn}>تسجيل الدخول</button>
+              <div style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#c4c4c4" }}>
+                ليس لديك حساب؟ <span style={{ color: "#e8cd9c", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthView("register")}>سجل حساب جديد</span>
+              </div>
+              <div style={{ textAlign: "center", marginTop: 4, fontSize: 12, color: "#999" }}>
+                <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => setAuthView("reset")}>نسيت كلمة المرور؟</span>
+              </div>
+            </form>
+          )}
+
+          {authView === "register" && (
+            <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <Field label="الاسم الكامل"><input type="text" value={authName} onChange={e => setAuthName(e.target.value)} required /></Field>
+              <Field label="البريد الإلكتروني"><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></Field>
+              <Field label="كلمة المرور (6 أحرف على الأقل)"><input type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} required /></Field>
+              <button type="submit" style={styles.saveBtn}>إنشاء الحساب</button>
+              <div style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#c4c4c4" }}>
+                لديك حساب بالفعل؟ <span style={{ color: "#e8cd9c", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthView("login")}>تسجيل الدخول</span>
+              </div>
+            </form>
+          )}
+
+          {authView === "reset" && (
+            <form onSubmit={handleReset} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <Field label="أدخل بريدك الإلكتروني"><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></Field>
+              <button type="submit" style={styles.saveBtn}>إرسال رابط استعادة كلمة المرور</button>
+              <div style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#c4c4c4" }}>
+                <span style={{ color: "#e8cd9c", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthView("login")}>العودة لتسجيل الدخول</span>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     );
@@ -1227,20 +1298,24 @@ function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, 
     }
   };
 
-  const toggleDecision = (partnerId) => {
-    setPartnerDecisions(prev => ({ ...prev, [partnerId]: prev[partnerId] === "إعادة استثمار" ? "سحب فوري" : "إعادة استثمار" }));
+  const setPartnerDecision = (partnerId, decisionType) => {
+    setPartnerDecisions(prev => ({ ...prev, [partnerId]: decisionType }));
   };
 
   const handleExecuteDistribution = () => {
     if (autoAmount <= 0) { notify("لا يوجد مبلغ قابل للتوزيع!", "error"); return; }
+    
     partnersCalculated.forEach((p) => {
       if (p.decision === "إعادة استثمار") {
+        // زيادة رأس مال الشريك بمبلغ أرباحه فتزيد نسبته في الشركة تلقائياً
         setPartners(prev => prev.map(x => String(x.id) === String(p.id) ? { ...x, capital: x.capital + p.shareAmount } : x));
       } else {
+        // سحب فوري يسجل في المسحوبات
         const newW = { id: Date.now() + Math.random(), partnerId: p.id, partnerName: p.name, amount: p.shareAmount, date: new Date().toISOString().split("T")[0], notes: "توزيع أرباح - سحب فوري" };
         setWithdrawalsLog(prev => [...prev, newW]);
       }
     });
+
     const newDist = { id: Date.now(), date: new Date().toISOString().split("T")[0], amount: autoAmount, details: partnersCalculated.map(p => `${p.name}: ${fmt(p.shareAmount)} ج.م (${p.decision})`).join(" | ") };
     setDistributionsLog(prev => [...prev, newDist]);
     notify(`تم تنفيذ توزيع الأرباح بمبلغ ${fmt(autoAmount)} ج.م بنجاح!`);
@@ -1260,7 +1335,7 @@ function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
           <button type="button" onClick={() => setPresetPeriod("currentMonth")} style={{ background: periodFilter === "currentMonth" ? "#d0b689" : "#1b1b1d", color: periodFilter === "currentMonth" ? "#1b1b1d" : "#c4c4c4", border: "1px solid #404040", padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>الشهر الحالي</button>
           <button type="button" onClick={() => setPresetPeriod("lastMonth")} style={{ background: periodFilter === "lastMonth" ? "#d0b689" : "#1b1b1d", color: periodFilter === "lastMonth" ? "#1b1b1d" : "#c4c4c4", border: "1px solid #404040", padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>الشهر اللي فات</button>
-          <button type="button" onClick={() => setPresetPeriod("twoMonths")} style={{ background: periodFilter === "twoMonths" ? "#d0b689" : "#1b1b1d", color: periodFilter === "twoMonths" ? "#1b1b1d" : "#c4c4c4", border: "1px solid #404040", padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>من شهرين</button>
+          <button type="button" onClick={() => setPresetPeriod("twoMonths")} style={{ background: periodFilter === "twoMonths" ? "#d0b689" : "#1b1b1d", color: periodFilter === "twoMonths" ? "#1b1b1d" : "#c4c4c4", border: "1px solid #404040", padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight 700, cursor: "pointer" }}>من شهرين</button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 14 }}>
@@ -1287,7 +1362,11 @@ function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, 
           <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 14 }}>
             <thead>
               <tr style={{ background: "#1b1b1d", color: "#e8cd9c", borderBottom: "1px solid #404040" }}>
-                <th style={{ padding: "10px" }}>الشريك</th><th style={{ padding: "10px" }}>النسبة</th><th style={{ padding: "10px" }}>مسحوباته السابقة</th><th style={{ padding: "10px" }}>نصيبه من هذا التوزيع</th><th style={{ padding: "10px", textAlign: "center" }}>القرار</th>
+                <th style={{ padding: "10px" }}>الشريك</th>
+                <th style={{ padding: "10px" }}>النسبة</th>
+                <th style={{ padding: "10px" }}>مسحوباته السابقة</th>
+                <th style={{ padding: "10px" }}>نصيبه من هذا التوزيع</th>
+                <th style={{ padding: "10px", textAlign: "center" }}>القرار</th>
               </tr>
             </thead>
             <tbody>
@@ -1298,9 +1377,34 @@ function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, 
                   <td style={{ padding: "10px", color: "#f0c6bb" }}>{fmt(p.prevWithdrawals)} ج.م</td>
                   <td style={{ padding: "10px", fontWeight: 800, color: "#bfe8cd" }}>{fmt(p.shareAmount)} ج.م</td>
                   <td style={{ padding: "10px", textAlign: "center" }}>
-                    <button type="button" onClick={() => toggleDecision(p.id)} style={{ background: p.decision === "إعادة استثمار" ? "#213526" : "#211f18", border: `1px solid ${p.decision === "إعادة استثمار" ? "#3d6b4a" : "#d0b689"}`, color: p.decision === "إعادة استثمار" ? "#bfe8cd" : "#e8cd9c", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      {p.decision === "إعادة استثمار" ? <RefreshCw size={12} /> : <DollarSign size={12} />} {p.decision}
-                    </button>
+                    <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                      <button
+                        type="button"
+                        onClick={() => setPartnerDecision(p.id, "سحب فوري")}
+                        style={{
+                          background: p.decision === "سحب فوري" ? "#3a2320" : "#1b1b1d",
+                          border: `1px solid ${p.decision === "سحب فوري" ? "#7a4a3f" : "#404040"}`,
+                          color: p.decision === "سحب فوري" ? "#f0c6bb" : "#c4c4c4",
+                          padding: "6px 10px", borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: "pointer",
+                          display: "inline-flex", alignItems: "center", gap: 4
+                        }}
+                      >
+                        <DollarSign size={13} /> سحب فوري
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPartnerDecision(p.id, "إعادة استثمار")}
+                        style={{
+                          background: p.decision === "إعادة استثمار" ? "#213526" : "#1b1b1d",
+                          border: `1px solid ${p.decision === "إعادة استثمار" ? "#3d6b4a" : "#404040"}`,
+                          color: p.decision === "إعادة استثمار" ? "#bfe8cd" : "#c4c4c4",
+                          padding: "6px 10px", borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: "pointer",
+                          display: "inline-flex", alignItems: "center", gap: 4
+                        }}
+                      >
+                        <RefreshCw size={13} /> إعادة استثمار
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1353,8 +1457,8 @@ function Dashboard({ totals, lateCount, onNavigate, user, onLogout }) {
     { key: "deleteClient", label: "حذف حساب عميل", icon: Trash2, tone: "gold" },
     { key: "treasury", label: "توزيع الأرباح والخزينة", icon: Wallet, tone: "roseDark" },
     { key: "changePassword", label: "تغيير كلمة السر", icon: KeyRound, tone: "tan" },
-    { key: "treasuryPartners", label: "إضافة شريك جديد", icon: Users, tone: "copper" },
-    { key: "treasuryEmployees", label: "إضافة موظف جديد", icon: UserCog, tone: "silver" },
+    { key: "addPartner", label: "إضافة شريك جديد", icon: Users, tone: "copper" },
+    { key: "addEmployee", label: "إضافة موظف جديد", icon: UserCog, tone: "silver" },
     { key: "backup", label: "النسخ الاحتياطي السحابي", icon: UploadCloud, tone: "roseLight" },
     { key: "exit", label: "تسجيل الخروج", icon: Power, tone: "dark" },
   ];
@@ -1648,6 +1752,65 @@ function ProfileRow({ label, value, highlight, error }) {
   );
 }
 
+/* 3. إضافة شريك */
+function AddPartnerScreen({ partners, onSave, onBack }) {
+  const [name, setName] = useState("");
+  const [capital, setCapital] = useState("");
+
+  const livePercent = useMemo(() => {
+    const numCapital = parseFloat(capital) || 0;
+    const currentTotal = partners.reduce((s, p) => s + (p.capital || 0), 0);
+    if (currentTotal + numCapital === 0) return 0;
+    return ((numCapital / (currentTotal + numCapital)) * 100).toFixed(2);
+  }, [capital, partners]);
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="إضافة شريك جديد" onBack={onBack} />
+      <div style={styles.card}>
+        <form onSubmit={e => { e.preventDefault(); onSave(name, capital); }} style={styles.formGrid}>
+          <Field label="اسم الشريك"><input style={styles.input} value={name} onChange={e => setName(e.target.value)} required /></Field>
+          <Field label="رأس المال المدفوع">
+            <input type="number" style={styles.input} value={capital} onChange={e => setCapital(e.target.value)} placeholder="0" required />
+          </Field>
+
+          <div style={{ gridColumn: "1 / -1", background: "#211f18", padding: 14, borderRadius: 10, border: "1px dashed #d0b689", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ color: "#c4c4c4", fontSize: 14 }}>نسبة الشريك في الشركة بناءً على الإدخال:</span>
+            <span style={{ color: "#e8cd9c", fontSize: 20, fontWeight: 800 }}>{livePercent}%</span>
+          </div>
+
+          <button type="submit" style={styles.saveBtn}>حفظ وإضافة الشريك</button>
+        </form>
+        <BottomExitButton onBack={onBack} />
+      </div>
+    </div>
+  );
+}
+
+/* 4. إضافة موظف */
+function AddEmployeeScreen({ onSave, onBack }) {
+  const [form, setForm] = useState({ name: "", phone: "", job: "", salary: "", hireDate: "" });
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="إضافة موظف جديد" onBack={onBack} />
+      <div style={styles.card}>
+        <form onSubmit={e => { e.preventDefault(); onSave(form); }} style={styles.formGrid}>
+          <Field label="الاسم"><input style={styles.input} onChange={e => setForm({ ...form, name: e.target.value })} required /></Field>
+          <Field label="التليفون"><input style={styles.input} onChange={e => setForm({ ...form, phone: e.target.value })} required /></Field>
+          <Field label="الوظيفة"><input style={styles.input} onChange={e => setForm({ ...form, job: e.target.value })} required /></Field>
+          <Field label="الراتب الأساسي"><input type="number" style={styles.input} onChange={e => setForm({ ...form, salary: e.target.value })} required /></Field>
+          <Field label="تاريخ التعيين">
+            <DateInput value={form.hireDate} onChange={e => setForm({ ...form, hireDate: e.target.value })} required />
+          </Field>
+          <button type="submit" style={styles.saveBtn}>حفظ بيانات الموظف</button>
+        </form>
+        <BottomExitButton onBack={onBack} />
+      </div>
+    </div>
+  );
+}
+
+/* 5. سداد الأقساط */
 function PayScreen({ rows, payments, employees, onPay, onDeletePayment, onShowReceipt, onBack }) {
   const [selected, setSelected] = useState(null);
   const [amount, setAmount] = useState("");
@@ -1840,11 +2003,14 @@ function LateClientsScreen({ rows, onBack, onPay }) {
   const [payAmount, setPayAmount] = useState("");
 
   const processedRows = useMemo(() => {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     return rows.map((r) => {
       let daysLate = 0;
       if (r.due) {
-        const dueDate = new Date(r.due); dueDate.setHours(0, 0, 0, 0);
+        const dueDate = new Date(r.due);
+        dueDate.setHours(0, 0, 0, 0);
         const diff = today.getTime() - dueDate.getTime();
         daysLate = diff > 0 ? Math.floor(diff / (1000 * 3600 * 24)) : 0;
       }
@@ -1856,6 +2022,7 @@ function LateClientsScreen({ rows, onBack, onPay }) {
     return processedRows.filter((r) => {
       const matchSearch = r.name.includes(search.trim()) || r.phone.includes(search.trim()) || r.item.includes(search.trim());
       if (!matchSearch) return false;
+
       if (filter === "simple") return r.daysLate < 30;
       if (filter === "medium") return r.daysLate >= 30 && r.daysLate <= 60;
       if (filter === "critical") return r.daysLate > 60;
@@ -1878,7 +2045,8 @@ function LateClientsScreen({ rows, onBack, onPay }) {
     e.preventDefault();
     if (!payTarget || !payAmount) return;
     await onPay(payTarget.id, parseFloat(payAmount) || 0, new Date().toISOString().split("T")[0]);
-    setPayTarget(null); setPayAmount("");
+    setPayTarget(null);
+    setPayAmount("");
   };
 
   return (
@@ -1892,10 +2060,37 @@ function LateClientsScreen({ rows, onBack, onPay }) {
       </section>
 
       <div style={{ ...styles.card, marginBottom: 16, padding: 16, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
-        <input style={{ ...styles.input, maxWidth: 300 }} placeholder="بحث باسم العميل..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input
+          style={{ ...styles.input, maxWidth: 300 }}
+          placeholder="بحث باسم العميل أو التليفون أو السلعة..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {[{ key: "all", label: `الكل (${processedRows.length})` }, { key: "simple", label: "تأخير بسيط (< 30 يوم)" }, { key: "medium", label: "تأخير متوسط (30-60 يوم)" }, { key: "critical", label: "حرج (> 60 يوم)" }].map((btn) => (
-            <button key={btn.key} type="button" onClick={() => setFilter(btn.key)} style={{ background: filter === btn.key ? "#d0b689" : "#1b1b1d", color: filter === btn.key ? "#1b1b1d" : "#c4c4c4", border: "1px solid #404040", padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{btn.label}</button>
+          {[
+            { key: "all", label: `الكل (${processedRows.length})` },
+            { key: "simple", label: "تأخير بسيط (< 30 يوم)" },
+            { key: "medium", label: "تأخير متوسط (30-60 يوم)" },
+            { key: "critical", label: "حرج (> 60 يوم)" },
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              type="button"
+              onClick={() => setFilter(btn.key)}
+              style={{
+                background: filter === btn.key ? "#d0b689" : "#1b1b1d",
+                color: filter === btn.key ? "#1b1b1d" : "#c4c4c4",
+                border: "1px solid #404040",
+                padding: "8px 14px",
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {btn.label}
+            </button>
           ))}
         </div>
       </div>
@@ -1906,10 +2101,28 @@ function LateClientsScreen({ rows, onBack, onPay }) {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {filtered.map((item) => (
-              <div key={item.id} style={{ background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div
+                key={item.id}
+                style={{
+                  background: "#1b1b1d",
+                  border: "1px solid #404040",
+                  borderRadius: 12,
+                  padding: 16,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>{item.name}</div>
                   <div style={{ fontSize: 13, color: "#e8cd9c", marginTop: 2 }}>{item.item} · {item.phone}</div>
+                  {item.guarantor && (
+                    <div style={{ fontSize: 12, color: "#999", marginTop: 2 }}>
+                      الضامن: {item.guarantor} ({item.guarantorPhone})
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
@@ -1917,9 +2130,36 @@ function LateClientsScreen({ rows, onBack, onPay }) {
                     <div style={{ fontSize: 11, color: "#c4c4c4" }}>المستحق حالياً</div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: "#e07a5f" }}>{fmt(item.debtAmount)} ج.م</div>
                   </div>
+
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#c4c4c4" }}>مدة التأخير</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: item.daysLate > 60 ? "#e07a5f" : "#d0b689" }}>
+                      {item.daysLate} يوم
+                    </div>
+                  </div>
+
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button type="button" onClick={() => handleSendWhatsApp(item)} style={{ background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>واتساب</button>
-                    <button type="button" onClick={() => { setPayTarget(item); setPayAmount(item.debtAmount); }} style={{ background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 800 }}>تحصيل</button>
+                    <button
+                      type="button"
+                      title="واتساب"
+                      onClick={() => handleSendWhatsApp(item)}
+                      style={{ background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700 }}
+                    >
+                      واتساب
+                    </button>
+                    <a
+                      href={`tel:${item.phone}`}
+                      style={{ background: "#1b2a38", border: "1px solid #385a7c", color: "#b2d4f5", padding: "8px 12px", borderRadius: 8, textDecoration: "none", fontSize: 12, fontWeight: 700 }}
+                    >
+                      اتصال
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => { setPayTarget(item); setPayAmount(item.debtAmount); }}
+                      style={{ background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 800 }}
+                    >
+                      تحصيل
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1934,7 +2174,9 @@ function LateClientsScreen({ rows, onBack, onPay }) {
           <div style={{ ...styles.card, width: "100%", maxWidth: 400 }}>
             <h3 style={{ color: "#e8cd9c", fontSize: 17, fontWeight: 800, marginBottom: 12 }}>تحصيل قسط: {payTarget.name}</h3>
             <form onSubmit={handleConfirmPay} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Field label="المبلغ المراد تحصيله"><input type="number" style={styles.input} value={payAmount} onChange={(e) => setPayAmount(e.target.value)} required /></Field>
+              <Field label="المبلغ المراد تحصيله">
+                <input type="number" style={styles.input} value={payAmount} onChange={(e) => setPayAmount(e.target.value)} required />
+              </Field>
               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                 <button type="submit" style={{ ...styles.saveBtn, flex: 1, marginTop: 0 }}>تأكيد التحصيل</button>
                 <button type="button" onClick={() => setPayTarget(null)} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 16px", cursor: "pointer", fontWeight: 700 }}>إلغاء</button>
@@ -1957,23 +2199,41 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
   const currentMonthName = today.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
 
   const processedRows = useMemo(() => {
-    return rows.filter((r) => r.remaining > 0 && r.monthly > 0).map((r) => {
-      const monthlyReq = Math.min(r.monthly, r.remaining);
-      const debt = r.debtAmount;
-      let status = "unpaid"; let paidThisMonth = 0; let dueThisMonth = monthlyReq;
+    return rows
+      .filter((r) => r.remaining > 0 && r.monthly > 0)
+      .map((r) => {
+        const monthlyReq = Math.min(r.monthly, r.remaining);
+        const debt = r.debtAmount;
+        let status = "unpaid";
+        let paidThisMonth = 0;
+        let dueThisMonth = monthlyReq;
 
-      if (debt <= 0) { status = "paid"; paidThisMonth = monthlyReq; }
-      else if (debt < monthlyReq) { status = "partial"; paidThisMonth = monthlyReq - debt; }
-      else { status = "unpaid"; paidThisMonth = 0; }
+        if (debt <= 0) {
+          status = "paid";
+          paidThisMonth = monthlyReq;
+        } else if (debt < monthlyReq) {
+          status = "partial";
+          paidThisMonth = monthlyReq - debt;
+        } else {
+          status = "unpaid";
+          paidThisMonth = 0;
+        }
 
-      return { ...r, dueThisMonth, paidThisMonth, remainingThisMonth: Math.max(0, dueThisMonth - paidThisMonth), monthStatus: status };
-    });
+        return {
+          ...r,
+          dueThisMonth,
+          paidThisMonth,
+          remainingThisMonth: Math.max(0, dueThisMonth - paidThisMonth),
+          monthStatus: status
+        };
+      });
   }, [rows]);
 
   const filtered = useMemo(() => {
     return processedRows.filter((r) => {
       const matchSearch = r.name.includes(search.trim()) || r.phone.includes(search.trim()) || r.item.includes(search.trim());
       if (!matchSearch) return false;
+
       if (statusFilter === "paid") return r.monthStatus === "paid";
       if (statusFilter === "partial") return r.monthStatus === "partial";
       if (statusFilter === "unpaid") return r.monthStatus === "unpaid";
@@ -1989,11 +2249,17 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
     return { totalDue, totalCollected, totalRemaining, progressPct };
   }, [processedRows]);
 
+  const handleSendWhatsApp = (client) => {
+    const msg = `السلام عليكم ورحمة الله، أستاذ/ة ${client.name}.\nنود تذكيركم بحلول موعد قسط شهر (${currentMonthName}) لقسط (${client.item}) بقيمة ${fmt(client.dueThisMonth)} ج.م.\nبرجاء التكرم بالسداد في الموعد المحدد. شكراً لكم!`;
+    window.open(`https://wa.me/2${client.phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
   const handleConfirmPay = async (e) => {
     e.preventDefault();
     if (!payTarget || !payAmount) return;
     await onPay(payTarget.id, parseFloat(payAmount) || 0, new Date().toISOString().split("T")[0]);
-    setPayTarget(null); setPayAmount("");
+    setPayTarget(null);
+    setPayAmount("");
   };
 
   return (
@@ -2006,13 +2272,55 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
         <KPI icon={TrendingUp} label="المتبقي تحصيله" sub="مستحقات جاري متابعتها" value={fmt(stats.totalRemaining)} />
       </section>
 
+      <div style={{ ...styles.card, marginBottom: 16, padding: 16, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
+        <input
+          style={{ ...styles.input, maxWidth: 300 }}
+          placeholder="بحث باسم العميل أو التليفون أو السلعة..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {[
+            { key: "all", label: `الكل (${processedRows.length})` },
+            { key: "unpaid", label: "لم يسدد" },
+            { key: "partial", label: "سداد جزئي" },
+            { key: "paid", label: "تم السداد" },
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              type="button"
+              onClick={() => setStatusFilter(btn.key)}
+              style={{
+                background: statusFilter === btn.key ? "#d0b689" : "#1b1b1d",
+                color: statusFilter === btn.key ? "#1b1b1d" : "#c4c4c4",
+                border: "1px solid #404040",
+                padding: "8px 14px",
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div style={styles.card}>
         {filtered.length === 0 ? (
           <div style={styles.emptyState}>لا توجد مستحقات تنطبق عليها معايير البحث.</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {filtered.map((item) => (
-              <div key={item.id} style={{ background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div
+                key={item.id}
+                style={{
+                  background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16,
+                  display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12,
+                }}
+              >
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>{item.name}</div>
                   <div style={{ fontSize: 13, color: "#e8cd9c", marginTop: 2 }}>{item.item} · {item.phone}</div>
@@ -2023,9 +2331,46 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
                     <div style={{ fontSize: 11, color: "#c4c4c4" }}>قسط الشهر</div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: "#d0b689" }}>{fmt(item.dueThisMonth)} ج.م</div>
                   </div>
-                  {item.monthStatus !== "paid" && (
-                    <button type="button" onClick={() => { setPayTarget(item); setPayAmount(item.remainingThisMonth); }} style={{ background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 800 }}>تحصيل</button>
-                  )}
+
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#c4c4c4" }}>حالة السداد</div>
+                    <div
+                      style={{
+                        fontSize: 12, fontWeight: 800, padding: "4px 8px", borderRadius: 6,
+                        background: item.monthStatus === "paid" ? "#213526" : item.monthStatus === "partial" ? "#3d3527" : "#3a2320",
+                        color: item.monthStatus === "paid" ? "#bfe8cd" : item.monthStatus === "partial" ? "#e8cd9c" : "#f0c6bb",
+                        border: `1px solid ${item.monthStatus === "paid" ? "#3d6b4a" : item.monthStatus === "partial" ? "#b6935a" : "#7a4a3f"}`,
+                      }}
+                    >
+                      {item.monthStatus === "paid" ? "تم السداد" : item.monthStatus === "partial" ? "سداد جزئي" : "لم يسدد"}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      type="button"
+                      title="واتساب"
+                      onClick={() => handleSendWhatsApp(item)}
+                      style={{ background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700 }}
+                    >
+                      واتساب
+                    </button>
+                    <a
+                      href={`tel:${item.phone}`}
+                      style={{ background: "#1b2a38", border: "1px solid #385a7c", color: "#b2d4f5", padding: "8px 12px", borderRadius: 8, textDecoration: "none", fontSize: 12, fontWeight: 700 }}
+                    >
+                      اتصال
+                    </a>
+                    {item.monthStatus !== "paid" && (
+                      <button
+                        type="button"
+                        onClick={() => { setPayTarget(item); setPayAmount(item.remainingThisMonth); }}
+                        style={{ background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 800 }}
+                      >
+                        تحصيل
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -2039,7 +2384,9 @@ function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
           <div style={{ ...styles.card, width: "100%", maxWidth: 400 }}>
             <h3 style={{ color: "#e8cd9c", fontSize: 17, fontWeight: 800, marginBottom: 12 }}>تحصيل قسط: {payTarget.name}</h3>
             <form onSubmit={handleConfirmPay} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Field label="المبلغ المراد تحصيله"><input type="number" style={styles.input} value={payAmount} onChange={(e) => setPayAmount(e.target.value)} required /></Field>
+              <Field label="المبلغ المراد تحصيله">
+                <input type="number" style={styles.input} value={payAmount} onChange={(e) => setPayAmount(e.target.value)} required />
+              </Field>
               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                 <button type="submit" style={{ ...styles.saveBtn, flex: 1, marginTop: 0 }}>تأكيد التحصيل</button>
                 <button type="button" onClick={() => setPayTarget(null)} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 16px", cursor: "pointer", fontWeight: 700 }}>إلغاء</button>
@@ -2058,11 +2405,26 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
   const [selectedClient, setSelectedClient] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
+  const suggestions = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    const term = searchTerm.trim().toLowerCase();
+    return clients.filter(
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.phone.includes(term) ||
+        c.item.toLowerCase().includes(term)
+    );
+  }, [clients, searchTerm]);
+
   const handleMoveToTrash = (client) => {
-    const deletedItem = { ...client, deletedAt: new Date().toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" }) };
+    const deletedItem = {
+      ...client,
+      deletedAt: new Date().toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })
+    };
     setDeletedClients((prev) => [...prev, deletedItem]);
     setClients((prev) => prev.filter((c) => String(c.id) !== String(client.id)));
-    setSelectedClient(null); setSearchTerm("");
+    setSelectedClient(null);
+    setSearchTerm("");
     notify("تم نقل العميل إلى سلة المحذوفات بنجاح");
   };
 
@@ -2075,12 +2437,15 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
 
   const handlePermanentDelete = async (clientId) => {
     try {
-      if (supabase) await supabase.from("clients").delete().eq("id", clientId);
+      if (supabase) {
+        await supabase.from("clients").delete().eq("id", clientId);
+      }
       setDeletedClients((prev) => prev.filter((c) => String(c.id) !== String(clientId)));
       setConfirmDeleteId(null);
       notify("تم حذف حساب العميل نهائياً من قاعدة البيانات السحابية");
     } catch (err) {
-      console.error(err); notify("حدث خطأ أثناء الحذف النهائي", "error");
+      console.error(err);
+      notify("حدث خطأ أثناء الحذف النهائي", "error");
     }
   };
 
@@ -2089,20 +2454,88 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
       <ScreenHeader title="حذف وإدارة حسابات العملاء" onBack={onBack} />
 
       <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-        <button type="button" onClick={() => setActiveTab("search")} style={{ flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040", background: activeTab === "search" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d", color: activeTab === "search" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer" }}>البحث ونقل للسلة</button>
-        <button type="button" onClick={() => setActiveTab("trash")} style={{ flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040", background: activeTab === "trash" ? "#3a2320" : "#1b1b1d", color: activeTab === "trash" ? "#f0c6bb" : "#c4c4c4", borderColor: activeTab === "trash" ? "#7a4a3f" : "#404040", fontWeight: 800, fontSize: 14, cursor: "pointer" }}>سلة المحذوفات ({deletedClients.length})</button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("search")}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: activeTab === "search" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
+            color: activeTab === "search" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer"
+          }}
+        >
+          البحث ونقل للسلة
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("trash")}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: activeTab === "trash" ? "#3a2320" : "#1b1b1d",
+            color: activeTab === "trash" ? "#f0c6bb" : "#c4c4c4", borderColor: activeTab === "trash" ? "#7a4a3f" : "#404040",
+            fontWeight: 800, fontSize: 14, cursor: "pointer"
+          }}
+        >
+          سلة المحذوفات ({deletedClients.length})
+        </button>
       </div>
 
       {activeTab === "search" && (
         <div style={styles.card}>
-          <Field label="ابحث باسم العميل أو رقم الهاتف">
-            <input style={styles.input} placeholder="اكتب اسماً للبحث..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <Field label="ابحث باسم العميل أو رقم الهاتف أو السلعة">
+            <div style={{ position: "relative" }}>
+              <input
+                style={styles.input}
+                placeholder="اكتب حرفاً أو اسماً للفلترة الحية..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setSelectedClient(null);
+                }}
+              />
+
+              {searchTerm.trim() && !selectedClient && (
+                <div style={styles.suggestBox}>
+                  {suggestions.length > 0 ? (
+                    suggestions.map((item) => (
+                      <button
+                        type="button"
+                        key={item.id}
+                        style={styles.suggestItem}
+                        onClick={() => {
+                          setSelectedClient(item);
+                          setSearchTerm(item.name);
+                        }}
+                      >
+                        <span style={styles.suggestLabel}>{item.name}</span>
+                        <span style={styles.suggestSecondary}>{item.item} · {item.phone}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div style={{ padding: 12, textAlign: "center", color: "#888", fontSize: 13 }}>
+                      لا يوجد عميل يطابق البحث
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </Field>
 
           {selectedClient && (
             <div style={styles.profileBox}>
               <h3 style={styles.historyTitle}>بيانات العميل المحدد: {selectedClient.name}</h3>
-              <button type="button" onClick={() => handleMoveToTrash(selectedClient)} style={{ ...styles.saveBtn, background: "linear-gradient(145deg, #d69a5f, #b06a35)", color: "#ffffff" }}>نقل العميل إلى سلة المحذوفات</button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                <ProfileRow label="رقم الهاتف" value={selectedClient.phone} />
+                <ProfileRow label="السلعة" value={selectedClient.item} />
+                <ProfileRow label="إجمالي المتبقي" value={`${fmt(selectedClient.sale - selectedClient.down - selectedClient.totalPaid)} ج.م`} />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleMoveToTrash(selectedClient)}
+                style={{ ...styles.saveBtn, background: "linear-gradient(145deg, #d69a5f, #b06a35)", color: "#ffffff" }}
+              >
+                نقل العميل إلى سلة المحذوفات
+              </button>
             </div>
           )}
           <BottomExitButton onBack={onBack} />
@@ -2111,15 +2544,44 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
 
       {activeTab === "trash" && (
         <div style={styles.card}>
-          {deletedClients.map((item) => (
-            <div key={item.id} style={{ background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div><div style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>{item.name}</div></div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button type="button" onClick={() => handleRestore(item)} style={{ background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "8px 14px", borderRadius: 8, cursor: "pointer" }}>استعادة</button>
-                <button type="button" onClick={() => setConfirmDeleteId(item.id)} style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "8px 14px", borderRadius: 8, cursor: "pointer" }}>حذف نهائي</button>
-              </div>
+          {deletedClients.length === 0 ? (
+            <div style={styles.emptyState}>سلة المحذوفات فارغة حالياً.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {deletedClients.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16,
+                    display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>{item.name}</div>
+                    <div style={{ fontSize: 13, color: "#e8cd9c", marginTop: 2 }}>{item.item} · {item.phone}</div>
+                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>تاريخ النقل للسلة: {item.deletedAt}</div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => handleRestore(item)}
+                      style={{ background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      استعادة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(item.id)}
+                      style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      حذف نهائي
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
           <BottomExitButton onBack={onBack} />
         </div>
       )}
@@ -2128,9 +2590,24 @@ function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedCli
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 }}>
           <div style={{ ...styles.card, width: "100%", maxWidth: 400, textAlign: "center" }}>
             <h3 style={{ color: "#e07a5f", fontSize: 18, fontWeight: 800, marginBottom: 8 }}>تأكيد الحذف النهائي</h3>
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button type="button" onClick={() => handlePermanentDelete(confirmDeleteId)} style={{ ...styles.saveBtn, flex: 1, background: "#e07a5f", color: "#fff", marginTop: 0 }}>تأكيد الحذف</button>
-              <button type="button" onClick={() => setConfirmDeleteId(null)} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 16px", cursor: "pointer" }}>إلغاء</button>
+            <p style={{ color: "#c4c4c4", fontSize: 13, marginBottom: 16 }}>
+              هل أنت تأكد من مسح هذا العميل نهائياً؟ لن تتمكن من استعادته أو الوصول لبياناته مرة أخرى من السحابة.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => handlePermanentDelete(confirmDeleteId)}
+                style={{ ...styles.saveBtn, flex: 1, background: "#e07a5f", color: "#fff", marginTop: 0 }}
+              >
+                تأكيد الحذف
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 16px", cursor: "pointer", fontWeight: 700 }}
+              >
+                إلغاء
+              </button>
             </div>
           </div>
         </div>
@@ -2148,10 +2625,85 @@ function ReceiptModal({ receipt, onClose }) {
 
   const handlePrint = () => { window.print(); };
 
+  const handleDownloadImage = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 650;
+    canvas.height = 780;
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#1b1b1d"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#d0b689"; ctx.lineWidth = 4; ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+
+    ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 26px Cairo, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("إيصال استلام قسط — نظام الأقساط", canvas.width / 2, 60);
+
+    ctx.fillStyle = "#c4c4c4"; ctx.font = "14px Cairo, sans-serif";
+    ctx.fillText(`تاريخ الإيصال: ${payment.payDate || new Date().toISOString().split("T")[0]}`, canvas.width / 2, 90);
+
+    ctx.strokeStyle = "#404040"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(40, 110); ctx.lineTo(canvas.width - 40, 110); ctx.stroke();
+
+    const drawRow = (label, val, y, isGold = false) => {
+      ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "16px Cairo, sans-serif";
+      ctx.fillText(label, canvas.width - 50, y);
+      ctx.textAlign = "left"; ctx.fillStyle = isGold ? "#e8cd9c" : "#ffffff"; ctx.font = isGold ? "bold 18px Cairo, sans-serif" : "bold 16px Cairo, sans-serif";
+      ctx.fillText(String(val), 50, y);
+    };
+
+    drawRow("اسم العميل:", client.name, 150, true);
+    drawRow("السلعة المباعة:", client.item, 190);
+    drawRow("إجمالي عقد البيع:", `${fmt(client.sale)} ج.م`, 230);
+    drawRow("المقدم المدفوع:", `${fmt(client.down)} ج.م`, 270);
+    drawRow("المسدد كلياً حتى الآن:", `${fmt(totalPaidSoFar)} ج.م`, 310);
+    drawRow("المتبقي الكلي على العميل:", `${fmt(remainingDebt)} ج.م`, 350, true);
+    drawRow("عدد الأقساط المتبقية:", `${remainingInstallments} قسط`, 390);
+
+    ctx.beginPath(); ctx.moveTo(40, 420); ctx.lineTo(canvas.width - 40, 420); ctx.stroke();
+
+    ctx.fillStyle = "#211f18"; ctx.fillRect(40, 440, canvas.width - 80, 140);
+    ctx.strokeStyle = "#d0b689"; ctx.strokeRect(40, 440, canvas.width - 80, 140);
+
+    ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
+    ctx.fillText("المبلغ المدفوع حالياً:", canvas.width - 60, 480);
+    ctx.textAlign = "left"; ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 24px Cairo, sans-serif";
+    ctx.fillText(`${fmt(payment.amount)} ج.م`, 60, 480);
+
+    ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
+    ctx.fillText("طريقة الدفع والمحصل:", canvas.width - 60, 520);
+    ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"; ctx.font = "bold 15px Cairo, sans-serif";
+    ctx.fillText(`${payment.method || "كاش"} · ${payment.collector || "المشرف"}`, 60, 520);
+
+    ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
+    ctx.fillText("المتبقي بعد هذا القسط:", canvas.width - 60, 555);
+    ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"; ctx.font = "bold 16px Cairo, sans-serif";
+    ctx.fillText(`${fmt(payment.remainingAfter)} ج.م`, 60, 555);
+
+    if (isPaidInFull) {
+      ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 20px Cairo, sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("🏆 تم مخالصة وسداد هذا العقد بالكامل 🏆", canvas.width / 2, 630);
+    }
+
+    ctx.fillStyle = "#888888"; ctx.font = "13px Cairo, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("شكراً لالتزامكم بالسداد في الموعد المحدد", canvas.width / 2, 720);
+
+    const link = document.createElement("a");
+    link.download = `إيصال_${client.name}_${payment.payDate || "سداد"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  const handleWhatsAppShare = () => {
+    const msg = `إيصال سداد قسط 🧾\nاسم العميل: ${client.name}\nالسلعة: ${client.item}\nالمبلغ المدفوع: ${fmt(payment.amount)} ج.م\nالمتبقي الحالي: ${fmt(payment.remainingAfter)} ج.م\nتاريخ السداد: ${payment.payDate}\nشكراً لالتزامكم بالتسديد!`;
+    window.open(`https://wa.me/2${client.phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-      <div style={{ background: "#242426", border: "1px solid #d0b689", borderRadius: 18, width: "100%", maxWidth: 520, padding: 24, color: "#fff", position: "relative" }}>
-        <button onClick={onClose} style={{ position: "absolute", top: 16, left: 16, background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", width: 34, height: 36, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} /></button>
+      <div style={{ background: "#242426", border: "1px solid #d0b689", borderRadius: 18, width: "100%", maxWidth: 520, padding: 24, color: "#fff", position: "relative", boxShadow: "0 20px 50px rgba(0,0,0,0.8)" }}>
+        
+        <button onClick={onClose} style={{ position: "absolute", top: 16, left: 16, background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", width: 34, height: 36, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <X size={18} />
+        </button>
+
         <div id="printable-receipt" style={{ textAlign: "center", paddingBottom: 10 }}>
           <div style={{ color: "#e8cd9c", fontSize: 20, fontWeight: 800, marginBottom: 4 }}>إيصال استلام قسط</div>
           <div style={{ color: "#c4c4c4", fontSize: 12 }}>تاريخ العملية: {payment.payDate || new Date().toISOString().split("T")[0]}</div>
@@ -2167,10 +2719,18 @@ function ReceiptModal({ receipt, onClose }) {
             <ReceiptRow label="أقساط متبقية" val={`${remainingInstallments} قسط`} />
           </div>
 
-          <div style={{ background: "#1b1b1d", border: "1px dashed #d0b689", borderRadius: 12, padding: 14, margin: "16px 0", textAlign: "right" }}>
+          <div style={{ background: "#1b1b1d", border: "1px dashed #d0b689", borderRadius: 12, padding: 14, margin: "16px 0", display: "flex", flexDirection: "column", gap: 6, textAlign: "right" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ color: "#c4c4c4", fontSize: 13 }}>المبلغ المدفوع حالياً:</span>
               <span style={{ color: "#e8cd9c", fontSize: 22, fontWeight: 800 }}>{fmt(payment.amount)} ج.م</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#888" }}>
+              <span>طريقة الدفع والمحصل:</span>
+              <span style={{ color: "#fff", fontWeight: 700 }}>{payment.method || "كاش"} · {payment.collector || "المشرف"}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#c4c4c4", marginTop: 4 }}>
+              <span>المتبقي بعد هذا القسط:</span>
+              <span style={{ color: "#fff", fontWeight: 800 }}>{fmt(payment.remainingAfter)} ج.م</span>
             </div>
           </div>
 
@@ -2181,7 +2741,17 @@ function ReceiptModal({ receipt, onClose }) {
           )}
         </div>
 
-        <button type="button" onClick={handlePrint} style={{ width: "100%", background: "linear-gradient(145deg, #e8cd9c, #d0b689)", color: "#1b1b1d", border: "none", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 10 }}><Printer size={16} /> طباعة الإيصال</button>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginTop: 16 }}>
+          <button type="button" onClick={handlePrint} style={{ background: "linear-gradient(145deg, #e8cd9c, #d0b689)", color: "#1b1b1d", border: "none", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Printer size={16} /> طباعة الإيصال
+          </button>
+          <button type="button" onClick={handleDownloadImage} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Download size={16} /> تنزيل الصورة
+          </button>
+          <button type="button" onClick={handleWhatsAppShare} style={{ gridColumn: "1 / -1", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Share2 size={16} /> إرسال عبر الواتساب
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -2196,18 +2766,50 @@ function ReceiptRow({ label, val, highlight }) {
   );
 }
 
-/* أنماط التصميم القياسية */
+function ScreenHeader({ title, onBack }) {
+  return (
+    <div style={styles.subHeader}>
+      <button style={styles.backBtn} onClick={onBack} title="رجوع للرئيسية">
+        <ArrowRight size={16} /> رجوع للرئيسية
+      </button>
+      <div style={styles.subTitle}>{title}</div>
+      <button type="button" style={styles.topCloseBtn} onClick={onBack} title="إغلاق الشاشة والعودة للرئيسية">
+        <X size={18} />
+      </button>
+    </div>
+  );
+}
+
+function BottomExitButton({ onBack }) {
+  return (
+    <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #333336" }}>
+      <button
+        type="button"
+        onClick={onBack}
+        style={{
+          width: "100%", background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c",
+          borderRadius: 12, padding: "13px 20px", fontSize: 14, fontWeight: 800, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "inherit"
+        }}
+      >
+        <ArrowRight size={16} /> خروج والعودة للشاشة الرئيسية
+      </button>
+    </div>
+  );
+}
+
+/* أنماط التصميم */
 const styles = {
   page: { minHeight: "100vh", background: `radial-gradient(1200px 600px at 20% -10%, #2a271f 0%, #1b1b1d 55%)`, padding: "24px 16px 60px", fontFamily: "'Cairo', 'Tajawal', system-ui, sans-serif", color: "#ffffff" },
   container: { maxWidth: 1100, margin: "0 auto" },
-  toast: { position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "10px 18px", borderRadius: 12, fontSize: 13.5, display: "flex", alignItems: "center", gap: 8, zIndex: 5000 },
+  toast: { position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "10px 18px", borderRadius: 12, fontSize: 13.5, display: "flex", alignItems: "center", gap: 8, zIndex: 50 },
   toastError: { background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb" },
   dashHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", background: `linear-gradient(135deg, #e6cf9e 0%, #b6935a 50%, #8a6a35 100%)`, borderRadius: 18, padding: "18px 24px", marginBottom: 20 },
   adminBadge: { background: "#1b1b1d", color: "#e8cd9c", fontSize: 12.5, fontWeight: 700, padding: "8px 16px", borderRadius: 10 },
   dashTitle: { fontSize: 22, fontWeight: 800, color: "#2c2211" },
   dashSub: { fontSize: 12.5, color: "#5a4a2c", marginTop: 2 },
   calcIcon: { width: 44, height: 44, borderRadius: 12, background: "#1b1b1d", display: "flex", alignItems: "center", justifyContent: "center" },
-  kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 },
+  kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14, marginBottom: 20 },
   kpiCard: { background: "#242426", border: `1px solid #404040`, borderRadius: 16, padding: "20px 20px" },
   kpiValue: { fontSize: 24, fontWeight: 800, color: "#ffffff", fontVariantNumeric: "tabular-nums" },
   kpiLabel: { fontSize: 13.5, color: "#e8cd9c", fontWeight: 700, marginTop: 8 },
@@ -2218,12 +2820,12 @@ const styles = {
   topCloseBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, background: "#242426", border: "1px solid #404040", cursor: "pointer", color: "#e8cd9c" },
   subTitle: { fontSize: 19, fontWeight: 800, color: "#e8cd9c" },
   card: { background: "#242426", border: `1px solid #404040`, borderRadius: 18, padding: 22 },
-  formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 },
+  formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 },
   fieldLabel: { fontSize: 13.5, color: "#c4c4c4", fontWeight: 700, display: "block", marginBottom: 6 },
   input: { width: "100%", background: "#1b1b1d", border: "1px solid #404040", borderRadius: 10, padding: "12px 14px", color: "#ffffff", fontFamily: "inherit", fontSize: 15, outline: "none" },
   sectionLabel: { gridColumn: "1 / -1", fontSize: 13.5, fontWeight: 800, color: "#d0b689", marginTop: 12, paddingBottom: 8, borderBottom: `1px solid #404040` },
   liveBox: { gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: "#211f18", border: "1px dashed rgba(208,182,137,0.5)", borderRadius: 12, padding: 14, margin: "6px 0" },
-  saveBtn: { gridColumn: "1 / -1", background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", borderRadius: 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 8, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 },
+  saveBtn: { gridColumn: "1 / -1", background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", borderRadius: 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 8, fontFamily: "inherit" },
   errorBox: { background: "rgba(224,122,95,0.12)", border: "1px solid rgba(224,122,95,0.5)", color: "#e8a996", borderRadius: 10, padding: "12px 14px", fontSize: 14, marginBottom: 16 },
   emptyState: { textAlign: "center", color: "#c4c4c4", padding: "30px 10px", fontSize: 15 },
   historyTitle: { fontSize: 16, fontWeight: 800, color: "#e8cd9c", marginTop: 22, marginBottom: 16, paddingTop: 16, borderTop: `1px solid #404040` },
