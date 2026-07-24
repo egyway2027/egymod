@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   CreditCard, UserPlus, CalendarClock, Search, UserX, UploadCloud,
   KeyRound, Power, Wallet, TrendingUp, Calculator, ArrowRight,
-  Trash2, CheckCircle2, X, Users, UserCog, Printer, Download, Share2, Award
+  Trash2, CheckCircle2, X, Users, UserCog, Printer, Download, Share2, Award,
+  DollarSign, RefreshCw, UserMinus
 } from "lucide-react";
 
 const SUPABASE_URL = 'https://blijuizmqoprlrsuebgo.supabase.co';
