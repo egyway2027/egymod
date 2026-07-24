@@ -1205,7 +1205,7 @@ function EmployeeDetailsModal({ employee, salaryLog, onTerminate, onClose }) {
 }
 
 /* ============================================================
-   5. شاشة توزيع الأرباح الفائقة (صورة 3 - مع زر إعادة استثمار)
+   5. شاشة توزيع الأرباح الفائقة (صورة 3)
    ============================================================ */
 function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, withdrawalsLog, setWithdrawalsLog, distributionsLog, setDistributionsLog, totals, onBack, notify }) {
   const [periodFilter, setPeriodFilter] = useState("all");
@@ -1264,10 +1264,10 @@ function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, 
     
     partnersCalculated.forEach((p) => {
       if (p.decision === "إعادة استثمار") {
-        // إعادة استثمار: يضيف نصيبه لرأس ماله فتزيد نسبته في الشركة
+        // زيادة رأس مال الشريك بمبلغ أرباحه فتزيد نسبته في الشركة تلقائياً
         setPartners(prev => prev.map(x => String(x.id) === String(p.id) ? { ...x, capital: x.capital + p.shareAmount } : x));
       } else {
-        // سحب فوري: يسجل كمبلغ صرف في سجل المسحوبات
+        // سحب فوري يسجل في المسحوبات
         const newW = { id: Date.now() + Math.random(), partnerId: p.id, partnerName: p.name, amount: p.shareAmount, date: new Date().toISOString().split("T")[0], notes: "توزيع أرباح - سحب فوري" };
         setWithdrawalsLog(prev => [...prev, newW]);
       }
@@ -1404,18 +1404,1310 @@ function BottomExitButton({ onBack }) {
   );
 }
 
-/* أنماط التصميم القياسية */
+function Dashboard({ totals, lateCount, onNavigate, user, onLogout }) {
+  const buttons = [
+    { key: "addClient", label: "إضافة عميل جديد", icon: UserPlus, tone: "dark" },
+    { key: "pay", label: "سداد الأقساط", icon: CreditCard, tone: "gold" },
+    { key: "search", label: "استعلام عن عميل", icon: Search, tone: "silver" },
+    { key: "monthlyDues", label: "مستحقات الشهر", icon: CalendarClock, tone: "copper" },
+    { key: "lateClients", label: `المتأخرين عن السداد${lateCount ? ` (${lateCount})` : ""}`, icon: UserX, tone: "rose" },
+    { key: "deleteClient", label: "حذف حساب عميل", icon: Trash2, tone: "gold" },
+    { key: "treasury", label: "توزيع الأرباح والخزينة", icon: Wallet, tone: "roseDark" },
+    { key: "changePassword", label: "تغيير كلمة السر", icon: KeyRound, tone: "tan" },
+    { key: "treasuryPartners", label: "إضافة شريك جديد", icon: Users, tone: "copper" },
+    { key: "treasuryEmployees", label: "إضافة موظف جديد", icon: UserCog, tone: "silver" },
+    { key: "backup", label: "النسخ الاحتياطي السحابي", icon: UploadCloud, tone: "roseLight" },
+    { key: "exit", label: "تسجيل الخروج", icon: Power, tone: "dark" },
+  ];
+
+  return (
+    <div style={styles.container}>
+      <header style={styles.dashHeader}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={styles.adminBadge}>مرحبًا، {user?.name || "المشرف"}</div>
+          <button onClick={onLogout} style={{ background: "#1b1b1d", border: "1px solid #e07a5f", color: "#e07a5f", padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12 }}>خروج</button>
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div style={styles.dashTitle}>نظام إدارة الأقساط الاحترافي</div>
+          <div style={styles.dashSub}>Cloud Database Connected (Supabase)</div>
+        </div>
+        <div style={styles.calcIcon}><Calculator size={22} color="#3a2e18" /></div>
+      </header>
+
+      <section style={styles.kpiRow}>
+        <KPI icon={TrendingUp} label="صافي الأرباح حتى اليوم" sub="إجمالي أرباح العقود" value={fmt(totals.totalProfit)} />
+        <KPI icon={CalendarClock} label="مستحقات هذا الشهر" sub="المطلوب تحصيله حالياً" value={fmt(totals.totalDebt)} />
+        <KPI icon={Wallet} label="إجمالي الأقساط" sub="المبالغ المتبقية في ذمة العملاء" value={fmt(totals.totalPortfolio)} />
+      </section>
+
+      <section style={styles.grid}>
+        {buttons.map((b) => (
+          <DashButton key={b.key} label={b.label} Icon={b.icon} tone={b.tone} onClick={() => {
+            if (b.key === "exit") { onLogout(); return; }
+            onNavigate(b.key);
+          }} />
+        ))}
+      </section>
+    </div>
+  );
+}
+
+function AddClientScreen({ onSave, onBack }) {
+  const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState("");
+
+  const live = useMemo(() => {
+    return calculateContract({ cost: parseFloat(form.cost) || 0, sale: parseFloat(form.sale) || 0, down: parseFloat(form.down) || 0, monthly: parseFloat(form.monthly) || 0 });
+  }, [form]);
+
+  function handleContractDate(e) {
+    const cDate = e.target.value;
+    const firstPay = addOneMonth(cDate);
+    setForm({ ...form, contractDate: cDate, firstPayDate: firstPay });
+  }
+
+  function submit(e) {
+    e.preventDefault();
+    if (!form.name || !form.item || !form.cost || !form.sale || !form.contractDate) { setError("يرجى ملء الحقول الأساسية وتاريخ التعاقد!"); return; }
+    onSave({
+      ...form, cost: parseFloat(form.cost) || 0, sale: parseFloat(form.sale) || 0,
+      down: parseFloat(form.down) || 0, monthly: parseFloat(form.monthly) || 0,
+    });
+  }
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="إضافة عميل جديد" onBack={onBack} />
+      <div style={styles.card}>
+        {error && <div style={styles.errorBox}>{error}</div>}
+        <form onSubmit={submit} style={styles.formGrid}>
+          <div style={styles.sectionLabel}>بيانات العميل والضامن</div>
+          <Field label="اسم العميل *"><input style={styles.input} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></Field>
+          <Field label="تليفون العميل *"><input style={styles.input} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></Field>
+          <Field label="اسم الضامن *"><input style={styles.input} value={form.guarantor} onChange={e => setForm({ ...form, guarantor: e.target.value })} /></Field>
+          <Field label="تليفون الضامن *"><input style={styles.input} value={form.guarantorPhone} onChange={e => setForm({ ...form, guarantorPhone: e.target.value })} /></Field>
+
+          <div style={styles.sectionLabel}>بيانات السلعة والتقسيط</div>
+          <div style={{ gridColumn: "1 / -1" }}><Field label="السلعة *"><input style={styles.input} value={form.item} onChange={e => setForm({ ...form, item: e.target.value })} /></Field></div>
+          <Field label="سعر التكلفة *"><input type="number" style={styles.input} value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} /></Field>
+          <Field label="سعر البيع *"><input type="number" style={styles.input} value={form.sale} onChange={e => setForm({ ...form, sale: e.target.value })} /></Field>
+          <Field label="المقدم *"><input type="number" style={styles.input} value={form.down} onChange={e => setForm({ ...form, down: e.target.value })} /></Field>
+          <Field label="القسط الشهري *"><input type="number" style={styles.input} value={form.monthly} onChange={e => setForm({ ...form, monthly: e.target.value })} /></Field>
+
+          <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, gridColumn: "1 / -1" }}>
+            <Field label="تاريخ التعاقد *"><DateInput value={form.contractDate} onChange={handleContractDate} required /></Field>
+            <Field label="تاريخ أول قسط (تلقائي + شهر)"><DateInput value={form.firstPayDate} disabled readOnly /></Field>
+          </div>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <Field label="ملاحظات"><input style={styles.input} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></Field>
+          </div>
+
+          <div style={styles.liveBox}>
+            <LiveStat label="صافي الربح" value={fmt(live.profit)} />
+            <LiveStat label="المتبقي للتقسيط" value={fmt(live.remaining)} />
+            <LiveStat label="عدد الأقساط" value={live.installmentsCount} />
+          </div>
+
+          <button type="submit" style={styles.saveBtn}>حفظ بيانات العقد</button>
+        </form>
+        <BottomExitButton onBack={onBack} />
+      </div>
+    </div>
+  );
+}
+
+function SearchScreen({ rows, onUpdateClient, onBack }) {
+  const [tab, setTab] = useState("active");
+  const [selected, setSelected] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState(emptyForm);
+
+  const displayedRows = useMemo(() => {
+    if (tab === "archived") return rows.filter((r) => r.remaining <= 0);
+    return rows.filter((r) => r.remaining > 0);
+  }, [rows, tab]);
+
+  const handleSelectClient = (client) => {
+    setSelected(client); setIsEditing(false);
+    if (client) {
+      setEditForm({
+        name: client.name || "", phone: client.phone || "", guarantor: client.guarantor || "",
+        guarantorPhone: client.guarantorPhone || "", item: client.item || "", cost: client.cost || "",
+        sale: client.sale || "", down: client.down || "", monthly: client.monthly || "",
+        contractDate: client.contractDate || "", firstPayDate: client.firstPayDate || "", notes: client.notes || "",
+      });
+    }
+  };
+
+  const handleContractDateChange = (e) => {
+    const cDate = e.target.value;
+    const firstPay = addOneMonth(cDate);
+    setEditForm((prev) => ({ ...prev, contractDate: cDate, firstPayDate: firstPay }));
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!selected) return;
+    const success = await onUpdateClient(selected.id, {
+      ...editForm, cost: parseFloat(editForm.cost) || 0, sale: parseFloat(editForm.sale) || 0,
+      down: parseFloat(editForm.down) || 0, monthly: parseFloat(editForm.monthly) || 0,
+    });
+    if (success) {
+      setIsEditing(false);
+      setSelected((prev) => ({
+        ...prev, ...editForm, cost: parseFloat(editForm.cost) || 0, sale: parseFloat(editForm.sale) || 0,
+        down: parseFloat(editForm.down) || 0, monthly: parseFloat(editForm.monthly) || 0,
+      }));
+    }
+  };
+
+  const readStyle = {
+    width: "100%", background: "#1b1b1d", border: "1px solid #404040",
+    borderRadius: 10, padding: "12px 14px", color: "#ffffff", fontSize: 15, fontWeight: 800
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="استعلام وتعديل بيانات العميل" onBack={onBack} />
+      
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <button
+          type="button" onClick={() => { setTab("active"); setSelected(null); }}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: tab === "active" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
+            color: tab === "active" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer"
+          }}
+        >
+          📋 العقود النشطة
+        </button>
+        <button
+          type="button" onClick={() => { setTab("archived"); setSelected(null); }}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: tab === "archived" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
+            color: tab === "archived" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer"
+          }}
+        >
+          📂 أرشيف العقود المسددة بالكامل ({rows.filter(r => r.remaining <= 0).length})
+        </button>
+      </div>
+
+      <div style={styles.card}>
+        <span style={styles.fieldLabel}>
+          {tab === "archived" ? "ابحث بأسماء عملاء الأرشيف المسددين بالكامل" : "ابحث باسم العميل أو رقم التليفون"}
+        </span>
+        <NameComboBox
+          items={displayedRows} getLabel={(r) => `${r.name} — ${r.item}`} getSecondary={(r) => `متبقي ${fmt(r.remaining)} ج.م`}
+          placeholder="اكتب اسم العميل..." onSelect={handleSelectClient} selectedLabel={selected ? `${selected.name} — ${selected.item}` : null}
+          onClear={() => { setSelected(null); setIsEditing(false); }}
+        />
+
+        {selected && (
+          <div style={styles.profileBox}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+              <h3 style={{ fontSize: 17, fontWeight: 800, color: "#e8cd9c", margin: 0 }}>
+                {isEditing ? `تعديل بيانات العميل: ${selected.name}` : `بيانات عقد العميل: ${selected.name}`}
+              </h3>
+              <button
+                type="button" onClick={() => setIsEditing(!isEditing)}
+                style={{
+                  background: isEditing ? "#3a2320" : "linear-gradient(145deg, #e8cd9c, #d0b689)",
+                  color: isEditing ? "#f0c6bb" : "#1b1b1d", border: isEditing ? "1px solid #7a4a3f" : "none",
+                  padding: "8px 16px", borderRadius: 10, fontWeight: 800, fontSize: 13, cursor: "pointer"
+                }}
+              >
+                {isEditing ? "إلغاء التعديل" : "✏️ تعديل بيانات العميل"}
+              </button>
+            </div>
+
+            {!isEditing && (
+              <div style={styles.formGrid}>
+                <div style={styles.sectionLabel}>بيانات العميل والضامن</div>
+                <Field label="اسم العميل"><div style={readStyle}>{selected.name}</div></Field>
+                <Field label="تليفون العميل"><div style={readStyle}>{selected.phone || "غير محدد"}</div></Field>
+                <Field label="اسم الضامن"><div style={readStyle}>{selected.guarantor || "لا يوجد"}</div></Field>
+                <Field label="تليفون الضامن"><div style={readStyle}>{selected.guarantorPhone || "لا يوجد"}</div></Field>
+
+                <div style={styles.sectionLabel}>بيانات السلعة والماليات</div>
+                <div style={{ gridColumn: "1 / -1" }}><Field label="السلعة"><div style={readStyle}>{selected.item}</div></Field></div>
+                <Field label="سعر التكلفة"><div style={readStyle}>{fmt(selected.cost)} ج.م</div></Field>
+                <Field label="سعر البيع"><div style={readStyle}>{fmt(selected.sale)} ج.م</div></Field>
+                <Field label="المقدم المدفوع"><div style={readStyle}>{fmt(selected.down)} ج.م</div></Field>
+                <Field label="القسط الشهري"><div style={{ ...readStyle, color: "#d0b689", borderColor: "#d0b689" }}>{fmt(selected.monthly)} ج.م</div></Field>
+
+                <div style={styles.sectionLabel}>الموقف المالي الحقيقي</div>
+                <Field label="المسدد حتى الآن"><div style={readStyle}>{fmt(selected.totalPaid)} ج.م</div></Field>
+                <Field label="المتبقي الكلي"><div style={readStyle}>{fmt(selected.remaining)} ج.م</div></Field>
+                <Field label="حالة العقد">
+                  <div style={{ ...readStyle, color: selected.remaining <= 0 ? "#bfe8cd" : "#d0b689", borderColor: selected.remaining <= 0 ? "#3d6b4a" : "#404040" }}>
+                    {selected.remaining <= 0 ? "مخالص ومسدد بالكامل 🏆" : "عقد جارٍ وتسديد الأقساط مستمر"}
+                  </div>
+                </Field>
+
+                <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
+                <Field label="تاريخ التعاقد"><div style={readStyle}>{selected.contractDate}</div></Field>
+                <Field label="تاريخ أول قسط"><div style={readStyle}>{selected.firstPayDate}</div></Field>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <Field label="الملاحظات">
+                    <div style={{ ...readStyle, minHeight: 60, whiteSpace: "pre-wrap" }}>{selected.notes || "لا توجد ملاحظات مسجلة"}</div>
+                  </Field>
+                </div>
+              </div>
+            )}
+
+            {isEditing && (
+              <form onSubmit={handleSaveEdit} style={styles.formGrid}>
+                <div style={styles.sectionLabel}>بيانات العميل والضامن</div>
+                <Field label="اسم العميل *"><input style={styles.input} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required /></Field>
+                <Field label="تليفون العميل *"><input style={styles.input} value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required /></Field>
+                <Field label="اسم الضامن"><input style={styles.input} value={editForm.guarantor} onChange={(e) => setEditForm({ ...editForm, guarantor: e.target.value })} /></Field>
+                <Field label="تليفون الضامن"><input style={styles.input} value={editForm.guarantorPhone} onChange={(e) => setEditForm({ ...editForm, guarantorPhone: e.target.value })} /></Field>
+
+                <div style={styles.sectionLabel}>بيانات السلعة والتقسيط</div>
+                <div style={{ gridColumn: "1 / -1" }}><Field label="السلعة *"><input style={styles.input} value={editForm.item} onChange={(e) => setEditForm({ ...editForm, item: e.target.value })} required /></Field></div>
+                <Field label="سعر التكلفة *"><input type="number" style={styles.input} value={editForm.cost} onChange={(e) => setEditForm({ ...editForm, cost: e.target.value })} required /></Field>
+                <Field label="سعر البيع *"><input type="number" style={styles.input} value={editForm.sale} onChange={(e) => setEditForm({ ...editForm, sale: e.target.value })} required /></Field>
+                <Field label="المقدم *"><input type="number" style={styles.input} value={editForm.down} onChange={(e) => setEditForm({ ...editForm, down: e.target.value })} required /></Field>
+                <Field label="القسط الشهري *"><input type="number" style={styles.input} value={editForm.monthly} onChange={(e) => setEditForm({ ...editForm, monthly: e.target.value })} required /></Field>
+
+                <div style={styles.sectionLabel}>التواريخ والملاحظات</div>
+                <Field label="تاريخ التعاقد *"><DateInput value={editForm.contractDate} onChange={handleContractDateChange} required /></Field>
+                <Field label="تاريخ أول قسط"><DateInput value={editForm.firstPayDate} disabled readOnly /></Field>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <Field label="الملاحظات"><input style={styles.input} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} /></Field>
+                </div>
+
+                <div style={{ gridColumn: "1 / -1", display: "flex", gap: 10, marginTop: 12 }}>
+                  <button type="submit" style={{ ...styles.saveBtn, flex: 1, marginTop: 0 }}>حفظ التعديلات بالسحابة</button>
+                  <button type="button" onClick={() => setIsEditing(false)} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 20px", fontWeight: 700, cursor: "pointer" }}>إلغاء</button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+        <BottomExitButton onBack={onBack} />
+      </div>
+    </div>
+  );
+}
+
+function ProfileRow({ label, value, highlight, error }) {
+  let textColor = "#ffffff";
+  let borderColor = "#404040";
+  if (highlight) { textColor = "#d0b689"; borderColor = "#d0b689"; }
+  if (error) { textColor = "#e07a5f"; borderColor = "#e07a5f"; }
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ width: "130px", color: "#c4c4c4", fontSize: "14px", fontWeight: 700 }}>{label}</div>
+      <div style={{ flex: 1, background: "#1b1b1d", border: `1px solid ${borderColor}`, padding: "12px 16px", borderRadius: "10px", color: textColor, fontSize: "15px", fontWeight: 800 }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function PayScreen({ rows, payments, employees, onPay, onDeletePayment, onShowReceipt, onBack }) {
+  const [selected, setSelected] = useState(null);
+  const [amount, setAmount] = useState("");
+  const [payDate, setPayDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [method, setMethod] = useState("نقداً / كاش");
+  const [collector, setCollector] = useState("المشرف");
+
+  const numAmount = parseFloat(amount) || 0;
+  const currentRemaining = selected ? selected.remaining : 0;
+  const remainingAfterPay = Math.max(0, currentRemaining - numAmount);
+  const isPaidOffNow = selected && currentRemaining > 0 && remainingAfterPay === 0;
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!selected || numAmount <= 0) return;
+    await onPay(selected.id, numAmount, payDate, method, collector);
+    setAmount("");
+  }
+
+  const clientPayments = selected ? payments.filter(p => String(p.clientId) === String(selected.id)) : [];
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="سداد الأقساط" onBack={onBack} />
+      <div style={styles.card}>
+        <span style={styles.fieldLabel}>اختر العميل أو العقد</span>
+        <NameComboBox
+          items={rows} getLabel={(r) => `${r.name} — ${r.item}`} getSecondary={(r) => `متبقي ${fmt(r.remaining)} ج.م`}
+          placeholder="اكتب اسم العميل..." onSelect={(item) => { setSelected(item); setAmount(""); }}
+          selectedLabel={selected ? `${selected.name} — ${selected.item}` : null} onClear={() => { setSelected(null); setAmount(""); }}
+        />
+
+        {selected && (
+          <form onSubmit={submit} style={{ marginTop: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 16 }}>
+              <Field label="تاريخ السداد"><DateInput value={payDate} onChange={(e) => setPayDate(e.target.value)} required /></Field>
+              <Field label="المبلغ المدفوع (ج.م) *">
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="number" style={{ ...styles.input, fontSize: 18, fontWeight: 800, color: "#e8cd9c" }}
+                    value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required
+                  />
+                  <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                    <button type="button" onClick={() => setAmount(String(selected.monthly))} style={{ background: "#211f18", border: "1px solid #d0b689", color: "#e8cd9c", borderRadius: 6, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>[ 💵 قسط كامل: {fmt(selected.monthly)} ]</button>
+                    <button type="button" onClick={() => setAmount(String(selected.remaining))} style={{ background: "#211f18", border: "1px solid #d0b689", color: "#e8cd9c", borderRadius: 6, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>[ 🎯 تصفية العقد: {fmt(selected.remaining)} ]</button>
+                  </div>
+                </div>
+              </Field>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 16 }}>
+              <Field label="طريقة الدفع">
+                <select style={styles.input} value={method} onChange={(e) => setMethod(e.target.value)}>
+                  <option value="نقداً / كاش">نقداً / كاش</option>
+                  <option value="فودافون كاش / إنستا باي">فودافون كاش / إنستا باي</option>
+                  <option value="تحويل بنكي">تحويل بنكي</option>
+                </select>
+              </Field>
+
+              <Field label="المحصل / الموظف">
+                <select style={styles.input} value={collector} onChange={(e) => setCollector(e.target.value)}>
+                  <option value="المشرف">المشرف العام</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.name}>{emp.name} ({emp.job})</option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            <div style={styles.liveBox}>
+              <LiveStat label="السلعة" value={selected.item} />
+              <LiveStat label="المتبقي الحالي" value={`${fmt(currentRemaining)} ج.م`} />
+              <LiveStat label="المتبقي بعد هذا السداد" value={`${fmt(remainingAfterPay)} ج.م`} />
+            </div>
+
+            {isPaidOffNow && (
+              <div style={{ background: "rgba(232,205,156,0.15)", border: "1px solid #e8cd9c", color: "#e8cd9c", padding: "10px", borderRadius: 10, textAlign: "center", fontWeight: 800, fontSize: 14, margin: "12px 0" }}>
+                🏆 تم مخالصة وسداد هذا العقد بالكامل عند حفظ التغييرات!
+              </div>
+            )}
+
+            <button type="submit" style={{ ...styles.saveBtn, marginTop: 14 }}>
+              تسجيل السداد وطباعة الإيصال
+            </button>
+
+            {clientPayments.length > 0 && (
+              <div style={styles.profileBox}>
+                <h3 style={styles.historyTitle}>سجل السداد لهذا العقد</h3>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 14 }}>
+                    <thead>
+                      <tr style={{ background: "#1b1b1d", color: "#e8cd9c", borderBottom: "1px solid #404040" }}>
+                        <th style={{ padding: "10px 12px" }}>التاريخ</th>
+                        <th style={{ padding: "10px 12px" }}>المبلغ</th>
+                        <th style={{ padding: "10px 12px" }}>المتبقي بعدها</th>
+                        <th style={{ padding: "10px 12px", textAlign: "center" }}>إجراء</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clientPayments.slice().reverse().map((p) => (
+                        <tr key={p.id} style={{ borderBottom: "1px solid #2d2d30" }}>
+                          <td style={{ padding: "10px 12px" }}>{p.payDate || "سداد"}</td>
+                          <td style={{ padding: "10px 12px", color: "#e8cd9c", fontWeight: 800 }}>{fmt(p.amount)} ج.م</td>
+                          <td style={{ padding: "10px 12px" }}>{fmt(p.remainingAfter)} ج.م</td>
+                          <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                              <button type="button" onClick={() => onShowReceipt(selected, p)} style={{ background: "#211f18", border: "1px solid #d0b689", color: "#e8cd9c", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><Printer size={13} /> طباعة</button>
+                              <button type="button" onClick={() => onDeletePayment(p.id, selected.id, p.amount)} style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><Trash2 size={13} /> حذف القسط</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </form>
+        )}
+        <BottomExitButton onBack={onBack} />
+      </div>
+    </div>
+  );
+}
+
+function PlaceholderScreen({ title, note, onBack }) {
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title={title} onBack={onBack} />
+      <div style={styles.card}>
+        <div style={styles.emptyState}>{note || "شاشة تحت التجهيز النهائي"}</div>
+        <BottomExitButton onBack={onBack} />
+      </div>
+    </div>
+  );
+}
+
+function KPI({ icon: Icon, label, sub, value }) {
+  return (
+    <div style={styles.kpiCard}>
+      <div style={{ marginBottom: 10 }}><Icon size={26} color="#e8cd9c" /></div>
+      <div style={styles.kpiValue}>{value} <span style={{ fontSize: 13, color: "#c4c4c4", fontWeight: 500 }}>ج.م</span></div>
+      <div style={styles.kpiLabel}>{label}</div>
+      <div style={styles.kpiSub}>{sub}</div>
+    </div>
+  );
+}
+
+function DashButton({ label, Icon, tone, onClick }) {
+  const TONES = {
+    gold: { background: "linear-gradient(135deg, #e6cf9e 0%, #b6935a 55%, #8a6a35 100%)", color: "#3a2e18" },
+    dark: { background: "linear-gradient(135deg, #3d3527 0%, #211c14 60%, #100d09 100%)", color: "#e8cd9c" },
+    copper: { background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)", color: "#2c1a0c" },
+    silver: { background: "linear-gradient(135deg, #e8e8e8 0%, #b9b9b9 55%, #8a8a8a 100%)", color: "#2a2a2a" },
+    rose: { background: "linear-gradient(135deg, #c97a6d 0%, #9c4a3d 55%, #6e2f26 100%)", color: "#fbe9e4" },
+    roseLight: { background: "linear-gradient(135deg, #d99b8c 0%, #b96f5f 55%, #8a4a3c 100%)", color: "#2c1a14" },
+    roseDark: { background: "linear-gradient(135deg, #b06f63 0%, #7a3a30 55%, #4a221c 100%)", color: "#fbe9e4" },
+    tan: { background: "linear-gradient(135deg, #e6d4b0 0%, #c9ab78 55%, #a5824f 100%)", color: "#3a2e18" },
+  };
+  return (
+    <button onClick={onClick} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "none", borderRadius: 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 6px 16px rgba(0,0,0,0.35)", minHeight: 64, ...TONES[tone] }}>
+      <span style={{ fontSize: 15, fontWeight: 800 }}>{label}</span>
+      <span style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(0,0,0,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon size={20} /></span>
+    </button>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span style={styles.fieldLabel}>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function LiveStat({ label, value }) {
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 17, fontWeight: 800, color: "#e8cd9c", fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      <div style={{ fontSize: 12, color: "#c4c4c4", marginTop: 4 }}>{label}</div>
+    </div>
+  );
+}
+
+function LateClientsScreen({ rows, onBack, onPay }) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [payTarget, setPayTarget] = useState(null);
+  const [payAmount, setPayAmount] = useState("");
+
+  const processedRows = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return rows.map((r) => {
+      let daysLate = 0;
+      if (r.due) {
+        const dueDate = new Date(r.due);
+        dueDate.setHours(0, 0, 0, 0);
+        const diff = today.getTime() - dueDate.getTime();
+        daysLate = diff > 0 ? Math.floor(diff / (1000 * 3600 * 24)) : 0;
+      }
+      return { ...r, daysLate };
+    });
+  }, [rows]);
+
+  const filtered = useMemo(() => {
+    return processedRows.filter((r) => {
+      const matchSearch = r.name.includes(search.trim()) || r.phone.includes(search.trim()) || r.item.includes(search.trim());
+      if (!matchSearch) return false;
+
+      if (filter === "simple") return r.daysLate < 30;
+      if (filter === "medium") return r.daysLate >= 30 && r.daysLate <= 60;
+      if (filter === "critical") return r.daysLate > 60;
+      return true;
+    });
+  }, [processedRows, search, filter]);
+
+  const stats = useMemo(() => {
+    const totalDebt = processedRows.reduce((s, r) => s + r.debtAmount, 0);
+    const maxDays = processedRows.length > 0 ? Math.max(...processedRows.map((r) => r.daysLate)) : 0;
+    return { totalDebt, count: processedRows.length, maxDays };
+  }, [processedRows]);
+
+  const handleSendWhatsApp = (client) => {
+    const msg = `السلام عليكم ورحمة الله، أستاذ/ة ${client.name}.\nنود تذكيركم بوجود مستحقات متاخرة لقسط (${client.item}) بمبلغ ${fmt(client.debtAmount)} ج.م.\nبرجاء التكرم بالسداد في أقرب وقت. شكراً لتفهمكم!`;
+    window.open(`https://wa.me/2${client.phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  const handleConfirmPay = async (e) => {
+    e.preventDefault();
+    if (!payTarget || !payAmount) return;
+    await onPay(payTarget.id, parseFloat(payAmount) || 0, new Date().toISOString().split("T")[0]);
+    setPayTarget(null);
+    setPayAmount("");
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title={`المتأخرين عن السداد (${stats.count})`} onBack={onBack} />
+
+      <section style={{ ...styles.kpiRow, marginBottom: 16 }}>
+        <KPI icon={Wallet} label="إجمالي المتأخرات المطلوبة" sub="المبالغ المستحقة حالياً" value={fmt(stats.totalDebt)} />
+        <KPI icon={Users} label="عدد العملاء المتأخرين" sub="عملاء بحاجة للمتابعة" value={stats.count} />
+        <KPI icon={CalendarClock} label="أقصى مدة تأخير" sub="أطول فترة قسط غير مسدد" value={`${stats.maxDays} يوم`} />
+      </section>
+
+      <div style={{ ...styles.card, marginBottom: 16, padding: 16, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
+        <input
+          style={{ ...styles.input, maxWidth: 300 }}
+          placeholder="بحث باسم العميل أو التليفون أو السلعة..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {[
+            { key: "all", label: `الكل (${processedRows.length})` },
+            { key: "simple", label: "تأخير بسيط (< 30 يوم)" },
+            { key: "medium", label: "تأخير متوسط (30-60 يوم)" },
+            { key: "critical", label: "حرج (> 60 يوم)" },
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              type="button"
+              onClick={() => setFilter(btn.key)}
+              style={{
+                background: filter === btn.key ? "#d0b689" : "#1b1b1d",
+                color: filter === btn.key ? "#1b1b1d" : "#c4c4c4",
+                border: "1px solid #404040",
+                padding: "8px 14px",
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={styles.card}>
+        {filtered.length === 0 ? (
+          <div style={styles.emptyState}>لا يوجد عملاء متأخرين ينطبق عليهم شرط البحث حالياً.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {filtered.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  background: "#1b1b1d",
+                  border: "1px solid #404040",
+                  borderRadius: 12,
+                  padding: 16,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>{item.name}</div>
+                  <div style={{ fontSize: 13, color: "#e8cd9c", marginTop: 2 }}>{item.item} · {item.phone}</div>
+                  {item.guarantor && (
+                    <div style={{ fontSize: 12, color: "#999", marginTop: 2 }}>
+                      الضامن: {item.guarantor} ({item.guarantorPhone})
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#c4c4c4" }}>المستحق حالياً</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#e07a5f" }}>{fmt(item.debtAmount)} ج.م</div>
+                  </div>
+
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#c4c4c4" }}>مدة التأخير</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: item.daysLate > 60 ? "#e07a5f" : "#d0b689" }}>
+                      {item.daysLate} يوم
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      type="button"
+                      title="واتساب"
+                      onClick={() => handleSendWhatsApp(item)}
+                      style={{ background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700 }}
+                    >
+                      واتساب
+                    </button>
+                    <a
+                      href={`tel:${item.phone}`}
+                      style={{ background: "#1b2a38", border: "1px solid #385a7c", color: "#b2d4f5", padding: "8px 12px", borderRadius: 8, textDecoration: "none", fontSize: 12, fontWeight: 700 }}
+                    >
+                      اتصال
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => { setPayTarget(item); setPayAmount(item.debtAmount); }}
+                      style={{ background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 800 }}
+                    >
+                      تحصيل
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <BottomExitButton onBack={onBack} />
+      </div>
+
+      {payTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 }}>
+          <div style={{ ...styles.card, width: "100%", maxWidth: 400 }}>
+            <h3 style={{ color: "#e8cd9c", fontSize: 17, fontWeight: 800, marginBottom: 12 }}>تحصيل قسط: {payTarget.name}</h3>
+            <form onSubmit={handleConfirmPay} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Field label="المبلغ المراد تحصيله">
+                <input type="number" style={styles.input} value={payAmount} onChange={(e) => setPayAmount(e.target.value)} required />
+              </Field>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button type="submit" style={{ ...styles.saveBtn, flex: 1, marginTop: 0 }}>تأكيد التحصيل</button>
+                <button type="button" onClick={() => setPayTarget(null)} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 16px", cursor: "pointer", fontWeight: 700 }}>إلغاء</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonthlyDuesScreen({ rows, payments, onBack, onPay }) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [payTarget, setPayTarget] = useState(null);
+  const [payAmount, setPayAmount] = useState("");
+
+  const today = new Date();
+  const currentMonthName = today.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
+
+  const processedRows = useMemo(() => {
+    return rows
+      .filter((r) => r.remaining > 0 && r.monthly > 0)
+      .map((r) => {
+        const monthlyReq = Math.min(r.monthly, r.remaining);
+        const debt = r.debtAmount;
+        let status = "unpaid";
+        let paidThisMonth = 0;
+        let dueThisMonth = monthlyReq;
+
+        if (debt <= 0) {
+          status = "paid";
+          paidThisMonth = monthlyReq;
+        } else if (debt < monthlyReq) {
+          status = "partial";
+          paidThisMonth = monthlyReq - debt;
+        } else {
+          status = "unpaid";
+          paidThisMonth = 0;
+        }
+
+        return {
+          ...r,
+          dueThisMonth,
+          paidThisMonth,
+          remainingThisMonth: Math.max(0, dueThisMonth - paidThisMonth),
+          monthStatus: status
+        };
+      });
+  }, [rows]);
+
+  const filtered = useMemo(() => {
+    return processedRows.filter((r) => {
+      const matchSearch = r.name.includes(search.trim()) || r.phone.includes(search.trim()) || r.item.includes(search.trim());
+      if (!matchSearch) return false;
+
+      if (statusFilter === "paid") return r.monthStatus === "paid";
+      if (statusFilter === "partial") return r.monthStatus === "partial";
+      if (statusFilter === "unpaid") return r.monthStatus === "unpaid";
+      return true;
+    });
+  }, [processedRows, search, statusFilter]);
+
+  const stats = useMemo(() => {
+    const totalDue = processedRows.reduce((s, r) => s + r.dueThisMonth, 0);
+    const totalCollected = processedRows.reduce((s, r) => s + r.paidThisMonth, 0);
+    const totalRemaining = totalDue - totalCollected;
+    const progressPct = totalDue > 0 ? Math.round((totalCollected / totalDue) * 100) : 0;
+    return { totalDue, totalCollected, totalRemaining, progressPct };
+  }, [processedRows]);
+
+  const handleSendWhatsApp = (client) => {
+    const msg = `السلام عليكم ورحمة الله، أستاذ/ة ${client.name}.\nنود تذكيركم بحلول موعد قسط شهر (${currentMonthName}) لقسط (${client.item}) بقيمة ${fmt(client.dueThisMonth)} ج.م.\nبرجاء التكرم بالسداد في الموعد المحدد. شكراً لكم!`;
+    window.open(`https://wa.me/2${client.phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  const handleConfirmPay = async (e) => {
+    e.preventDefault();
+    if (!payTarget || !payAmount) return;
+    await onPay(payTarget.id, parseFloat(payAmount) || 0, new Date().toISOString().split("T")[0]);
+    setPayTarget(null);
+    setPayAmount("");
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title={`مستحقات شهر ${currentMonthName}`} onBack={onBack} />
+
+      <section style={{ ...styles.kpiRow, marginBottom: 16 }}>
+        <KPI icon={CalendarClock} label="إجمالي المطلوب هذا الشهر" sub="مجموع الأقساط المستحقة" value={fmt(stats.totalDue)} />
+        <KPI icon={Wallet} label="تم تحصيله حتى الآن" sub={`نسبة الإنجاز ${stats.progressPct}%`} value={fmt(stats.totalCollected)} />
+        <KPI icon={TrendingUp} label="المتبقي تحصيله" sub="مستحقات جاري متابعتها" value={fmt(stats.totalRemaining)} />
+      </section>
+
+      <div style={{ ...styles.card, marginBottom: 16, padding: 16, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
+        <input
+          style={{ ...styles.input, maxWidth: 300 }}
+          placeholder="بحث باسم العميل أو التليفون أو السلعة..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {[
+            { key: "all", label: `الكل (${processedRows.length})` },
+            { key: "unpaid", label: "لم يسدد" },
+            { key: "partial", label: "سداد جزئي" },
+            { key: "paid", label: "تم السداد" },
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              type="button"
+              onClick={() => setStatusFilter(btn.key)}
+              style={{
+                background: statusFilter === btn.key ? "#d0b689" : "#1b1b1d",
+                color: statusFilter === btn.key ? "#1b1b1d" : "#c4c4c4",
+                border: "1px solid #404040",
+                padding: "8px 14px",
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={styles.card}>
+        {filtered.length === 0 ? (
+          <div style={styles.emptyState}>لا توجد مستحقات تنطبق عليها معايير البحث.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {filtered.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16,
+                  display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>{item.name}</div>
+                  <div style={{ fontSize: 13, color: "#e8cd9c", marginTop: 2 }}>{item.item} · {item.phone}</div>
+                </div>
+
+                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#c4c4c4" }}>قسط الشهر</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#d0b689" }}>{fmt(item.dueThisMonth)} ج.م</div>
+                  </div>
+
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#c4c4c4" }}>حالة السداد</div>
+                    <div
+                      style={{
+                        fontSize: 12, fontWeight: 800, padding: "4px 8px", borderRadius: 6,
+                        background: item.monthStatus === "paid" ? "#213526" : item.monthStatus === "partial" ? "#3d3527" : "#3a2320",
+                        color: item.monthStatus === "paid" ? "#bfe8cd" : item.monthStatus === "partial" ? "#e8cd9c" : "#f0c6bb",
+                        border: `1px solid ${item.monthStatus === "paid" ? "#3d6b4a" : item.monthStatus === "partial" ? "#b6935a" : "#7a4a3f"}`,
+                      }}
+                    >
+                      {item.monthStatus === "paid" ? "تم السداد" : item.monthStatus === "partial" ? "سداد جزئي" : "لم يسدد"}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      type="button"
+                      title="واتساب"
+                      onClick={() => handleSendWhatsApp(item)}
+                      style={{ background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700 }}
+                    >
+                      واتساب
+                    </button>
+                    <a
+                      href={`tel:${item.phone}`}
+                      style={{ background: "#1b2a38", border: "1px solid #385a7c", color: "#b2d4f5", padding: "8px 12px", borderRadius: 8, textDecoration: "none", fontSize: 12, fontWeight: 700 }}
+                    >
+                      اتصال
+                    </a>
+                    {item.monthStatus !== "paid" && (
+                      <button
+                        type="button"
+                        onClick={() => { setPayTarget(item); setPayAmount(item.remainingThisMonth); }}
+                        style={{ background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 800 }}
+                      >
+                        تحصيل
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <BottomExitButton onBack={onBack} />
+      </div>
+
+      {payTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 }}>
+          <div style={{ ...styles.card, width: "100%", maxWidth: 400 }}>
+            <h3 style={{ color: "#e8cd9c", fontSize: 17, fontWeight: 800, marginBottom: 12 }}>تحصيل قسط: {payTarget.name}</h3>
+            <form onSubmit={handleConfirmPay} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Field label="المبلغ المراد تحصيله">
+                <input type="number" style={styles.input} value={payAmount} onChange={(e) => setPayAmount(e.target.value)} required />
+              </Field>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button type="submit" style={{ ...styles.saveBtn, flex: 1, marginTop: 0 }}>تأكيد التحصيل</button>
+                <button type="button" onClick={() => setPayTarget(null)} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 16px", cursor: "pointer", fontWeight: 700 }}>إلغاء</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DeleteClientScreen({ clients, setClients, deletedClients, setDeletedClients, onBack, notify }) {
+  const [activeTab, setActiveTab] = useState("search");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  const suggestions = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    const term = searchTerm.trim().toLowerCase();
+    return clients.filter(
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.phone.includes(term) ||
+        c.item.toLowerCase().includes(term)
+    );
+  }, [clients, searchTerm]);
+
+  const handleMoveToTrash = (client) => {
+    const deletedItem = {
+      ...client,
+      deletedAt: new Date().toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })
+    };
+    setDeletedClients((prev) => [...prev, deletedItem]);
+    setClients((prev) => prev.filter((c) => String(c.id) !== String(client.id)));
+    setSelectedClient(null);
+    setSearchTerm("");
+    notify("تم نقل العميل إلى سلة المحذوفات بنجاح");
+  };
+
+  const handleRestore = (client) => {
+    const { deletedAt, ...restoredClient } = client;
+    setClients((prev) => [...prev, restoredClient]);
+    setDeletedClients((prev) => prev.filter((c) => String(c.id) !== String(client.id)));
+    notify("تمت استعادة حساب العميل إلى النظام النشط بنجاح");
+  };
+
+  const handlePermanentDelete = async (clientId) => {
+    try {
+      if (supabase) {
+        await supabase.from("clients").delete().eq("id", clientId);
+      }
+      setDeletedClients((prev) => prev.filter((c) => String(c.id) !== String(clientId)));
+      setConfirmDeleteId(null);
+      notify("تم حذف حساب العميل نهائياً من قاعدة البيانات السحابية");
+    } catch (err) {
+      console.error(err);
+      notify("حدث خطأ أثناء الحذف النهائي", "error");
+    }
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="حذف وإدارة حسابات العملاء" onBack={onBack} />
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab("search")}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: activeTab === "search" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d",
+            color: activeTab === "search" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer"
+          }}
+        >
+          البحث ونقل للسلة
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("trash")}
+          style={{
+            flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040",
+            background: activeTab === "trash" ? "#3a2320" : "#1b1b1d",
+            color: activeTab === "trash" ? "#f0c6bb" : "#c4c4c4", borderColor: activeTab === "trash" ? "#7a4a3f" : "#404040",
+            fontWeight: 800, fontSize: 14, cursor: "pointer"
+          }}
+        >
+          سلة المحذوفات ({deletedClients.length})
+        </button>
+      </div>
+
+      {activeTab === "search" && (
+        <div style={styles.card}>
+          <Field label="ابحث باسم العميل أو رقم الهاتف أو السلعة">
+            <div style={{ position: "relative" }}>
+              <input
+                style={styles.input}
+                placeholder="اكتب حرفاً أو اسماً للفلترة الحية..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setSelectedClient(null);
+                }}
+              />
+
+              {searchTerm.trim() && !selectedClient && (
+                <div style={styles.suggestBox}>
+                  {suggestions.length > 0 ? (
+                    suggestions.map((item) => (
+                      <button
+                        type="button"
+                        key={item.id}
+                        style={styles.suggestItem}
+                        onClick={() => {
+                          setSelectedClient(item);
+                          setSearchTerm(item.name);
+                        }}
+                      >
+                        <span style={styles.suggestLabel}>{item.name}</span>
+                        <span style={styles.suggestSecondary}>{item.item} · {item.phone}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div style={{ padding: 12, textAlign: "center", color: "#888", fontSize: 13 }}>
+                      لا يوجد عميل يطابق البحث
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Field>
+
+          {selectedClient && (
+            <div style={styles.profileBox}>
+              <h3 style={styles.historyTitle}>بيانات العميل المحدد: {selectedClient.name}</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                <ProfileRow label="رقم الهاتف" value={selectedClient.phone} />
+                <ProfileRow label="السلعة" value={selectedClient.item} />
+                <ProfileRow label="إجمالي المتبقي" value={`${fmt(selectedClient.sale - selectedClient.down - selectedClient.totalPaid)} ج.م`} />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleMoveToTrash(selectedClient)}
+                style={{ ...styles.saveBtn, background: "linear-gradient(145deg, #d69a5f, #b06a35)", color: "#ffffff" }}
+              >
+                نقل العميل إلى سلة المحذوفات
+              </button>
+            </div>
+          )}
+          <BottomExitButton onBack={onBack} />
+        </div>
+      )}
+
+      {activeTab === "trash" && (
+        <div style={styles.card}>
+          {deletedClients.length === 0 ? (
+            <div style={styles.emptyState}>سلة المحذوفات فارغة حالياً.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {deletedClients.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    background: "#1b1b1d", border: "1px solid #404040", borderRadius: 12, padding: 16,
+                    display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>{item.name}</div>
+                    <div style={{ fontSize: 13, color: "#e8cd9c", marginTop: 2 }}>{item.item} · {item.phone}</div>
+                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>تاريخ النقل للسلة: {item.deletedAt}</div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => handleRestore(item)}
+                      style={{ background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      استعادة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(item.id)}
+                      style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      حذف نهائي
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <BottomExitButton onBack={onBack} />
+        </div>
+      )}
+
+      {confirmDeleteId && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 }}>
+          <div style={{ ...styles.card, width: "100%", maxWidth: 400, textAlign: "center" }}>
+            <h3 style={{ color: "#e07a5f", fontSize: 18, fontWeight: 800, marginBottom: 8 }}>تأكيد الحذف النهائي</h3>
+            <p style={{ color: "#c4c4c4", fontSize: 13, marginBottom: 16 }}>
+              هل أنت تأكد من مسح هذا العميل نهائياً؟ لن تتمكن من استعادته أو الوصول لبياناته مرة أخرى من السحابة.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => handlePermanentDelete(confirmDeleteId)}
+                style={{ ...styles.saveBtn, flex: 1, background: "#e07a5f", color: "#fff", marginTop: 0 }}
+              >
+                تأكيد الحذف
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 16px", cursor: "pointer", fontWeight: 700 }}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReceiptModal({ receipt, onClose }) {
+  const { client, payment } = receipt;
+  const totalPaidSoFar = client.totalPaid;
+  const remainingDebt = Math.max(0, client.sale - client.down - totalPaidSoFar);
+  const remainingInstallments = client.monthly > 0 ? Math.ceil(remainingDebt / client.monthly) : 0;
+  const isPaidInFull = remainingDebt <= 0;
+
+  const handlePrint = () => { window.print(); };
+
+  const handleDownloadImage = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 650;
+    canvas.height = 780;
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#1b1b1d"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#d0b689"; ctx.lineWidth = 4; ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+
+    ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 26px Cairo, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("إيصال استلام قسط — نظام الأقساط", canvas.width / 2, 60);
+
+    ctx.fillStyle = "#c4c4c4"; ctx.font = "14px Cairo, sans-serif";
+    ctx.fillText(`تاريخ الإيصال: ${payment.payDate || new Date().toISOString().split("T")[0]}`, canvas.width / 2, 90);
+
+    ctx.strokeStyle = "#404040"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(40, 110); ctx.lineTo(canvas.width - 40, 110); ctx.stroke();
+
+    const drawRow = (label, val, y, isGold = false) => {
+      ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "16px Cairo, sans-serif";
+      ctx.fillText(label, canvas.width - 50, y);
+      ctx.textAlign = "left"; ctx.fillStyle = isGold ? "#e8cd9c" : "#ffffff"; ctx.font = isGold ? "bold 18px Cairo, sans-serif" : "bold 16px Cairo, sans-serif";
+      ctx.fillText(String(val), 50, y);
+    };
+
+    drawRow("اسم العميل:", client.name, 150, true);
+    drawRow("السلعة المباعة:", client.item, 190);
+    drawRow("إجمالي عقد البيع:", `${fmt(client.sale)} ج.م`, 230);
+    drawRow("المقدم المدفوع:", `${fmt(client.down)} ج.م`, 270);
+    drawRow("المسدد كلياً حتى الآن:", `${fmt(totalPaidSoFar)} ج.م`, 310);
+    drawRow("المتبقي الكلي على العميل:", `${fmt(remainingDebt)} ج.م`, 350, true);
+    drawRow("عدد الأقساط المتبقية:", `${remainingInstallments} قسط`, 390);
+
+    ctx.beginPath(); ctx.moveTo(40, 420); ctx.lineTo(canvas.width - 40, 420); ctx.stroke();
+
+    ctx.fillStyle = "#211f18"; ctx.fillRect(40, 440, canvas.width - 80, 140);
+    ctx.strokeStyle = "#d0b689"; ctx.strokeRect(40, 440, canvas.width - 80, 140);
+
+    ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
+    ctx.fillText("المبلغ المدفوع حالياً:", canvas.width - 60, 480);
+    ctx.textAlign = "left"; ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 24px Cairo, sans-serif";
+    ctx.fillText(`${fmt(payment.amount)} ج.م`, 60, 480);
+
+    ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
+    ctx.fillText("طريقة الدفع والمحصل:", canvas.width - 60, 520);
+    ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"; ctx.font = "bold 15px Cairo, sans-serif";
+    ctx.fillText(`${payment.method || "كاش"} · ${payment.collector || "المشرف"}`, 60, 520);
+
+    ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
+    ctx.fillText("المتبقي بعد هذا القسط:", canvas.width - 60, 555);
+    ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"; ctx.font = "bold 16px Cairo, sans-serif";
+    ctx.fillText(`${fmt(payment.remainingAfter)} ج.م`, 60, 555);
+
+    if (isPaidInFull) {
+      ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 20px Cairo, sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("🏆 تم مخالصة وسداد هذا العقد بالكامل 🏆", canvas.width / 2, 630);
+    }
+
+    ctx.fillStyle = "#888888"; ctx.font = "13px Cairo, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("شكراً لالتزامكم بالسداد في الموعد المحدد", canvas.width / 2, 720);
+
+    const link = document.createElement("a");
+    link.download = `إيصال_${client.name}_${payment.payDate || "سداد"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  const handleWhatsAppShare = () => {
+    const msg = `إيصال سداد قسط 🧾\nاسم العميل: ${client.name}\nالسلعة: ${client.item}\nالمبلغ المدفوع: ${fmt(payment.amount)} ج.م\nالمتبقي الحالي: ${fmt(payment.remainingAfter)} ج.م\nتاريخ السداد: ${payment.payDate}\nشكراً لالتزامكم بالتسديد!`;
+    window.open(`https://wa.me/2${client.phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+      <div style={{ background: "#242426", border: "1px solid #d0b689", borderRadius: 18, width: "100%", maxWidth: 520, padding: 24, color: "#fff", position: "relative", boxShadow: "0 20px 50px rgba(0,0,0,0.8)" }}>
+        
+        <button onClick={onClose} style={{ position: "absolute", top: 16, left: 16, background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", width: 34, height: 36, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <X size={18} />
+        </button>
+
+        <div id="printable-receipt" style={{ textAlign: "center", paddingBottom: 10 }}>
+          <div style={{ color: "#e8cd9c", fontSize: 20, fontWeight: 800, marginBottom: 4 }}>إيصال استلام قسط</div>
+          <div style={{ color: "#c4c4c4", fontSize: 12 }}>تاريخ العملية: {payment.payDate || new Date().toISOString().split("T")[0]}</div>
+          <div style={{ height: 1, background: "#404040", margin: "14px 0" }} />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "right", fontSize: 14 }}>
+            <ReceiptRow label="اسم العميل" val={client.name} highlight />
+            <ReceiptRow label="السلعة" val={client.item} />
+            <ReceiptRow label="إجمالي العقد" val={`${fmt(client.sale)} ج.م`} />
+            <ReceiptRow label="المقدم المدفوع" val={`${fmt(client.down)} ج.م`} />
+            <ReceiptRow label="المسدد كلياً" val={`${fmt(totalPaidSoFar)} ج.م`} />
+            <ReceiptRow label="المتبقي الكلي" val={`${fmt(remainingDebt)} ج.م`} highlight />
+            <ReceiptRow label="أقساط متبقية" val={`${remainingInstallments} قسط`} />
+          </div>
+
+          <div style={{ background: "#1b1b1d", border: "1px dashed #d0b689", borderRadius: 12, padding: 14, margin: "16px 0", display: "flex", flexDirection: "column", gap: 6, textAlign: "right" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ color: "#c4c4c4", fontSize: 13 }}>المبلغ المدفوع حالياً:</span>
+              <span style={{ color: "#e8cd9c", fontSize: 22, fontWeight: 800 }}>{fmt(payment.amount)} ج.م</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#888" }}>
+              <span>طريقة الدفع والمحصل:</span>
+              <span style={{ color: "#fff", fontWeight: 700 }}>{payment.method || "كاش"} · {payment.collector || "المشرف"}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#c4c4c4", marginTop: 4 }}>
+              <span>المتبقي بعد هذا القسط:</span>
+              <span style={{ color: "#fff", fontWeight: 800 }}>{fmt(payment.remainingAfter)} ج.م</span>
+            </div>
+          </div>
+
+          {isPaidInFull && (
+            <div style={{ background: "rgba(232,205,156,0.15)", border: "1px solid #e8cd9c", color: "#e8cd9c", padding: "10px", borderRadius: 10, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <Award size={18} /> تم مخالصة وسداد هذا العقد بالكامل
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginTop: 16 }}>
+          <button type="button" onClick={handlePrint} style={{ background: "linear-gradient(145deg, #e8cd9c, #d0b689)", color: "#1b1b1d", border: "none", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Printer size={16} /> طباعة الإيصال
+          </button>
+          <button type="button" onClick={handleDownloadImage} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", borderRadius: 10, padding: "11px", fontWeight 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Download size={16} /> تنزيل الصورة
+          </button>
+          <button type="button" onClick={handleWhatsAppShare} style={{ gridColumn: "1 / -1", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Share2 size={16} /> إرسال عبر الواتساب
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReceiptRow({ label, val, highlight }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #2a2a2d", paddingBottom: 4 }}>
+      <span style={{ color: "#c4c4c4" }}>{label}:</span>
+      <span style={{ color: highlight ? "#e8cd9c" : "#ffffff", fontWeight: highlight ? 800 : 600 }}>{val}</span>
+    </div>
+  );
+}
+
+function ScreenHeader({ title, onBack }) {
+  return (
+    <div style={styles.subHeader}>
+      <button style={styles.backBtn} onClick={onBack} title="رجوع للرئيسية">
+        <ArrowRight size={16} /> رجوع للرئيسية
+      </button>
+      <div style={styles.subTitle}>{title}</div>
+      <button type="button" style={styles.topCloseBtn} onClick={onBack} title="إغلاق الشاشة والعودة للرئيسية">
+        <X size={18} />
+      </button>
+    </div>
+  );
+}
+
+function BottomExitButton({ onBack }) {
+  return (
+    <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #333336" }}>
+      <button
+        type="button"
+        onClick={onBack}
+        style={{
+          width: "100%", background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c",
+          borderRadius: 12, padding: "13px 20px", fontSize: 14, fontWeight: 800, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "inherit"
+        }}
+      >
+        <ArrowRight size={16} /> خروج والعودة للشاشة الرئيسية
+      </button>
+    </div>
+  );
+}
+
+/* أنماط التصميم */
 const styles = {
   page: { minHeight: "100vh", background: `radial-gradient(1200px 600px at 20% -10%, #2a271f 0%, #1b1b1d 55%)`, padding: "24px 16px 60px", fontFamily: "'Cairo', 'Tajawal', system-ui, sans-serif", color: "#ffffff" },
   container: { maxWidth: 1100, margin: "0 auto" },
-  toast: { position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "10px 18px", borderRadius: 12, fontSize: 13.5, display: "flex", alignItems: "center", gap: 8, zIndex: 5000 },
+  toast: { position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "10px 18px", borderRadius: 12, fontSize: 13.5, display: "flex", alignItems: "center", gap: 8, zIndex: 50 },
   toastError: { background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb" },
   dashHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", background: `linear-gradient(135deg, #e6cf9e 0%, #b6935a 50%, #8a6a35 100%)`, borderRadius: 18, padding: "18px 24px", marginBottom: 20 },
   adminBadge: { background: "#1b1b1d", color: "#e8cd9c", fontSize: 12.5, fontWeight: 700, padding: "8px 16px", borderRadius: 10 },
   dashTitle: { fontSize: 22, fontWeight: 800, color: "#2c2211" },
   dashSub: { fontSize: 12.5, color: "#5a4a2c", marginTop: 2 },
   calcIcon: { width: 44, height: 44, borderRadius: 12, background: "#1b1b1d", display: "flex", alignItems: "center", justifyContent: "center" },
-  kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 },
+  kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14, marginBottom: 20 },
   kpiCard: { background: "#242426", border: `1px solid #404040`, borderRadius: 16, padding: "20px 20px" },
   kpiValue: { fontSize: 24, fontWeight: 800, color: "#ffffff", fontVariantNumeric: "tabular-nums" },
   kpiLabel: { fontSize: 13.5, color: "#e8cd9c", fontWeight: 700, marginTop: 8 },
@@ -1431,7 +2723,7 @@ const styles = {
   input: { width: "100%", background: "#1b1b1d", border: "1px solid #404040", borderRadius: 10, padding: "12px 14px", color: "#ffffff", fontFamily: "inherit", fontSize: 15, outline: "none" },
   sectionLabel: { gridColumn: "1 / -1", fontSize: 13.5, fontWeight: 800, color: "#d0b689", marginTop: 12, paddingBottom: 8, borderBottom: `1px solid #404040` },
   liveBox: { gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: "#211f18", border: "1px dashed rgba(208,182,137,0.5)", borderRadius: 12, padding: 14, margin: "6px 0" },
-  saveBtn: { gridColumn: "1 / -1", background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", borderRadius: 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 8, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 },
+  saveBtn: { gridColumn: "1 / -1", background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", borderRadius: 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 8, fontFamily: "inherit" },
   errorBox: { background: "rgba(224,122,95,0.12)", border: "1px solid rgba(224,122,95,0.5)", color: "#e07a5f", borderRadius: 10, padding: "12px 14px", fontSize: 14, marginBottom: 16 },
   emptyState: { textAlign: "center", color: "#c4c4c4", padding: "30px 10px", fontSize: 15 },
   historyTitle: { fontSize: 16, fontWeight: 800, color: "#e8cd9c", marginTop: 22, marginBottom: 16, paddingTop: 16, borderTop: `1px solid #404040` },
