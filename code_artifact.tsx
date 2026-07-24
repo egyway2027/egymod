@@ -10,7 +10,7 @@ const SUPABASE_URL = 'https://blijuizmqoprlrsuebgo.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rw8Rym37iQoFRWkLXaDbfw_MaKL65Tc';
 let supabase = null;
 
-// دالة آمنة لقراءة الذاكرة بدون أخطاء تسبب شاشة بيضاء
+// دالة آمنة لقراءة الذاكرة بدون أخطاء
 function safeJSONParse(key, fallback) {
   try {
     const saved = localStorage.getItem(key);
@@ -1287,7 +1287,11 @@ function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, 
           <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 14 }}>
             <thead>
               <tr style={{ background: "#1b1b1d", color: "#e8cd9c", borderBottom: "1px solid #404040" }}>
-                <th style={{ padding: "10px" }}>الشريك</th><th style={{ padding: "10px" }}>النسبة</th><th style={{ padding: "10px" }}>مسحوباته السابقة</th><th style={{ padding: "10px" }}>نصيبه من هذا التوزيع</th><th style={{ padding: "10px", textAlign: "center" }}>القرار</th>
+                <th style={{ padding: "10px" }}>الشريك</th>
+                <th style={{ padding: "10px" }}>النسبة</th>
+                <th style={{ padding: "10px" }}>مسحوباته السابقة</th>
+                <th style={{ padding: "10px" }}>نصيبه من هذا التوزيع</th>
+                <th style={{ padding: "10px", textAlign: "center" }}>القرار</th>
               </tr>
             </thead>
             <tbody>
@@ -1320,8 +1324,9 @@ function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, 
 }
 
 /* ============================================================
-   باقي مكونات الهيدر والأزرار والأنماط الثابتة
+   المكونات المساعدة للوحة التحكم والشاشات القياسية
    ============================================================ */
+
 function ScreenHeader({ title, onBack }) {
   return (
     <div style={styles.subHeader}>
@@ -2191,26 +2196,6 @@ function ReceiptRow({ label, val, highlight }) {
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #2a2a2d", paddingBottom: 4 }}>
       <span style={{ color: "#c4c4c4" }}>{label}:</span>
       <span style={{ color: highlight ? "#e8cd9c" : "#ffffff", fontWeight: highlight ? 800 : 600 }}>{val}</span>
-    </div>
-  );
-}
-
-function ScreenHeader({ title, onBack }) {
-  return (
-    <div style={styles.subHeader}>
-      <button style={styles.backBtn} onClick={onBack} title="رجوع للرئيسية"><ArrowRight size={16} /> رجوع للرئيسية</button>
-      <div style={styles.subTitle}>{title}</div>
-      <button type="button" style={styles.topCloseBtn} onClick={onBack} title="إغلاق"><X size={18} /></button>
-    </div>
-  );
-}
-
-function BottomExitButton({ onBack }) {
-  return (
-    <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #333336" }}>
-      <button type="button" onClick={onBack} style={{ width: "100%", background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", borderRadius: 12, padding: "13px 20px", fontSize: 14, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "inherit" }}>
-        <ArrowRight size={16} /> خروج والعودة للشاشة الرئيسية
-      </button>
     </div>
   );
 }
