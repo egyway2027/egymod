@@ -1,9 +1,11 @@
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   CreditCard, UserPlus, CalendarClock, Search, UserX, UploadCloud,
   KeyRound, Power, Wallet, TrendingUp, Calculator, ArrowRight,
   Trash2, CheckCircle2, X, Users, UserCog, Printer, Download, Share2, Award,
   DollarSign, RefreshCw, UserMinus, Settings, Globe, Palette, Lock, ShieldCheck, Store, Check
 } from "lucide-react";
+
 
 const SUPABASE_URL = 'https://blijuizmqoprlrsuebgo.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rw8Rym37iQoFRWkLXaDbfw_MaKL65Tc';
