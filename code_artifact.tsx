@@ -215,9 +215,64 @@ function EgymodApp() {
     localStorage.setItem("egymod_trash", JSON.stringify(deletedClients));
   }, [deletedClients]);
   
-  const [partners, setPartners] = useState(seedPartners);
-  const [expenses] = useState(seedExpenses);
-  const [employees, setEmployees] = useState(seedEmployees);
+  const [partners, setPartners] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_partners");
+      return saved ? JSON.parse(saved) : seedPartners;
+    } catch { return seedPartners; }
+  });
+
+  const [expenses, setExpenses] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_expenses");
+      return saved ? JSON.parse(saved) : seedExpenses;
+    } catch { return seedExpenses; }
+  });
+
+  const [employees, setEmployees] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_employees");
+      return saved ? JSON.parse(saved) : seedEmployees;
+    } catch { return seedEmployees; }
+  });
+
+  const [salaryLog, setSalaryLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_salary_log");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const [withdrawalsLog, setWithdrawalsLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_withdrawals");
+      return saved ? JSON.parse(saved) : [
+        { id: 1, partnerId: 1, partnerName: "مصطفى جمال", amount: 5000, date: "2026-07-15", notes: "مسحوبات أرباح" }
+      ];
+    } catch { return []; }
+  });
+
+  const [distributionsLog, setDistributionsLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_distributions");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => { localStorage.setItem("egymod_partners", JSON.stringify(partners)); }, [partners]);
+  useEffect(() => { localStorage.setItem("egymod_expenses", JSON.stringify(expenses)); }, [expenses]);
+  useEffect(() => { localStorage.setItem("egymod_employees", JSON.stringify(employees)); }, [employees]);
+  useEffect(() => { localStorage.setItem("egymod_salary_log", JSON.stringify(salaryLog)); }, [salaryLog]);
+  useEffect(() => { localStorage.setItem("egymod_withdrawals", JSON.stringify(withdrawalsLog)); }, [withdrawalsLog]);
+  useEffect(() => { localStorage.setItem("egymod_distributions", JSON.stringify(distributionsLog)); }, [distributionsLog]);
+
+  function settleAndRemovePartner(partnerId) {
+    const p = partners.find(x => String(x.id) === String(partnerId));
+    if (!p) return;
+    setPartners((prev) => prev.filter(x => String(x.id) !== String(partnerId)));
+    setWithdrawalsLog((prev) => prev.filter(w => String(w.partnerId) !== String(partnerId)));
+    notify(`تمت تصفية حساب الشريك ${p.name} وحذفه من الشركة بنجاح!`);
+  }
   const [today] = useState(new Date());
   const [screen, setScreen] = useState("dashboard");
   const [toast, setToast] = useState(null);
