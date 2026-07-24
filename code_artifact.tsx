@@ -648,7 +648,46 @@ function EgymodApp() {
       )}
       {screen === "lateClients" && <LateClientsScreen rows={lateRows} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
       {screen === "changePassword" && <PlaceholderScreen title="تغيير كلمة السر" onBack={() => setScreen("dashboard")} />}
-      {screen === "treasury" && <PlaceholderScreen title="الخزينة وتوزيع الأرباح" onBack={() => setScreen("dashboard")} />}
+      {screen === "treasury" && (
+        <TreasuryMainScreen
+          partners={partners} expenses={expenses} employees={employees}
+          salaryLog={salaryLog} withdrawalsLog={withdrawalsLog} totals={totals}
+          onNavigate={setScreen} onBack={() => setScreen("dashboard")}
+        />
+      )}
+
+      {screen === "treasuryPartners" && (
+        <PartnersScreen
+          partners={partners} onAddPartner={addPartner}
+          withdrawalsLog={withdrawalsLog} setWithdrawalsLog={setWithdrawalsLog}
+          onSettlePartner={settleAndRemovePartner} onBack={() => setScreen("treasury")} notify={notify}
+        />
+      )}
+
+      {screen === "treasuryExpenses" && (
+        <ExpensesScreen
+          expenses={expenses} setExpenses={setExpenses}
+          onBack={() => setScreen("treasury")} notify={notify}
+        />
+      )}
+
+      {screen === "treasuryEmployees" && (
+        <EmployeesMergedScreen
+          employees={employees} setEmployees={setEmployees}
+          salaryLog={salaryLog} setSalaryLog={setSalaryLog}
+          onBack={() => setScreen("treasury")} notify={notify}
+        />
+      )}
+
+      {screen === "treasuryDistribute" && (
+        <ProfitDistributionScreen
+          partners={partners} setPartners={setPartners}
+          expenses={expenses} salaryLog={salaryLog}
+          withdrawalsLog={withdrawalsLog} setWithdrawalsLog={setWithdrawalsLog}
+          distributionsLog={distributionsLog} setDistributionsLog={setDistributionsLog}
+          totals={totals} onBack={() => setScreen("treasury")} notify={notify}
+        />
+      )}
       {screen === "backup" && <PlaceholderScreen title="النسخ الاحتياطي السحابي" note="تم ربط النظام بقاعدة بيانات Supabase بنجاح." onBack={() => setScreen("dashboard")} />}
 
       {activeReceipt && (
