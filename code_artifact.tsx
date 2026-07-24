@@ -2,7 +2,8 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   CreditCard, UserPlus, CalendarClock, Search, UserX, UploadCloud,
   KeyRound, Power, Wallet, TrendingUp, Calculator, ArrowRight,
-  Trash2, CheckCircle2, X, Users, UserCog, Printer, Download, Share2, Award
+  Trash2, CheckCircle2, X, Users, UserCog, Printer, Download, Share2, Award,
+  DollarSign, RefreshCw, UserMinus
 } from "lucide-react";
 
 const SUPABASE_URL = 'https://blijuizmqoprlrsuebgo.supabase.co';
@@ -90,12 +91,12 @@ const seedPartners = [
   { id: 2, name: "خالد فتحي", capital: 50000, profit: 6000, withdrawals: 0 },
 ];
 const seedExpenses = [{ id: 1, date: "2026-07-01", category: "إيجار المحل", amount: 3000, notes: "" }];
-const seedEmployees = [{ id: 1, name: "سعيد عبد الله", phone: "01011112222", job: "محصل", salary: 3500, hireDate: "2025-01-01" }];
+const seedEmployees = [{ id: 1, name: "سعيد عبد الله", phone: "01011112222", job: "محصل", salary: 3500, hireDate: "2025-01-01", status: "نشط" }];
 
 const emptyForm = { name: "", phone: "", guarantor: "", guarantorPhone: "", item: "", cost: "", sale: "", down: "", monthly: "", contractDate: "", firstPayDate: "", notes: "" };
 
 /* ============================================================
-   مكون إدخال التاريخ الذكي (يعالج مشكلة قنس/رهش/موي)
+   مكون إدخال التاريخ الذكي
    ============================================================ */
 function DateInput({ value, onChange, disabled, required, placeholder = "سنة - شهر - يوم", style }) {
   const [focused, setFocused] = useState(false);
@@ -188,14 +189,11 @@ function EgymodApp() {
 
   const [clients, setClients] = useState([]);
 
-  // حفظ واسترجاع جدول المدفوعات محلياً كنسخة احتياطية
   const [payments, setPayments] = useState(() => {
     try {
       const saved = localStorage.getItem("egymod_payments");
       return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   });
 
   useEffect(() => {
@@ -206,18 +204,65 @@ function EgymodApp() {
     try {
       const saved = localStorage.getItem("egymod_trash");
       return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   });
 
   useEffect(() => {
     localStorage.setItem("egymod_trash", JSON.stringify(deletedClients));
   }, [deletedClients]);
   
-  const [partners, setPartners] = useState(seedPartners);
-  const [expenses] = useState(seedExpenses);
-  const [employees, setEmployees] = useState(seedEmployees);
+  // حالة الخزينة والماليات المحدثة
+  const [partners, setPartners] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_partners");
+      return saved ? JSON.parse(saved) : seedPartners;
+    } catch { return seedPartners; }
+  });
+
+  const [expenses, setExpenses] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_expenses");
+      return saved ? JSON.parse(saved) : seedExpenses;
+    } catch { return seedExpenses; }
+  });
+
+  const [employees, setEmployees] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_employees");
+      return saved ? JSON.parse(saved) : seedEmployees;
+    } catch { return seedEmployees; }
+  });
+
+  const [salaryLog, setSalaryLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_salary_log");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const [withdrawalsLog, setWithdrawalsLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_withdrawals");
+      return saved ? JSON.parse(saved) : [
+        { id: 1, partnerId: 1, partnerName: "مصطفى جمال", amount: 5000, date: "2026-07-15", notes: "مسحوبات أرباح" }
+      ];
+    } catch { return []; }
+  });
+
+  const [distributionsLog, setDistributionsLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem("egymod_distributions");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => { localStorage.setItem("egymod_partners", JSON.stringify(partners)); }, [partners]);
+  useEffect(() => { localStorage.setItem("egymod_expenses", JSON.stringify(expenses)); }, [expenses]);
+  useEffect(() => { localStorage.setItem("egymod_employees", JSON.stringify(employees)); }, [employees]);
+  useEffect(() => { localStorage.setItem("egymod_salary_log", JSON.stringify(salaryLog)); }, [salaryLog]);
+  useEffect(() => { localStorage.setItem("egymod_withdrawals", JSON.stringify(withdrawalsLog)); }, [withdrawalsLog]);
+  useEffect(() => { localStorage.setItem("egymod_distributions", JSON.stringify(distributionsLog)); }, [distributionsLog]);
+
   const [today] = useState(new Date());
   const [screen, setScreen] = useState("dashboard");
   const [toast, setToast] = useState(null);
@@ -469,15 +514,16 @@ function EgymodApp() {
   }
 
   function addPartner(name, capital) {
-    setPartners((prev) => [...prev, { id: Date.now(), name, capital: parseFloat(capital), profit: 0, withdrawals: 0 }]);
+    setPartners((prev) => [...prev, { id: Date.now(), name, capital: parseFloat(capital) || 0, profit: 0, withdrawals: 0 }]);
     notify("تم تسجيل بيانات الشريك الجديد بنجاح!");
-    setScreen("dashboard");
   }
 
-  function addEmployee(data) {
-    setEmployees((prev) => [...prev, { id: Date.now(), ...data, salary: parseFloat(data.salary) }]);
-    notify("تم حفظ بيانات الموظف بنجاح!");
-    setScreen("dashboard");
+  function settleAndRemovePartner(partnerId) {
+    const p = partners.find(x => String(x.id) === String(partnerId));
+    if (!p) return;
+    setPartners((prev) => prev.filter(x => String(x.id) !== String(partnerId)));
+    setWithdrawalsLog((prev) => prev.filter(w => String(w.partnerId) !== String(partnerId)));
+    notify(`تمت تصفية حساب الشريك ${p.name} وحذفه من الشركة بنجاح!`);
   }
 
   if (!currentUser) {
@@ -577,8 +623,47 @@ function EgymodApp() {
       {screen === "addClient" && <AddClientScreen onSave={addClient} onBack={() => setScreen("dashboard")} />}
       {screen === "search" && <SearchScreen rows={rows} onUpdateClient={updateClient} onBack={() => setScreen("dashboard")} />}
 
-      {screen === "addPartner" && <AddPartnerScreen partners={partners.map(p => ({ ...p, net: p.capital + p.profit - p.withdrawals }))} onSave={addPartner} onBack={() => setScreen("dashboard")} />}
-      {screen === "addEmployee" && <AddEmployeeScreen onSave={addEmployee} onBack={() => setScreen("dashboard")} />}
+      {/* ربط شاشات الخزينة الجديدة بالكامل */}
+      {screen === "treasury" && (
+        <TreasuryMainScreen
+          partners={partners} expenses={expenses} employees={employees}
+          salaryLog={salaryLog} withdrawalsLog={withdrawalsLog} totals={totals}
+          onNavigate={setScreen} onBack={() => setScreen("dashboard")}
+        />
+      )}
+
+      {screen === "treasuryPartners" && (
+        <PartnersScreen
+          partners={partners} onAddPartner={addPartner}
+          withdrawalsLog={withdrawalsLog} setWithdrawalsLog={setWithdrawalsLog}
+          onSettlePartner={settleAndRemovePartner} onBack={() => setScreen("treasury")} notify={notify}
+        />
+      )}
+
+      {screen === "treasuryExpenses" && (
+        <ExpensesScreen
+          expenses={expenses} setExpenses={setExpenses}
+          onBack={() => setScreen("treasury")} notify={notify}
+        />
+      )}
+
+      {screen === "treasuryEmployees" && (
+        <EmployeesMergedScreen
+          employees={employees} setEmployees={setEmployees}
+          salaryLog={salaryLog} setSalaryLog={setSalaryLog}
+          onBack={() => setScreen("treasury")} notify={notify}
+        />
+      )}
+
+      {screen === "treasuryDistribute" && (
+        <ProfitDistributionScreen
+          partners={partners} setPartners={setPartners}
+          expenses={expenses} salaryLog={salaryLog}
+          withdrawalsLog={withdrawalsLog} setWithdrawalsLog={setWithdrawalsLog}
+          distributionsLog={distributionsLog} setDistributionsLog={setDistributionsLog}
+          totals={totals} onBack={() => setScreen("treasury")} notify={notify}
+        />
+      )}
 
       {screen === "monthlyDues" && <MonthlyDuesScreen rows={rows} payments={payments} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
       {screen === "deleteClient" && (
@@ -593,7 +678,6 @@ function EgymodApp() {
       )}
       {screen === "lateClients" && <LateClientsScreen rows={lateRows} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
       {screen === "changePassword" && <PlaceholderScreen title="تغيير كلمة السر" onBack={() => setScreen("dashboard")} />}
-      {screen === "treasury" && <PlaceholderScreen title="الخزينة وتوزيع الأرباح" onBack={() => setScreen("dashboard")} />}
       {screen === "backup" && <PlaceholderScreen title="النسخ الاحتياطي السحابي" note="تم ربط النظام بقاعدة بيانات Supabase بنجاح." onBack={() => setScreen("dashboard")} />}
 
       {activeReceipt && (
@@ -607,7 +691,744 @@ function EgymodApp() {
 }
 
 /* ============================================================
-   نافذة إيصال السداد المطبوع (Popup Modal)
+   1. شاشة "الخزينة والحسابات" الرئيسية
+   ============================================================ */
+function TreasuryMainScreen({ partners, expenses, salaryLog, totals, onNavigate, onBack }) {
+  const totalCapital = useMemo(() => partners.reduce((s, p) => s + Number(p.capital || 0), 0), [partners]);
+  const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);
+  const totalSalaries = useMemo(() => salaryLog.reduce((s, x) => s + Number(x.amount || 0), 0), [salaryLog]);
+  const netDistributableProfit = Math.max(0, totals.totalProfit - totalExpenses - totalSalaries);
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="الخزينة والحسابات" onBack={onBack} />
+
+      <section style={{ ...styles.kpiRow, marginBottom: 24 }}>
+        <KPI icon={Wallet} label="إجمالي رأس مال الشركة" sub="صافي مستحقات كل الشركاء" value={fmt(totalCapital)} />
+        <KPI icon={CreditCard} label="إجمالي المصروفات" sub="كل المصروفات المسجلة" value={fmt(totalExpenses)} />
+        <KPI icon={UserCog} label="إجمالي رواتب وسلف الموظفين" sub="كل حركات الرواتب المسجلة" value={fmt(totalSalaries)} />
+        <KPI icon={TrendingUp} label="صافي الربح القابل للتوزيع" sub="الأرباح - المصروفات - الرواتب" value={fmt(netDistributableProfit)} />
+      </section>
+
+      <section style={styles.grid}>
+        <DashButton label="الشركاء ورأس المال" Icon={Users} tone="copper" onClick={() => onNavigate("treasuryPartners")} />
+        <DashButton label="توزيع الأرباح" Icon={Wallet} tone="roseDark" onClick={() => onNavigate("treasuryDistribute")} />
+        <DashButton label="الموظفين والسلف والرواتب" Icon={UserCog} tone="dark" onClick={() => onNavigate("treasuryEmployees")} />
+        <DashButton label="المصروفات العامة" Icon={CreditCard} tone="copper" onClick={() => onNavigate("treasuryExpenses")} />
+      </section>
+      <BottomExitButton onBack={onBack} />
+    </div>
+  );
+}
+
+/* ============================================================
+   2. شاشة الشركاء ورأس المال
+   ============================================================ */
+function PartnersScreen({ partners, onAddPartner, withdrawalsLog, setWithdrawalsLog, onSettlePartner, onBack, notify }) {
+  const [name, setName] = useState("");
+  const [capital, setCapital] = useState("");
+  const [withdrawPartner, setWithdrawPartner] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawNotes, setWithdrawNotes] = useState("");
+
+  const [selectedPartnerModal, setSelectedPartnerModal] = useState(null);
+  const [settleConfirmModal, setSettleConfirmModal] = useState(null);
+
+  const totalCapital = useMemo(() => partners.reduce((s, p) => s + Number(p.capital || 0), 0), [partners]);
+
+  const livePercent = useMemo(() => {
+    const numCap = parseFloat(capital) || 0;
+    if (totalCapital + numCap === 0) return 0;
+    return ((numCap / (totalCapital + numCap)) * 100).toFixed(2);
+  }, [capital, totalCapital]);
+
+  const partnersCalculated = useMemo(() => {
+    return partners.map((p) => {
+      const sharePct = totalCapital > 0 ? (p.capital / totalCapital) * 100 : 0;
+      const partnerWithdrawals = withdrawalsLog.filter(w => String(w.partnerId) === String(p.id)).reduce((s, w) => s + Number(w.amount), 0);
+      const netAmount = Math.max(0, p.capital + (p.profit || 0) - partnerWithdrawals);
+      return { ...p, sharePct: sharePct.toFixed(2), totalWithdrawals: partnerWithdrawals, netAmount };
+    });
+  }, [partners, totalCapital, withdrawalsLog]);
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    if (!name || !capital) return;
+    onAddPartner(name, capital);
+    setName(""); setCapital("");
+  };
+
+  const handleWithdraw = (e) => {
+    e.preventDefault();
+    const num = parseFloat(withdrawAmount) || 0;
+    const partnerObj = partners.find(p => p.name === withdrawPartner);
+    if (!partnerObj || num <= 0) return;
+
+    const newW = {
+      id: Date.now(), partnerId: partnerObj.id, partnerName: partnerObj.name,
+      amount: num, date: new Date().toISOString().split("T")[0], notes: withdrawNotes || "سحب مالي"
+    };
+
+    setWithdrawalsLog((prev) => [...prev, newW]);
+    setWithdrawAmount(""); setWithdrawNotes(""); setWithdrawPartner("");
+    notify(`تم تسجيل سحب مالي بمبلغ ${fmt(num)} ج.م للشريك ${partnerObj.name} بنجاح!`);
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="الشركاء ورأس المال" onBack={onBack} />
+
+      <div style={{ background: "#211f18", border: "1px solid #d0b689", borderRadius: 16, padding: 20, textAlign: "center", marginBottom: 20 }}>
+        <div style={{ fontSize: 13, color: "#c4c4c4" }}>إجمالي رأس مال الشركة الفعلي</div>
+        <div style={{ fontSize: 28, fontWeight: 800, color: "#e8cd9c", marginTop: 4 }}>{fmt(totalCapital)} ج.م</div>
+      </div>
+
+      <div style={{ ...styles.card, marginBottom: 20 }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: "#1b1b1d", color: "#e8cd9c", borderBottom: "1px solid #404040" }}>
+                <th style={{ padding: "12px" }}>الشريك</th>
+                <th style={{ padding: "12px" }}>رأس المال</th>
+                <th style={{ padding: "12px" }}>النسبة</th>
+                <th style={{ padding: "12px" }}>الأرباح المجمعة</th>
+                <th style={{ padding: "12px" }}>المسحوبات</th>
+                <th style={{ padding: "12px" }}>الصافي المستحق</th>
+                <th style={{ padding: "12px", textAlign: "center" }}>إجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {partnersCalculated.map((p) => (
+                <tr key={p.id} style={{ borderBottom: "1px solid #2d2d30" }}>
+                  <td
+                    style={{ padding: "12px", fontWeight: 800, color: "#e8cd9c", cursor: "pointer", textDecoration: "underline" }}
+                    onClick={() => setSelectedPartnerModal(p)}
+                  >
+                    {p.name}
+                  </td>
+                  <td style={{ padding: "12px" }}>{fmt(p.capital)} ج.م</td>
+                  <td style={{ padding: "12px", color: "#d0b689", fontWeight: 800 }}>{p.sharePct}%</td>
+                  <td style={{ padding: "12px", color: "#bfe8cd" }}>{fmt(p.profit || 0)} ج.م</td>
+                  <td style={{ padding: "12px", color: "#f0c6bb" }}>{fmt(p.totalWithdrawals)} ج.م</td>
+                  <td style={{ padding: "12px", fontWeight: 800, color: "#fff" }}>{fmt(p.netAmount)} ج.م</td>
+                  <td style={{ padding: "12px", textAlign: "center" }}>
+                    <button
+                      type="button" onClick={() => setSettleConfirmModal(p)}
+                      style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "6px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
+                    >
+                      <UserMinus size={12} /> تصفية وحذف
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+        <div style={styles.card}>
+          <div style={{ ...styles.sectionLabel, marginTop: 0 }}>إضافة شريك جديد</div>
+          <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+            <Field label="اسم الشريك"><input style={styles.input} value={name} onChange={e => setName(e.target.value)} required /></Field>
+            <Field label="مبلغ الاستثمار (رأس المال)"><input type="number" style={styles.input} value={capital} onChange={e => setCapital(e.target.value)} placeholder="0" required /></Field>
+            <div style={{ background: "#1b1b1d", border: "1px dashed #d0b689", padding: 12, borderRadius: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 13, color: "#c4c4c4" }}>نسبة الشريك التلقائية:</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#e8cd9c" }}>{livePercent}%</span>
+            </div>
+            <button type="submit" style={styles.saveBtn}>حفظ الشريك الجديد</button>
+          </form>
+        </div>
+
+        <div style={styles.card}>
+          <div style={{ ...styles.sectionLabel, marginTop: 0 }}>تسجيل سحب مالي (حرية الشريك في السحب)</div>
+          <form onSubmit={handleWithdraw} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+            <Field label="اسم الشريك">
+              <select style={styles.input} value={withdrawPartner} onChange={e => setWithdrawPartner(e.target.value)} required>
+                <option value="">اختار اسم الشريك...</option>
+                {partners.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
+            </Field>
+            <Field label="مبلغ السحب (ج.م) *"><input type="number" style={styles.input} value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} placeholder="0" required /></Field>
+            <Field label="بيان وسبب السحب"><input style={styles.input} value={withdrawNotes} onChange={e => setWithdrawNotes(e.target.value)} placeholder="مثال: سحب نقدي تحت حساب الأرباح" /></Field>
+            <button type="submit" style={styles.saveBtn}>تسجيل السحب</button>
+          </form>
+        </div>
+      </div>
+
+      {selectedPartnerModal && (
+        <PartnerDetailsModal partner={selectedPartnerModal} withdrawalsLog={withdrawalsLog} onClose={() => setSelectedPartnerModal(null)} />
+      )}
+
+      {settleConfirmModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div style={{ ...styles.card, width: "100%", maxWidth: 440, textAlign: "center" }}>
+            <h3 style={{ color: "#e07a5f", fontSize: 18, fontWeight: 800, marginBottom: 8 }}>تأكيد تصفية وحذف حساب الشريك: {settleConfirmModal.name}</h3>
+            <p style={{ color: "#c4c4c4", fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>عند التأكيد، سيتم تصفية رصيد الشريك وتسوية حسابه وحذفه وإعادة حساب النسب تلقائياً.</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button type="button" onClick={() => { onSettlePartner(settleConfirmModal.id); setSettleConfirmModal(null); }} style={{ ...styles.saveBtn, flex: 1, background: "#e07a5f", color: "#fff", marginTop: 0 }}>تأكيد التصفية والحذف</button>
+              <button type="button" onClick={() => setSettleConfirmModal(null)} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#fff", borderRadius: 12, padding: "12px 18px", cursor: "pointer" }}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <BottomExitButton onBack={onBack} />
+    </div>
+  );
+}
+
+function PartnerDetailsModal({ partner, withdrawalsLog, onClose }) {
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const partnerWithdrawals = useMemo(() => {
+    return withdrawalsLog.filter((w) => {
+      if (String(w.partnerId) !== String(partner.id)) return false;
+      if (fromDate && w.date < fromDate) return false;
+      if (toDate && w.date > toDate) return false;
+      return true;
+    });
+  }, [withdrawalsLog, partner, fromDate, toDate]);
+
+  const filteredTotal = partnerWithdrawals.reduce((s, w) => s + Number(w.amount), 0);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+      <div style={{ background: "#242426", border: "1px solid #d0b689", borderRadius: 18, width: "100%", maxWidth: 580, padding: 22, color: "#fff", position: "relative" }}>
+        <button onClick={onClose} style={{ position: "absolute", top: 16, left: 16, background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", width: 34, height: 34, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} /></button>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#e8cd9c", marginBottom: 12 }}>سجل سحوبات الشريك: {partner.name}</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, background: "#1b1b1d", padding: 12, borderRadius: 12, marginBottom: 16 }}>
+          <div><span style={{ fontSize: 11, color: "#888" }}>رأس المال:</span> <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>{fmt(partner.capital)} ج.م</div></div>
+          <div><span style={{ fontSize: 11, color: "#888" }}>إجمالي المسحوبات:</span> <div style={{ fontSize: 15, fontWeight: 800, color: "#f0c6bb" }}>{fmt(filteredTotal)} ج.م</div></div>
+        </div>
+        <div style={{ display: "flex", gap: 10, marginBottom: 14, background: "#1f1f22", padding: 10, borderRadius: 10 }}>
+          <Field label="من تاريخ"><DateInput value={fromDate} onChange={e => setFromDate(e.target.value)} /></Field>
+          <Field label="إلى تاريخ"><DateInput value={toDate} onChange={e => setToDate(e.target.value)} /></Field>
+        </div>
+        <div style={{ overflowX: "auto", maxHeight: 240, overflowY: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: "#1b1b1d", color: "#c4c4c4", borderBottom: "1px solid #404040" }}>
+                <th style={{ padding: "8px" }}>التاريخ</th><th style={{ padding: "8px" }}>المبلغ</th><th style={{ padding: "8px" }}>البيان</th>
+              </tr>
+            </thead>
+            <tbody>
+              {partnerWithdrawals.length === 0 ? (
+                <tr><td colSpan={3} style={{ padding: 16, textAlign: "center", color: "#888" }}>لا توجد مسحوبات مسجلة.</td></tr>
+              ) : (
+                partnerWithdrawals.slice().reverse().map(w => (
+                  <tr key={w.id} style={{ borderBottom: "1px solid #2d2d30" }}>
+                    <td style={{ padding: "8px" }}>{w.date}</td>
+                    <td style={{ padding: "8px", color: "#f0c6bb", fontWeight: 800 }}>{fmt(w.amount)} ج.م</td>
+                    <td style={{ padding: "8px", color: "#888" }}>{w.notes || "-"}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   3. شاشة المصروفات المفلترة تاريخياً
+   ============================================================ */
+function ExpensesScreen({ expenses, setExpenses, onBack, notify }) {
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [category, setCategory] = useState("إيجار المحل");
+  const [amount, setAmount] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter((e) => {
+      if (fromDate && e.date < fromDate) return false;
+      if (toDate && e.date > toDate) return false;
+      return true;
+    });
+  }, [expenses, fromDate, toDate]);
+
+  const totalFiltered = useMemo(() => filteredExpenses.reduce((s, e) => s + Number(e.amount || 0), 0), [filteredExpenses]);
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    const num = parseFloat(amount) || 0;
+    if (num <= 0) return;
+    const newE = { id: Date.now(), date, category, amount: num, notes };
+    setExpenses((prev) => [...prev, newE]);
+    setAmount(""); setNotes("");
+    notify("تم تسجيل المصروف الخزيني بنجاح!");
+  };
+
+  const handleDelete = (id) => {
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    notify("تم حذف المصروف بنجاح!");
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="المصروفات العامة" onBack={onBack} />
+
+      <div style={{ ...styles.card, marginBottom: 20 }}>
+        <form onSubmit={handleAdd} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
+          <Field label="التاريخ"><DateInput value={date} onChange={e => setDate(e.target.value)} required /></Field>
+          <Field label="البند">
+            <select style={styles.input} value={category} onChange={e => setCategory(e.target.value)}>
+              <option value="إيجار المحل">إيجار المحل</option>
+              <option value="كهرباء ومياه وغاز">فواتير كهرباء ومياه</option>
+              <option value="رواتب ونثريات">رواتب ونثريات</option>
+              <option value="صيانة وإصلاحات">صيانة وإصلاحات</option>
+              <option value="مصروفات أخرى">أخرى</option>
+            </select>
+          </Field>
+          <Field label="المبلغ"><input type="number" style={styles.input} value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" required /></Field>
+          <Field label="ملاحظات"><input style={styles.input} value={notes} onChange={e => setNotes(e.target.value)} placeholder="تفاصيل..." /></Field>
+          <div style={{ gridColumn: "1 / -1", marginTop: 6 }}><button type="submit" style={styles.saveBtn}>تسجيل المصروف</button></div>
+        </form>
+      </div>
+
+      <div style={styles.card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#e8cd9c" }}>سجل المصروفات (إجمالي: {fmt(totalFiltered)} ج.م)</div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <Field label="من تاريخ"><DateInput value={fromDate} onChange={e => setFromDate(e.target.value)} style={{ padding: "6px 10px", fontSize: 13 }} /></Field>
+            <Field label="إلى تاريخ"><DateInput value={toDate} onChange={e => setToDate(e.target.value)} style={{ padding: "6px 10px", fontSize: 13 }} /></Field>
+          </div>
+        </div>
+
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: "#1b1b1d", color: "#c4c4c4", borderBottom: "1px solid #404040" }}>
+                <th style={{ padding: "10px" }}>التاريخ</th><th style={{ padding: "10px" }}>البند</th><th style={{ padding: "10px" }}>المبلغ</th><th style={{ padding: "10px" }}>ملاحظات</th><th style={{ padding: "10px", textAlign: "center" }}>إجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredExpenses.length === 0 ? (
+                <tr><td colSpan={5} style={{ padding: 20, textAlign: "center", color: "#888" }}>لا توجد مصروفات في هذه الفترة.</td></tr>
+              ) : (
+                filteredExpenses.slice().reverse().map((exp) => (
+                  <tr key={exp.id} style={{ borderBottom: "1px solid #2d2d30" }}>
+                    <td style={{ padding: "10px" }}>{exp.date}</td>
+                    <td style={{ padding: "10px", fontWeight: 700, color: "#e8cd9c" }}>{exp.category}</td>
+                    <td style={{ padding: "10px", fontWeight: 800, color: "#f0c6bb" }}>{fmt(exp.amount)} ج.م</td>
+                    <td style={{ padding: "10px", color: "#888" }}>{exp.notes || "—"}</td>
+                    <td style={{ padding: "10px", textAlign: "center" }}>
+                      <button type="button" onClick={() => handleDelete(exp.id)} style={{ background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "4px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 700 }}><Trash2 size={12} /> حذف</button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <BottomExitButton onBack={onBack} />
+    </div>
+  );
+}
+
+/* ============================================================
+   4. شاشة الموظفين والرواتب المدمجة
+   ============================================================ */
+function EmployeesMergedScreen({ employees, setEmployees, salaryLog, setSalaryLog, onBack, notify }) {
+  const [activeTab, setActiveTab] = useState("employees");
+  const [empForm, setEmpForm] = useState({ name: "", phone: "", job: "", salary: "", hireDate: "" });
+
+  const [selectedEmpName, setSelectedEmpName] = useState("");
+  const [transType, setType] = useState("صرف راتب شهري");
+  const [transAmount, setAmount] = useState("");
+  const [transNotes, setNotes] = useState("");
+  const [selectedEmployeeModal, setSelectedEmployeeModal] = useState(null);
+
+  const handleAddEmp = (e) => {
+    e.preventDefault();
+    if (!empForm.name || !empForm.salary) return;
+    const newEmp = { id: Date.now(), ...empForm, salary: parseFloat(empForm.salary) || 0, status: "نشط" };
+    setEmployees((prev) => [...prev, newEmp]);
+    setEmpForm({ name: "", phone: "", job: "", salary: "", hireDate: "" });
+    notify("تم حفظ بيانات الموظف بنجاح!");
+  };
+
+  const handleTransSubmit = (e) => {
+    e.preventDefault();
+    const num = parseFloat(transAmount) || 0;
+    const emp = employees.find(x => x.name === selectedEmpName);
+    if (!emp || num <= 0) return;
+
+    const newTrans = {
+      id: Date.now(), employeeId: emp.id, employeeName: emp.name,
+      type: transType, amount: num, date: new Date().toISOString().split("T")[0], notes: transNotes
+    };
+
+    setSalaryLog((prev) => [...prev, newTrans]);
+    setAmount(""); setNotes(""); setSelectedEmpName("");
+    notify(`تم تسجيل حركة (${transType}) بمبلغ ${fmt(num)} ج.م للموظف ${emp.name} بنجاح!`);
+  };
+
+  const handleTerminateContract = (empId) => {
+    setEmployees((prev) => prev.map(e => String(e.id) === String(empId) ? { ...e, status: "فسخ عقد / منتهي" } : e));
+    setSelectedEmployeeModal(null);
+    notify("تم فسخ عقد الموظف ونقله للأرشيف بنجاح!");
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="إضافة موظف ورواتب وسلف الموظفين" onBack={onBack} />
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <button type="button" onClick={() => setActiveTab("employees")} style={{ flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040", background: activeTab === "employees" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d", color: activeTab === "employees" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer" }}>👤 إضافة وقائمة الموظفين</button>
+        <button type="button" onClick={() => setActiveTab("salaries")} style={{ flex: 1, padding: "12px", borderRadius: 12, border: "1px solid #404040", background: activeTab === "salaries" ? "linear-gradient(145deg, #e8cd9c, #d0b689)" : "#1b1b1d", color: activeTab === "salaries" ? "#1b1b1d" : "#c4c4c4", fontWeight: 800, fontSize: 14, cursor: "pointer" }}>💵 رواتب وسلف الموظفين</button>
+      </div>
+
+      {activeTab === "employees" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={styles.card}>
+            <div style={{ ...styles.sectionLabel, marginTop: 0 }}>إضافة موظف جديد</div>
+            <form onSubmit={handleAddEmp} style={{ ...styles.formGrid, marginTop: 12 }}>
+              <Field label="اسم الموظف *"><input style={styles.input} value={empForm.name} onChange={e => setEmpForm({ ...empForm, name: e.target.value })} required /></Field>
+              <Field label="التليفون"><input style={styles.input} value={empForm.phone} onChange={e => setEmpForm({ ...empForm, phone: e.target.value })} /></Field>
+              <Field label="الوظيفة"><input style={styles.input} value={empForm.job} onChange={e => setEmpForm({ ...empForm, job: e.target.value })} /></Field>
+              <Field label="الراتب الأساسي *"><input type="number" style={styles.input} value={empForm.salary} onChange={e => setEmpForm({ ...empForm, salary: e.target.value })} required /></Field>
+              <div style={{ gridColumn: "1 / -1" }}><Field label="تاريخ التعيين"><DateInput value={empForm.hireDate} onChange={e => setEmpForm({ ...empForm, hireDate: e.target.value })} required /></Field></div>
+              <button type="submit" style={styles.saveBtn}>حفظ بيانات الموظف</button>
+            </form>
+          </div>
+
+          <div style={styles.card}>
+            <div style={{ ...styles.sectionLabel, marginTop: 0 }}>قائمة الموظفين (اضغط على اسم الموظف لاستعراض السجل والفسخ)</div>
+            <div style={{ overflowX: "auto", marginTop: 10 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 14 }}>
+                <thead>
+                  <tr style={{ background: "#1b1b1d", color: "#e8cd9c", borderBottom: "1px solid #404040" }}>
+                    <th style={{ padding: "10px" }}>الاسم</th><th style={{ padding: "10px" }}>التليفون</th><th style={{ padding: "10px" }}>الوظيفة</th><th style={{ padding: "10px" }}>الراتب</th><th style={{ padding: "10px" }}>تاريخ التعيين</th><th style={{ padding: "10px" }}>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map(emp => (
+                    <tr key={emp.id} style={{ borderBottom: "1px solid #2d2d30" }}>
+                      <td style={{ padding: "10px", fontWeight: 800, color: "#e8cd9c", cursor: "pointer", textDecoration: "underline" }} onClick={() => setSelectedEmployeeModal(emp)}>{emp.name}</td>
+                      <td style={{ padding: "10px" }}>{emp.phone || "—"}</td>
+                      <td style={{ padding: "10px" }}>{emp.job}</td>
+                      <td style={{ padding: "10px", fontWeight: 700 }}>{fmt(emp.salary)} ج.م</td>
+                      <td style={{ padding: "10px" }}>{emp.hireDate}</td>
+                      <td style={{ padding: "10px", color: emp.status === "نشط" ? "#bfe8cd" : "#e07a5f", fontWeight: 700 }}>{emp.status || "نشط"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "salaries" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={styles.card}>
+            <div style={{ ...styles.sectionLabel, marginTop: 0 }}>رواتب وسلف الموظفين</div>
+            <form onSubmit={handleTransSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+              <Field label="اسم الموظف">
+                <select style={styles.input} value={selectedEmpName} onChange={e => setSelectedEmpName(e.target.value)} required>
+                  <option value="">اختار اسم الموظف...</option>
+                  {employees.filter(e => e.status !== "فسخ عقد / منتهي").map(e => <option key={e.id} value={e.name}>{e.name} ({e.job})</option>)}
+                </select>
+              </Field>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                <Field label="نوع الحركة">
+                  <select style={styles.input} value={transType} onChange={e => setType(e.target.value)}>
+                    <option value="صرف راتب شهري">صرف راتب شهري</option>
+                    <option value="سلفة نقدية">سلفة نقدية</option>
+                    <option value="مكافأة حافز">مكافأة / حافز</option>
+                    <option value="خصم جزاء">خصم / جزاء</option>
+                  </select>
+                </Field>
+                <Field label="المبلغ (ج.م) *"><input type="number" style={styles.input} value={transAmount} onChange={e => setAmount(e.target.value)} placeholder="0" required /></Field>
+              </div>
+              <Field label="ملاحظات الحركة"><input style={styles.input} value={transNotes} onChange={e => setNotes(e.target.value)} placeholder="تفاصيل..." /></Field>
+              <button type="submit" style={styles.saveBtn}>تنفيذ الحركة وحفظها</button>
+            </form>
+          </div>
+
+          <div style={styles.card}>
+            <div style={{ ...styles.sectionLabel, marginTop: 0 }}>سجل حركات الرواتب والسلف</div>
+            <div style={{ overflowX: "auto", marginTop: 10 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: "#1b1b1d", color: "#c4c4c4", borderBottom: "1px solid #404040" }}>
+                    <th style={{ padding: "8px" }}>التاريخ</th><th style={{ padding: "8px" }}>الموظف</th><th style={{ padding: "8px" }}>نوع الحركة</th><th style={{ padding: "8px" }}>المبلغ</th><th style={{ padding: "8px" }}>ملاحظات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {salaryLog.length === 0 ? (
+                    <tr><td colSpan={5} style={{ padding: 16, textAlign: "center", color: "#888" }}>لا توجد حركات مسجلة.</td></tr>
+                  ) : (
+                    salaryLog.slice().reverse().map(s => (
+                      <tr key={s.id} style={{ borderBottom: "1px solid #2d2d30" }}>
+                        <td style={{ padding: "8px" }}>{s.date}</td>
+                        <td style={{ padding: "8px", fontWeight: 700, color: "#e8cd9c" }}>{s.employeeName}</td>
+                        <td style={{ padding: "8px" }}>{s.type}</td>
+                        <td style={{ padding: "8px", fontWeight: 800, color: "#f0c6bb" }}>{fmt(s.amount)} ج.م</td>
+                        <td style={{ padding: "8px", color: "#888" }}>{s.notes || "—"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedEmployeeModal && (
+        <EmployeeDetailsModal employee={selectedEmployeeModal} salaryLog={salaryLog} onTerminate={handleTerminateContract} onClose={() => setSelectedEmployeeModal(null)} />
+      )}
+
+      <BottomExitButton onBack={onBack} />
+    </div>
+  );
+}
+
+function EmployeeDetailsModal({ employee, salaryLog, onTerminate, onClose }) {
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const empLogs = useMemo(() => {
+    return salaryLog.filter((s) => {
+      if (String(s.employeeId) !== String(employee.id) && s.employeeName !== employee.name) return false;
+      if (fromDate && s.date < fromDate) return false;
+      if (toDate && s.date > toDate) return false;
+      return true;
+    });
+  }, [salaryLog, employee, fromDate, toDate]);
+
+  const totalEmpPaid = empLogs.reduce((acc, x) => acc + Number(x.amount), 0);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+      <div style={{ background: "#242426", border: "1px solid #d0b689", borderRadius: 18, width: "100%", maxWidth: 600, padding: 22, color: "#fff", position: "relative" }}>
+        <button onClick={onClose} style={{ position: "absolute", top: 16, left: 16, background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", width: 34, height: 34, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} /></button>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#e8cd9c", marginBottom: 12 }}>ملف الموظف: {employee.name}</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, background: "#1b1b1d", padding: 12, borderRadius: 12, marginBottom: 16 }}>
+          <div><span style={{ fontSize: 11, color: "#888" }}>الوظيفة:</span> <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>{employee.job}</div></div>
+          <div><span style={{ fontSize: 11, color: "#888" }}>الراتب الأساسي:</span> <div style={{ fontSize: 14, fontWeight: 800, color: "#d0b689" }}>{fmt(employee.salary)} ج.م</div></div>
+          <div><span style={{ fontSize: 11, color: "#888" }}>الإجمالي بالفلترة:</span> <div style={{ fontSize: 14, fontWeight: 800, color: "#f0c6bb" }}>{fmt(totalEmpPaid)} ج.م</div></div>
+        </div>
+        <div style={{ display: "flex", gap: 10, marginBottom: 14, background: "#1f1f22", padding: 10, borderRadius: 10 }}>
+          <Field label="من تاريخ"><DateInput value={fromDate} onChange={e => setFromDate(e.target.value)} /></Field>
+          <Field label="إلى تاريخ"><DateInput value={toDate} onChange={e => setToDate(e.target.value)} /></Field>
+        </div>
+        <div style={{ overflowX: "auto", maxHeight: 200, overflowY: "auto", marginBottom: 16 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: "#1b1b1d", color: "#c4c4c4", borderBottom: "1px solid #404040" }}>
+                <th style={{ padding: "8px" }}>التاريخ</th><th style={{ padding: "8px" }}>نوع الحركة</th><th style={{ padding: "8px" }}>المبلغ</th><th style={{ padding: "8px" }}>ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {empLogs.length === 0 ? (
+                <tr><td colSpan={4} style={{ padding: 16, textAlign: "center", color: "#888" }}>لا توجد حركات مسجلة.</td></tr>
+              ) : (
+                empLogs.slice().reverse().map(s => (
+                  <tr key={s.id} style={{ borderBottom: "1px solid #2d2d30" }}>
+                    <td style={{ padding: "8px" }}>{s.date}</td>
+                    <td style={{ padding: "8px", fontWeight: 700, color: "#e8cd9c" }}>{s.type}</td>
+                    <td style={{ padding: "8px", color: "#f0c6bb", fontWeight: 800 }}>{fmt(s.amount)} ج.م</td>
+                    <td style={{ padding: "8px", color: "#888" }}>{s.notes || "—"}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        {employee.status !== "فسخ عقد / منتهي" && (
+          <button type="button" onClick={() => onTerminate(employee.id)} style={{ width: "100%", background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb", padding: "10px", borderRadius: 10, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><UserMinus size={16} /> فسخ العقد وإنهاء خدمة الموظف</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   5. شاشة توزيع الأرباح الفائقة
+   ============================================================ */
+function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, withdrawalsLog, setWithdrawalsLog, distributionsLog, setDistributionsLog, totals, onBack, notify }) {
+  const [periodFilter, setPeriodFilter] = useState("all");
+  const [fromDate, setFromDate] = useState(() => "2026-07-01");
+  const [toDate, setToDate] = useState(() => new Date().toISOString().split("T")[0]);
+
+  const [customDistributeAmount, setCustomDistributeAmount] = useState("");
+  const [partnerDecisions, setPartnerDecisions] = useState({});
+  const [selectedPartnerModal, setSelectedPartnerModal] = useState(null);
+
+  const totalCapital = useMemo(() => partners.reduce((s, p) => s + Number(p.capital || 0), 0), [partners]);
+
+  const filteredPeriodData = useMemo(() => {
+    const periodExpenses = expenses.filter(e => (!fromDate || e.date >= fromDate) && (!toDate || e.date <= toDate)).reduce((s, e) => s + Number(e.amount), 0);
+    const periodSalaries = salaryLog.filter(s => (!fromDate || s.date >= fromDate) && (!toDate || s.date <= toDate)).reduce((s, x) => s + Number(x.amount), 0);
+    const netPeriodProfit = Math.max(0, totals.totalProfit - periodExpenses - periodSalaries);
+    return { periodExpenses, periodSalaries, netPeriodProfit };
+  }, [expenses, salaryLog, totals.totalProfit, fromDate, toDate]);
+
+  const autoAmount = customDistributeAmount !== "" ? (parseFloat(customDistributeAmount) || 0) : filteredPeriodData.netPeriodProfit;
+
+  const partnersCalculated = useMemo(() => {
+    return partners.map((p) => {
+      const sharePct = totalCapital > 0 ? (p.capital / totalCapital) * 100 : 0;
+      const amountForThisPartner = Math.round(autoAmount * (sharePct / 100));
+      const partnerWithdrawals = withdrawalsLog.filter(w => String(w.partnerId) === String(p.id)).reduce((s, w) => s + Number(w.amount), 0);
+      const decision = partnerDecisions[p.id] || "سحب فوري";
+      return { ...p, sharePct: sharePct.toFixed(2), prevWithdrawals: partnerWithdrawals, shareAmount: amountForThisPartner, decision };
+    });
+  }, [partners, totalCapital, autoAmount, withdrawalsLog, partnerDecisions]);
+
+  const setPresetPeriod = (preset) => {
+    setPeriodFilter(preset);
+    const d = new Date();
+    if (preset === "currentMonth") {
+      setFromDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`);
+      setToDate(d.toISOString().split("T")[0]);
+    } else if (preset === "lastMonth") {
+      const prevM = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+      const endPrevM = new Date(d.getFullYear(), d.getMonth(), 0);
+      setFromDate(prevM.toISOString().split("T")[0]);
+      setToDate(endPrevM.toISOString().split("T")[0]);
+    } else if (preset === "twoMonths") {
+      const prev2M = new Date(d.getFullYear(), d.getMonth() - 2, 1);
+      setFromDate(prev2M.toISOString().split("T")[0]);
+      setToDate(d.toISOString().split("T")[0]);
+    }
+  };
+
+  const setPartnerDecision = (partnerId, decisionType) => {
+    setPartnerDecisions(prev => ({ ...prev, [partnerId]: decisionType }));
+  };
+
+  const handleExecuteDistribution = () => {
+    if (autoAmount <= 0) { notify("لا يوجد مبلغ قابل للتوزيع!", "error"); return; }
+    
+    partnersCalculated.forEach((p) => {
+      if (p.decision === "إعادة استثمار") {
+        setPartners(prev => prev.map(x => String(x.id) === String(p.id) ? { ...x, capital: x.capital + p.shareAmount } : x));
+      } else {
+        const newW = { id: Date.now() + Math.random(), partnerId: p.id, partnerName: p.name, amount: p.shareAmount, date: new Date().toISOString().split("T")[0], notes: "توزيع أرباح - سحب فوري" };
+        setWithdrawalsLog(prev => [...prev, newW]);
+      }
+    });
+
+    const newDist = { id: Date.now(), date: new Date().toISOString().split("T")[0], amount: autoAmount, details: partnersCalculated.map(p => `${p.name}: ${fmt(p.shareAmount)} ج.م (${p.decision})`).join(" | ") };
+    setDistributionsLog(prev => [...prev, newDist]);
+    notify(`تم تنفيذ توزيع الأرباح بمبلغ ${fmt(autoAmount)} ج.م بنجاح!`);
+  };
+
+  return (
+    <div style={styles.container}>
+      <ScreenHeader title="توزيع الأرباح على الشركاء" onBack={onBack} />
+
+      <div style={{ background: "#211f18", border: "1px solid #d0b689", borderRadius: 16, padding: 18, textAlign: "center", marginBottom: 20 }}>
+        <div style={{ fontSize: 13, color: "#c4c4c4" }}>الأرباح حتى اليوم (كل الفترات)</div>
+        <div style={{ fontSize: 28, fontWeight: 800, color: "#e8cd9c", marginTop: 2 }}>{fmt(totals.totalProfit)} ج.م</div>
+      </div>
+
+      <div style={{ ...styles.card, marginBottom: 20 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#e8cd9c", marginBottom: 10 }}>حدد الفترة اللي عايز تحسب أرباحها</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+          <button type="button" onClick={() => setPresetPeriod("currentMonth")} style={{ background: periodFilter === "currentMonth" ? "#d0b689" : "#1b1b1d", color: periodFilter === "currentMonth" ? "#1b1b1d" : "#c4c4c4", border: "1px solid #404040", padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>الشهر الحالي</button>
+          <button type="button" onClick={() => setPresetPeriod("lastMonth")} style={{ background: periodFilter === "lastMonth" ? "#d0b689" : "#1b1b1d", color: periodFilter === "lastMonth" ? "#1b1b1d" : "#c4c4c4", border: "1px solid #404040", padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>الشهر اللي فات</button>
+          <button type="button" onClick={() => setPresetPeriod("twoMonths")} style={{ background: periodFilter === "twoMonths" ? "#d0b689" : "#1b1b1d", color: periodFilter === "twoMonths" ? "#1b1b1d" : "#c4c4c4", border: "1px solid #404040", padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>من شهرين</button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 14 }}>
+          <Field label="من تاريخ"><DateInput value={fromDate} onChange={e => setFromDate(e.target.value)} /></Field>
+          <Field label="إلى تاريخ"><DateInput value={toDate} onChange={e => setToDate(e.target.value)} /></Field>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, background: "#1b1b1d", border: "1px dashed #d0b689", borderRadius: 12, padding: 12, textAlign: "center" }}>
+          <div><div style={{ fontSize: 11, color: "#888" }}>المصروفات بالفترة</div><div style={{ fontSize: 15, fontWeight: 800, color: "#f0c6bb" }}>{fmt(filteredPeriodData.periodExpenses)} ج.م</div></div>
+          <div><div style={{ fontSize: 11, color: "#888" }}>الرواتب بالفترة</div><div style={{ fontSize: 15, fontWeight: 800, color: "#f0c6bb" }}>{fmt(filteredPeriodData.periodSalaries)} ج.م</div></div>
+          <div><div style={{ fontSize: 11, color: "#888" }}>الصافي للتوزيع</div><div style={{ fontSize: 16, fontWeight: 800, color: "#e8cd9c" }}>{fmt(filteredPeriodData.netPeriodProfit)} ج.م</div></div>
+        </div>
+      </div>
+
+      <div style={{ ...styles.card, marginBottom: 20 }}>
+        <Field label="المبلغ المراد توزيعه فعلياً (قابل للتعديل يدويًا)">
+          <input type="number" style={{ ...styles.input, fontSize: 18, fontWeight: 800, color: "#e8cd9c" }} value={customDistributeAmount !== "" ? customDistributeAmount : filteredPeriodData.netPeriodProfit} onChange={e => setCustomDistributeAmount(e.target.value)} />
+        </Field>
+      </div>
+
+      <div style={{ ...styles.card, marginBottom: 20 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "#e8cd9c", marginBottom: 12 }}>توزيع المبلغ حسب نسبة كل شريك</div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: "#1b1b1d", color: "#e8cd9c", borderBottom: "1px solid #404040" }}>
+                <th style={{ padding: "10px" }}>الشريك</th>
+                <th style={{ padding: "10px" }}>النسبة</th>
+                <th style={{ padding: "10px" }}>مسحوباته السابقة</th>
+                <th style={{ padding: "10px" }}>نصيبه من هذا التوزيع</th>
+                <th style={{ padding: "10px", textAlign: "center" }}>القرار</th>
+              </tr>
+            </thead>
+            <tbody>
+              {partnersCalculated.map(p => (
+                <tr key={p.id} style={{ borderBottom: "1px solid #2d2d30" }}>
+                  <td style={{ padding: "10px", fontWeight: 800, color: "#e8cd9c", cursor: "pointer", textDecoration: "underline" }} onClick={() => setSelectedPartnerModal(p)}>{p.name}</td>
+                  <td style={{ padding: "10px", color: "#d0b689", fontWeight: 800 }}>{p.sharePct}%</td>
+                  <td style={{ padding: "10px", color: "#f0c6bb" }}>{fmt(p.prevWithdrawals)} ج.م</td>
+                  <td style={{ padding: "10px", fontWeight: 800, color: "#bfe8cd" }}>{fmt(p.shareAmount)} ج.م</td>
+                  <td style={{ padding: "10px", textAlign: "center" }}>
+                    <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                      <button
+                        type="button"
+                        onClick={() => setPartnerDecision(p.id, "سحب فوري")}
+                        style={{
+                          background: p.decision === "سحب فوري" ? "#3a2320" : "#1b1b1d",
+                          border: `1px solid ${p.decision === "سحب فوري" ? "#7a4a3f" : "#404040"}`,
+                          color: p.decision === "سحب فوري" ? "#f0c6bb" : "#c4c4c4",
+                          padding: "6px 10px", borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: "pointer",
+                          display: "inline-flex", alignItems: "center", gap: 4
+                        }}
+                      >
+                        <DollarSign size={13} /> سحب فوري
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPartnerDecision(p.id, "إعادة استثمار")}
+                        style={{
+                          background: p.decision === "إعادة استثمار" ? "#213526" : "#1b1b1d",
+                          border: `1px solid ${p.decision === "إعادة استثمار" ? "#3d6b4a" : "#404040"}`,
+                          color: p.decision === "إعادة استثمار" ? "#bfe8cd" : "#c4c4c4",
+                          padding: "6px 10px", borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: "pointer",
+                          display: "inline-flex", alignItems: "center", gap: 4
+                        }}
+                      >
+                        <RefreshCw size={13} /> إعادة استثمار
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button type="button" onClick={handleExecuteDistribution} style={{ ...styles.saveBtn, marginTop: 16 }}>تنفيذ التوزيع على كل الشركاء</button>
+      </div>
+
+      {selectedPartnerModal && (
+        <PartnerDetailsModal partner={selectedPartnerModal} withdrawalsLog={withdrawalsLog} onClose={() => setSelectedPartnerModal(null)} />
+      )}
+
+      <BottomExitButton onBack={onBack} />
+    </div>
+  );
+}
+
+/* ============================================================
+   نافذة إيصال السداد المطبوع
    ============================================================ */
 function ReceiptModal({ receipt, onClose }) {
   const { client, payment } = receipt;
@@ -616,9 +1437,7 @@ function ReceiptModal({ receipt, onClose }) {
   const remainingInstallments = client.monthly > 0 ? Math.ceil(remainingDebt / client.monthly) : 0;
   const isPaidInFull = remainingDebt <= 0;
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => { window.print(); };
 
   const handleDownloadImage = () => {
     const canvas = document.createElement("canvas");
@@ -626,35 +1445,21 @@ function ReceiptModal({ receipt, onClose }) {
     canvas.height = 780;
     const ctx = canvas.getContext("2d");
 
-    ctx.fillStyle = "#1b1b1d";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#1b1b1d"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#d0b689"; ctx.lineWidth = 4; ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
 
-    ctx.strokeStyle = "#d0b689";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
-
-    ctx.fillStyle = "#e8cd9c";
-    ctx.font = "bold 26px Cairo, sans-serif";
-    ctx.textAlign = "center";
+    ctx.fillStyle = "#e8cd9c"; ctx.font = "bold 26px Cairo, sans-serif"; ctx.textAlign = "center";
     ctx.fillText("إيصال استلام قسط — نظام الأقساط", canvas.width / 2, 60);
 
-    ctx.fillStyle = "#c4c4c4";
-    ctx.font = "14px Cairo, sans-serif";
+    ctx.fillStyle = "#c4c4c4"; ctx.font = "14px Cairo, sans-serif";
     ctx.fillText(`تاريخ الإيصال: ${payment.payDate || new Date().toISOString().split("T")[0]}`, canvas.width / 2, 90);
 
-    ctx.strokeStyle = "#404040";
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(40, 110); ctx.lineTo(canvas.width - 40, 110); ctx.stroke();
+    ctx.strokeStyle = "#404040"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(40, 110); ctx.lineTo(canvas.width - 40, 110); ctx.stroke();
 
     const drawRow = (label, val, y, isGold = false) => {
-      ctx.textAlign = "right";
-      ctx.fillStyle = "#c4c4c4";
-      ctx.font = "16px Cairo, sans-serif";
+      ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "16px Cairo, sans-serif";
       ctx.fillText(label, canvas.width - 50, y);
-
-      ctx.textAlign = "left";
-      ctx.fillStyle = isGold ? "#e8cd9c" : "#ffffff";
-      ctx.font = isGold ? "bold 18px Cairo, sans-serif" : "bold 16px Cairo, sans-serif";
+      ctx.textAlign = "left"; ctx.fillStyle = isGold ? "#e8cd9c" : "#ffffff"; ctx.font = isGold ? "bold 18px Cairo, sans-serif" : "bold 16px Cairo, sans-serif";
       ctx.fillText(String(val), 50, y);
     };
 
@@ -668,10 +1473,8 @@ function ReceiptModal({ receipt, onClose }) {
 
     ctx.beginPath(); ctx.moveTo(40, 420); ctx.lineTo(canvas.width - 40, 420); ctx.stroke();
 
-    ctx.fillStyle = "#211f18";
-    ctx.fillRect(40, 440, canvas.width - 80, 140);
-    ctx.strokeStyle = "#d0b689";
-    ctx.strokeRect(40, 440, canvas.width - 80, 140);
+    ctx.fillStyle = "#211f18"; ctx.fillRect(40, 440, canvas.width - 80, 140);
+    ctx.strokeStyle = "#d0b689"; ctx.strokeRect(40, 440, canvas.width - 80, 140);
 
     ctx.textAlign = "right"; ctx.fillStyle = "#c4c4c4"; ctx.font = "15px Cairo, sans-serif";
     ctx.fillText("المبلغ المدفوع حالياً:", canvas.width - 60, 480);
@@ -759,7 +1562,7 @@ function ReceiptModal({ receipt, onClose }) {
           <button type="button" onClick={handleDownloadImage} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
             <Download size={16} /> تنزيل الصورة
           </button>
-          <button type="button" onClick={handleWhatsAppShare} style={{ gridColumn: "1 / -1", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          <button type="button" onClick={handleWhatsAppShare} style={{ gridColumn: "1 / -1", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", borderRadius: 10, padding: "11px", fontWeight 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
             <Share2 size={16} /> إرسال عبر الواتساب
           </button>
         </div>
@@ -823,8 +1626,8 @@ function Dashboard({ totals, lateCount, onNavigate, user, onLogout }) {
     { key: "deleteClient", label: "حذف حساب عميل", icon: Trash2, tone: "gold" },
     { key: "treasury", label: "توزيع الأرباح والخزينة", icon: Wallet, tone: "roseDark" },
     { key: "changePassword", label: "تغيير كلمة السر", icon: KeyRound, tone: "tan" },
-    { key: "addPartner", label: "إضافة شريك جديد", icon: Users, tone: "copper" },
-    { key: "addEmployee", label: "إضافة موظف جديد", icon: UserCog, tone: "silver" },
+    { key: "treasuryPartners", label: "الشركاء ورأس المال", icon: Users, tone: "copper" },
+    { key: "treasuryEmployees", label: "شئون الموظفين والرواتب", icon: UserCog, tone: "silver" },
     { key: "backup", label: "النسخ الاحتياطي السحابي", icon: UploadCloud, tone: "roseLight" },
     { key: "exit", label: "تسجيل الخروج", icon: Power, tone: "dark" },
   ];
@@ -1162,65 +1965,7 @@ function ProfileRow({ label, value, highlight, error }) {
   );
 }
 
-/* 3. إضافة شريك */
-function AddPartnerScreen({ partners, onSave, onBack }) {
-  const [name, setName] = useState("");
-  const [capital, setCapital] = useState("");
-
-  const livePercent = useMemo(() => {
-    const numCapital = parseFloat(capital) || 0;
-    const currentTotal = partners.reduce((s, p) => s + p.net, 0);
-    if (currentTotal + numCapital === 0) return 0;
-    return ((numCapital / (currentTotal + numCapital)) * 100).toFixed(2);
-  }, [capital, partners]);
-
-  return (
-    <div style={styles.container}>
-      <ScreenHeader title="إضافة شريك جديد" onBack={onBack} />
-      <div style={styles.card}>
-        <form onSubmit={e => { e.preventDefault(); onSave(name, capital); }} style={styles.formGrid}>
-          <Field label="اسم الشريك"><input style={styles.input} value={name} onChange={e => setName(e.target.value)} required /></Field>
-          <Field label="رأس المال المدفوع">
-            <input type="number" style={styles.input} value={capital} onChange={e => setCapital(e.target.value)} placeholder="0" required />
-          </Field>
-
-          <div style={{ gridColumn: "1 / -1", background: "#211f18", padding: 14, borderRadius: 10, border: "1px dashed #d0b689", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ color: "#c4c4c4", fontSize: 14 }}>نسبة الشريك في الشركة بناءً على الإدخال:</span>
-            <span style={{ color: "#e8cd9c", fontSize: 20, fontWeight: 800 }}>{livePercent}%</span>
-          </div>
-
-          <button type="submit" style={styles.saveBtn}>حفظ وإضافة الشريك</button>
-        </form>
-        <BottomExitButton onBack={onBack} />
-      </div>
-    </div>
-  );
-}
-
-/* 4. إضافة موظف */
-function AddEmployeeScreen({ onSave, onBack }) {
-  const [form, setForm] = useState({ name: "", phone: "", job: "", salary: "", hireDate: "" });
-  return (
-    <div style={styles.container}>
-      <ScreenHeader title="إضافة موظف جديد" onBack={onBack} />
-      <div style={styles.card}>
-        <form onSubmit={e => { e.preventDefault(); onSave(form); }} style={styles.formGrid}>
-          <Field label="الاسم"><input style={styles.input} onChange={e => setForm({ ...form, name: e.target.value })} required /></Field>
-          <Field label="التليفون"><input style={styles.input} onChange={e => setForm({ ...form, phone: e.target.value })} required /></Field>
-          <Field label="الوظيفة"><input style={styles.input} onChange={e => setForm({ ...form, job: e.target.value })} required /></Field>
-          <Field label="الراتب الأساسي"><input type="number" style={styles.input} onChange={e => setForm({ ...form, salary: e.target.value })} required /></Field>
-          <Field label="تاريخ التعيين">
-            <DateInput value={form.hireDate} onChange={e => setForm({ ...form, hireDate: e.target.value })} required />
-          </Field>
-          <button type="submit" style={styles.saveBtn}>حفظ بيانات الموظف</button>
-        </form>
-        <BottomExitButton onBack={onBack} />
-      </div>
-    </div>
-  );
-}
-
-/* 5. سداد الأقساط (الشاشة الجديدة المطورة الكاملة) */
+/* 3. سداد الأقساط */
 function PayScreen({ rows, payments, employees, onPay, onDeletePayment, onShowReceipt, onBack }) {
   const [selected, setSelected] = useState(null);
   const [amount, setAmount] = useState("");
@@ -1240,7 +1985,6 @@ function PayScreen({ rows, payments, employees, onPay, onDeletePayment, onShowRe
     setAmount("");
   }
 
-  // فلترة مرنة ومطابقة حتمية
   const clientPayments = selected ? payments.filter(p => String(p.clientId) === String(selected.id)) : [];
 
   return (
@@ -2087,12 +2831,12 @@ const styles = {
   topCloseBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, background: "#242426", border: "1px solid #404040", cursor: "pointer", color: "#e8cd9c" },
   subTitle: { fontSize: 19, fontWeight: 800, color: "#e8cd9c" },
   card: { background: "#242426", border: `1px solid #404040`, borderRadius: 18, padding: 22 },
-  formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 },
+  formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 },
   fieldLabel: { fontSize: 13.5, color: "#c4c4c4", fontWeight: 700, display: "block", marginBottom: 6 },
   input: { width: "100%", background: "#1b1b1d", border: "1px solid #404040", borderRadius: 10, padding: "12px 14px", color: "#ffffff", fontFamily: "inherit", fontSize: 15, outline: "none" },
   sectionLabel: { gridColumn: "1 / -1", fontSize: 13.5, fontWeight: 800, color: "#d0b689", marginTop: 12, paddingBottom: 8, borderBottom: `1px solid #404040` },
   liveBox: { gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: "#211f18", border: "1px dashed rgba(208,182,137,0.5)", borderRadius: 12, padding: 14, margin: "6px 0" },
-  saveBtn: { gridColumn: "1 / -1", background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", borderRadius: 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 8, fontFamily: "inherit" },
+  saveBtn: { gridColumn: "1 / -1", background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", borderRadius: 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 8, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 },
   errorBox: { background: "rgba(224,122,95,0.12)", border: "1px solid rgba(224,122,95,0.5)", color: "#e8a996", borderRadius: 10, padding: "12px 14px", fontSize: 14, marginBottom: 16 },
   emptyState: { textAlign: "center", color: "#c4c4c4", padding: "30px 10px", fontSize: 15 },
   historyTitle: { fontSize: 16, fontWeight: 800, color: "#e8cd9c", marginTop: 22, marginBottom: 16, paddingTop: 16, borderTop: `1px solid #404040` },
