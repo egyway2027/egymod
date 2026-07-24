@@ -2898,69 +2898,8 @@ function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, 
   );
 }
 
-/* ============================================================
-   المكونات المساعدة للوحة التحكم والشاشات القياسية
-   ============================================================ */
 
-function ScreenHeader({ title, onBack }) {
-  return (
-    <div style={styles.subHeader}>
-      <button style={styles.backBtn} onClick={onBack} title="رجوع للرئيسية"><ArrowRight size={16} /> رجوع للرئيسية</button>
-      <div style={styles.subTitle}>{title}</div>
-      <button type="button" style={styles.topCloseBtn} onClick={onBack} title="إغلاق"><X size={18} /></button>
-    </div>
-  );
-}
 
-function BottomExitButton({ onBack }) {
-  return (
-    <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #333336" }}>
-      <button type="button" onClick={onBack} style={{ width: "100%", background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", borderRadius: 12, padding: "13px 20px", fontSize: 14, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "inherit" }}>
-        <ArrowRight size={16} /> خروج والعودة للشاشة الرئيسية
-      </button>
-    </div>
-  );
-}
-
-/* أنماط التصميم القياسية */
-const styles = {
-  page: { minHeight: "100vh", background: `radial-gradient(1200px 600px at 20% -10%, #2a271f 0%, #1b1b1d 55%)`, padding: "24px 16px 60px", fontFamily: "'Cairo', 'Tajawal', system-ui, sans-serif", color: "#ffffff" },
-  container: { maxWidth: 1100, margin: "0 auto" },
-  toast: { position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", padding: "10px 18px", borderRadius: 12, fontSize: 13.5, display: "flex", alignItems: "center", gap: 8, zIndex: 5000 },
-  toastError: { background: "#3a2320", border: "1px solid #7a4a3f", color: "#f0c6bb" },
-  dashHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", background: `linear-gradient(135deg, #e6cf9e 0%, #b6935a 50%, #8a6a35 100%)`, borderRadius: 18, padding: "18px 24px", marginBottom: 20 },
-  adminBadge: { background: "#1b1b1d", color: "#e8cd9c", fontSize: 12.5, fontWeight: 700, padding: "8px 16px", borderRadius: 10 },
-  dashTitle: { fontSize: 22, fontWeight: 800, color: "#2c2211" },
-  dashSub: { fontSize: 12.5, color: "#5a4a2c", marginTop: 2 },
-  calcIcon: { width: 44, height: 44, borderRadius: 12, background: "#1b1b1d", display: "flex", alignItems: "center", justifyContent: "center" },
-  kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 },
-  kpiCard: { background: "#242426", border: `1px solid #404040`, borderRadius: 16, padding: "20px 20px" },
-  kpiValue: { fontSize: 24, fontWeight: 800, color: "#ffffff", fontVariantNumeric: "tabular-nums" },
-  kpiLabel: { fontSize: 13.5, color: "#e8cd9c", fontWeight: 700, marginTop: 8 },
-  kpiSub: { fontSize: 11.5, color: "#c4c4c4", marginTop: 4 },
-  grid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 },
-  subHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
-  backBtn: { display: "flex", alignItems: "center", gap: 6, background: "#242426", border: `1px solid #404040`, color: "#e8cd9c", padding: "9px 16px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700 },
-  topCloseBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, background: "#242426", border: "1px solid #404040", cursor: "pointer", color: "#e8cd9c" },
-  subTitle: { fontSize: 19, fontWeight: 800, color: "#e8cd9c" },
-  card: { background: "#242426", border: `1px solid #404040`, borderRadius: 18, padding: 22 },
-  formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 },
-  fieldLabel: { fontSize: 13.5, color: "#c4c4c4", fontWeight: 700, display: "block", marginBottom: 6 },
-  input: { width: "100%", background: "#1b1b1d", border: "1px solid #404040", borderRadius: 10, padding: "12px 14px", color: "#ffffff", fontFamily: "inherit", fontSize: 15, outline: "none" },
-  sectionLabel: { gridColumn: "1 / -1", fontSize: 13.5, fontWeight: 800, color: "#d0b689", marginTop: 12, paddingBottom: 8, borderBottom: `1px solid #404040` },
-  liveBox: { gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: "#211f18", border: "1px dashed rgba(208,182,137,0.5)", borderRadius: 12, padding: 14, margin: "6px 0" },
-  saveBtn: { gridColumn: "1 / -1", background: `linear-gradient(145deg, #e8cd9c, #d0b689)`, color: "#1b1b1d", border: "none", borderRadius: 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 8, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 },
-  errorBox: { background: "rgba(224,122,95,0.12)", border: "1px solid rgba(224,122,95,0.5)", color: "#e07a5f", borderRadius: 10, padding: "12px 14px", fontSize: 14, marginBottom: 16 },
-  emptyState: { textAlign: "center", color: "#c4c4c4", padding: "30px 10px", fontSize: 15 },
-  historyTitle: { fontSize: 16, fontWeight: 800, color: "#e8cd9c", marginTop: 22, marginBottom: 16, paddingTop: 16, borderTop: `1px solid #404040` },
-  profileBox: { marginTop: 16, paddingTop: 16, borderTop: `1px solid #404040` },
-  suggestBox: { position: "absolute", top: "calc(100% + 4px)", right: 0, left: 0, background: "#2d2d30", border: `1px solid #45454a`, borderRadius: 10, overflow: "hidden", zIndex: 30, boxShadow: "0 12px 30px rgba(0,0,0,0.5)", maxHeight: 260, overflowY: "auto" },
-  suggestItem: { display: "flex", flexDirection: "column", alignItems: "flex-end", width: "100%", textAlign: "right", background: "transparent", border: "none", borderBottom: `1px solid #242426`, padding: "12px 14px", cursor: "pointer", fontFamily: "inherit" },
-  suggestLabel: { fontSize: 14.5, fontWeight: 800, color: "#ffffff" },
-  suggestSecondary: { fontSize: 12.5, color: "#c4c4c4", marginTop: 4 },
-  selectedChip: { display: "flex", alignItems: "center", justifyContent: "space-between", background: "#211f18", border: `1px solid #d0b689`, borderRadius: 10, padding: "12px 14px", color: "#e8cd9c", fontWeight: 800, fontSize: 14.5 },
-  selectedChipX: { background: "transparent", border: "none", color: "#c4c4c4", cursor: "pointer", display: "flex", alignItems: "center" }
-};
 
 
 
