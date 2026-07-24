@@ -692,7 +692,15 @@ function EgymodApp() {
         />
       )}
       {screen === "lateClients" && <LateClientsScreen rows={lateRows} onBack={() => setScreen("dashboard")} onPay={recordPayment} />}
-      {screen === "changePassword" && <PlaceholderScreen title="تغيير كلمة السر" onBack={() => setScreen("dashboard")} />}
+      {screen === "settings" && (
+        <SettingsScreen
+          currentLang={currentLang} setCurrentLang={setCurrentLang}
+          currentTheme={currentTheme} setCurrentTheme={setCurrentTheme}
+          storeInfo={storeInfo} setStoreInfo={setStoreInfo}
+          appUsers={appUsers} setAppUsers={setAppUsers}
+          onBack={() => setScreen("dashboard")} notify={notify}
+        />
+      )}
       {screen === "backup" && <PlaceholderScreen title="النسخ الاحتياطي السحابي" note="تم ربط النظام بقاعدة بيانات Supabase بنجاح." onBack={() => setScreen("dashboard")} />}
 
       {activeReceipt && (
