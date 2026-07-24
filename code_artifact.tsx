@@ -102,7 +102,7 @@ const seedEmployees = [{ id: 1, name: "سعيد عبد الله", phone: "010111
 const emptyForm = { name: "", phone: "", guarantor: "", guarantorPhone: "", item: "", cost: "", sale: "", down: "", monthly: "", contractDate: "", firstPayDate: "", notes: "" };
 
 /* ============================================================
-   مكون إدخال التاريخ الذكي (يعالج مشكلة قنس/رهش/موي)
+   مكون إدخال التاريخ الذكي
    ============================================================ */
 function DateInput({ value, onChange, disabled, required, placeholder = "سنة - شهر - يوم", style }) {
   const [focused, setFocused] = useState(false);
@@ -1202,7 +1202,7 @@ function EmployeeDetailsModal({ employee, salaryLog, onTerminate, onClose }) {
 }
 
 /* ============================================================
-   5. شاشة توزيع الأرباح الفائقة (صورة 3)
+   5. شاشة توزيع الأرباح الفائقة (صورة 3 - مع الإصلاح النحوي)
    ============================================================ */
 function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, withdrawalsLog, setWithdrawalsLog, distributionsLog, setDistributionsLog, totals, onBack, notify }) {
   const [periodFilter, setPeriodFilter] = useState("all");
@@ -1318,7 +1318,7 @@ function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, 
             <tbody>
               {partnersCalculated.map(p => (
                 <tr key={p.id} style={{ borderBottom: "1px solid #2d2d30" }}>
-                  <td style={{ padding: "10px", fontWeight 800, color: "#e8cd9c", cursor: "pointer", textDecoration: "underline" }} onClick={() => setSelectedPartnerModal(p)}>{p.name}</td>
+                  <td style={{ padding: "10px", fontWeight: 800, color: "#e8cd9c", cursor: "pointer", textDecoration: "underline" }} onClick={() => setSelectedPartnerModal(p)}>{p.name}</td>
                   <td style={{ padding: "10px", color: "#d0b689", fontWeight: 800 }}>{p.sharePct}%</td>
                   <td style={{ padding: "10px", color: "#f0c6bb" }}>{fmt(p.prevWithdrawals)} ج.م</td>
                   <td style={{ padding: "10px", fontWeight: 800, color: "#bfe8cd" }}>{fmt(p.shareAmount)} ج.م</td>
