@@ -10,13 +10,13 @@ const SUPABASE_URL = 'https://blijuizmqoprlrsuebgo.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rw8Rym37iQoFRWkLXaDbfw_MaKL65Tc';
 let supabase = null;
 
+// دوال آمنة للذاكرة المحلية لمنع أي شاشة بيضاء
 function safeJSONParse(key, fallback) {
   try {
     const saved = localStorage.getItem(key);
     if (!saved || saved === "undefined" || saved === "null") return fallback;
     return JSON.parse(saved);
   } catch (e) {
-    console.error(`Error parsing ${key}:`, e);
     return fallback;
   }
 }
@@ -24,36 +24,27 @@ function safeJSONParse(key, fallback) {
 function safeSetStorage(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.error(`Error saving ${key}:`, e);
-  }
+  } catch (e) {}
 }
 
 export default function AppLoader() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      if (window.supabase) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        setReady(true);
-      } else {
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-        script.onload = () => {
-          try {
-            if (window.supabase) {
-              supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-          } catch (e) { console.error(e); }
-          setReady(true);
-        };
-        script.onerror = () => setReady(true);
-        document.head.appendChild(script);
-      }
-    } catch (err) {
-      console.error(err);
+    if (window.supabase) {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       setReady(true);
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+      script.onload = () => {
+        if (window.supabase) {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        setReady(true);
+      };
+      script.onerror = () => setReady(true);
+      document.head.appendChild(script);
     }
   }, []);
 
@@ -61,7 +52,7 @@ export default function AppLoader() {
     return (
       <div dir="rtl" className="flex flex-col items-center justify-center min-h-screen bg-[#1b1b1d] text-[#d0b689] font-['Cairo']">
         <div className="w-12 h-12 border-4 border-[#d0b689] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <h2 className="text-xl font-bold">جاري تحميل نظام إدارة الأقساط...</h2>
+        <h2 className="text-xl font-bold">جاري تأمين الاتصال بقاعدة البيانات السحابية...</h2>
       </div>
     );
   }
@@ -204,7 +195,7 @@ function NameComboBox({ items, getLabel, getSecondary, onSelect, placeholder, se
    المكون الرئيسي للتطبيق
    ============================================================ */
 function EgymodApp() {
-  const [currentUser, setCurrentUser] = useState({ id: "admin", name: "المشرف العام", email: "admin@egymod.com" });
+  const [currentUser, setCurrentUser] = useState(null);
   const [authView, setAuthView] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -214,6 +205,7 @@ function EgymodApp() {
   const [clients, setClients] = useState([]);
   const [payments, setPayments] = useState(() => safeJSONParse("egymod_payments", []));
   const [deletedClients, setDeletedClients] = useState(() => safeJSONParse("egymod_trash", []));
+  
   const [partners, setPartners] = useState(() => safeJSONParse("egymod_partners", seedPartners));
   const [expenses, setExpenses] = useState(() => safeJSONParse("egymod_expenses", seedExpenses));
   const [employees, setEmployees] = useState(() => safeJSONParse("egymod_employees", seedEmployees));
@@ -239,22 +231,20 @@ function EgymodApp() {
 
   useEffect(() => {
     if (!supabase) return;
-    try {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) handleUserSession(session.user);
-      });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) handleUserSession(session.user);
+    });
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          handleUserSession(session.user);
-        } else if (event === 'SIGNED_OUT') {
-          setCurrentUser(null);
-          setAuthView("login");
-        }
-      });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        handleUserSession(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        setAuthView("login");
+      }
+    });
 
-      return () => subscription?.unsubscribe();
-    } catch (e) { console.error(e); }
+    return () => subscription.unsubscribe();
   }, []);
 
   async function handleUserSession(user) {
@@ -263,7 +253,6 @@ function EgymodApp() {
   }
 
   async function loadCloudData(userId) {
-    if (!supabase) return;
     try {
       const [cRes, pRes] = await Promise.all([
         supabase.from('clients').select('*'),
@@ -278,10 +267,15 @@ function EgymodApp() {
       }
       if (pRes.data && pRes.data.length > 0) {
         setPayments(pRes.data.map(p => ({
-          id: p.id, clientId: p.client_id, clientName: p.client_name, item: p.item,
-          amount: Number(p.amount), remainingAfter: Number(p.remaining_after || 0),
+          id: p.id,
+          clientId: p.client_id,
+          clientName: p.client_name,
+          item: p.item,
+          amount: Number(p.amount),
+          remainingAfter: Number(p.remaining_after || 0),
           payDate: p.created_at ? p.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
-          method: p.method || "نقداً / كاش", collector: p.collector || "المشرف"
+          method: p.method || "نقداً / كاش",
+          collector: p.collector || "المشرف"
         })));
       }
     } catch (err) {
@@ -290,25 +284,33 @@ function EgymodApp() {
   }
 
   async function handleLogin(e) {
-    e.preventDefault(); setAuthError("");
-    if (!supabase) {
-      setCurrentUser({ id: "offline", email: authEmail || "admin@egymod.com", name: "المشرف العام" });
-      notify("تم الدخول بنجاح!");
-      return;
-    }
+    e.preventDefault();
+    setAuthError("");
     const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
-    if (error) {
-      setCurrentUser({ id: "offline", email: authEmail || "admin@egymod.com", name: "المشرف العام" });
-      notify("تم الدخول بالوضع المحلي بنجاح!");
-    } else {
-      notify("تم تسجيل الدخول بنجاح!");
-    }
+    if (error) setAuthError(error.message);
+    else notify("تم تسجيل الدخول بنجاح!");
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    setAuthError("");
+    const { error } = await supabase.auth.signUp({
+      email: authEmail, password: authPassword, options: { data: { name: authName } }
+    });
+    if (error) setAuthError(error.message);
+    else { notify("تم إنشاء الحساب بنجاح! يمكنك الدخول الآن."); setAuthView("login"); }
+  }
+
+  async function handleReset(e) {
+    e.preventDefault();
+    setAuthError("");
+    const { error } = await supabase.auth.resetPasswordForEmail(authEmail);
+    if (error) setAuthError(error.message);
+    else notify("تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.");
   }
 
   async function handleLogout() {
-    if (supabase) {
-      try { await supabase.auth.signOut(); } catch (e) {}
-    }
+    await supabase.auth.signOut();
     setCurrentUser(null);
     notify("تم تسجيل الخروج بنجاح.");
   }
@@ -364,39 +366,29 @@ function EgymodApp() {
   }
 
   async function addClient(data) {
+    if (!currentUser) return;
     const dbPayload = {
-      user_id: currentUser ? currentUser.id : "offline", name: data.name, phone: String(data.phone || ""),
+      user_id: currentUser.id, name: data.name, phone: String(data.phone || ""),
       guarantor: data.guarantor || "", guarantor_phone: String(data.guarantorPhone || ""),
       item: data.item, cost: Number(data.cost), sale: Number(data.sale), down: Number(data.down),
       monthly: Number(data.monthly), contract_date: data.contractDate, first_pay_date: data.firstPayDate,
       total_paid: 0, notes: data.notes || ""
     };
+    const { data: res, error } = await supabase.from('clients').insert([dbPayload]).select().single();
+    if (error) { notify("خطأ في حفظ العقد بالسحابة", "error"); return; }
 
-    if (supabase && currentUser && currentUser.id !== "offline") {
-      try {
-        const { data: res, error } = await supabase.from('clients').insert([dbPayload]).select().single();
-        if (!error && res) {
-          const newObj = {
-            id: res.id, name: res.name, phone: res.phone, guarantor: res.guarantor, guarantorPhone: res.guarantor_phone,
-            item: res.item, cost: Number(res.cost), sale: Number(res.sale), down: Number(res.down), monthly: Number(res.monthly),
-            contractDate: res.contract_date, firstPayDate: res.first_pay_date, totalPaid: 0, notes: res.notes
-          };
-          setClients((prev) => [...prev, newObj]);
-        } else {
-          setClients((prev) => [...prev, { id: Date.now(), ...data, totalPaid: 0 }]);
-        }
-      } catch (e) {
-        setClients((prev) => [...prev, { id: Date.now(), ...data, totalPaid: 0 }]);
-      }
-    } else {
-      setClients((prev) => [...prev, { id: Date.now(), ...data, totalPaid: 0 }]);
-    }
-
-    notify("تم حفظ العقد بنجاح!");
+    const newObj = {
+      id: res.id, name: res.name, phone: res.phone, guarantor: res.guarantor, guarantorPhone: res.guarantor_phone,
+      item: res.item, cost: Number(res.cost), sale: Number(res.sale), down: Number(res.down), monthly: Number(res.monthly),
+      contractDate: res.contract_date, firstPayDate: res.first_pay_date, totalPaid: 0, notes: res.notes
+    };
+    setClients((prev) => [...prev, newObj]);
+    notify("تم حفظ العقد بالسحابة بنجاح!");
     setScreen("dashboard");
   }
 
   async function recordPayment(clientId, amount, payDate, method = "نقداً / كاش", collector = "المشرف") {
+    if (!currentUser) return null;
     const client = clients.find((c) => String(c.id) === String(clientId));
     if (!client || !amount || amount <= 0) return null;
     const remainingBefore = client.sale - client.down - client.totalPaid;
@@ -405,23 +397,22 @@ function EgymodApp() {
     const newTotalPaid = client.totalPaid + amount;
     const remainingAfter = Math.max(0, remainingBefore - amount);
 
-    if (supabase && currentUser && currentUser.id !== "offline") {
-      try {
-        await supabase.from('clients').update({ total_paid: newTotalPaid }).eq('id', clientId);
-        const payPayload = {
-          user_id: currentUser.id, client_id: clientId, client_name: client.name,
-          item: client.item, amount: amount, remaining_after: remainingAfter,
-          method: method, collector: collector
-        };
-        await supabase.from('payments').insert([payPayload]);
-      } catch (e) { console.error(e); }
-    }
+    const { error } = await supabase.from('clients').update({ total_paid: newTotalPaid }).eq('id', clientId);
+    if (error) { notify("خطأ في تحديث السداد بالسحابة", "error"); return null; }
+
+    const payPayload = {
+      user_id: currentUser.id, client_id: clientId, client_name: client.name,
+      item: client.item, amount: amount, remaining_after: remainingAfter,
+      method: method, collector: collector
+    };
+    const { data: pRes } = await supabase.from('payments').insert([payPayload]).select().single();
 
     const paymentDateStr = payDate || new Date().toISOString().split("T")[0];
+
     setClients((prev) => prev.map((c) => (String(c.id) === String(clientId) ? { ...c, totalPaid: newTotalPaid } : c)));
-    
     const newPaymentObj = {
-      id: Date.now(), clientId: clientId, clientName: client.name, item: client.item,
+      id: pRes ? pRes.id : Date.now(),
+      clientId: clientId, clientName: client.name, item: client.item,
       amount, remainingAfter, payDate: paymentDateStr, method, collector
     };
     setPayments((prev) => [...prev, newPaymentObj]);
@@ -434,20 +425,21 @@ function EgymodApp() {
   }
 
   async function deletePayment(paymentId, clientId, amount) {
+    if (!currentUser) return;
     const client = clients.find((c) => String(c.id) === String(clientId));
     if (!client) return;
 
     const newTotalPaid = Math.max(0, client.totalPaid - amount);
 
     try {
-      if (supabase && currentUser && currentUser.id !== "offline") {
+      if (supabase) {
         await supabase.from('payments').delete().eq('id', paymentId);
         await supabase.from('clients').update({ total_paid: newTotalPaid }).eq('id', clientId);
       }
 
       setClients((prev) => prev.map((c) => (String(c.id) === String(clientId) ? { ...c, totalPaid: newTotalPaid } : c)));
       setPayments((prev) => prev.filter((p) => String(p.id) !== String(paymentId)));
-      notify("تم حذف القسط وتعديل رصيد العميل بنجاح!");
+      notify("تم حذف القسط وتعديل رصيد العميل بالسحابة بنجاح!");
     } catch (err) {
       console.error(err);
       notify("حدث خطأ أثناء حذف القسط", "error");
@@ -455,23 +447,30 @@ function EgymodApp() {
   }
 
   async function updateClient(clientId, updatedData) {
+    if (!currentUser) return false;
     const dbPayload = {
-      name: updatedData.name, phone: String(updatedData.phone || ""),
-      guarantor: updatedData.guarantor || "", guarantor_phone: String(updatedData.guarantorPhone || ""),
-      item: updatedData.item, cost: Number(updatedData.cost), sale: Number(updatedData.sale),
-      down: Number(updatedData.down), monthly: Number(updatedData.monthly),
-      contract_date: updatedData.contractDate, first_pay_date: updatedData.firstPayDate,
+      name: updatedData.name,
+      phone: String(updatedData.phone || ""),
+      guarantor: updatedData.guarantor || "",
+      guarantor_phone: String(updatedData.guarantorPhone || ""),
+      item: updatedData.item,
+      cost: Number(updatedData.cost),
+      sale: Number(updatedData.sale),
+      down: Number(updatedData.down),
+      monthly: Number(updatedData.monthly),
+      contract_date: updatedData.contractDate,
+      first_pay_date: updatedData.firstPayDate,
       notes: updatedData.notes || ""
     };
 
-    if (supabase && currentUser && currentUser.id !== "offline") {
-      try {
-        await supabase.from('clients').update(dbPayload).eq('id', clientId);
-      } catch (e) { console.error(e); }
+    const { error } = await supabase.from('clients').update(dbPayload).eq('id', clientId);
+    if (error) {
+      notify("خطأ في تحديث البيانات بالسحابة", "error");
+      return false;
     }
 
     setClients((prev) => prev.map((c) => (String(c.id) === String(clientId) ? { ...c, ...updatedData } : c)));
-    notify("تم تحديث بيانات العميل بنجاح!");
+    notify("تم تحديث بيانات العميل بالسحابة بنجاح!");
     return true;
   }
 
@@ -500,16 +499,46 @@ function EgymodApp() {
         <div style={{ background: "#242426", border: "1px solid #404040", borderRadius: 18, padding: 30, width: "100%", maxWidth: 420, boxShadow: "0 12px 30px rgba(0,0,0,0.6)" }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
             <h2 style={{ color: "#e8cd9c", fontSize: 22, fontWeight: 800 }}>نظام إدارة الأقساط السحابي</h2>
-            <p style={{ color: "#c4c4c4", fontSize: 13, marginTop: 4 }}>يرجى تسجيل الدخول للوصول للنظام</p>
+            <p style={{ color: "#c4c4c4", fontSize: 13, marginTop: 4 }}>يرجى تسجيل الدخول للوصول لقاعدة البيانات</p>
           </div>
 
           {authError && <div style={{ background: "rgba(224,122,95,0.15)", border: "1px solid #e07a5f", color: "#e07a5f", padding: 10, borderRadius: 8, fontSize: 13, marginBottom: 16 }}>{authError}</div>}
 
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Field label="البريد الإلكتروني"><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="ادخل بريدك..." required /></Field>
-            <Field label="كلمة المرور"><input type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder="••••••••" required /></Field>
-            <button type="submit" style={styles.saveBtn}>تسجيل الدخول للنظام</button>
-          </form>
+          {authView === "login" && (
+            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <Field label="البريد الإلكتروني"><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></Field>
+              <Field label="كلمة المرور"><input type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} required /></Field>
+              <button type="submit" style={styles.saveBtn}>تسجيل الدخول</button>
+              <div style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#c4c4c4" }}>
+                ليس لديك حساب؟ <span style={{ color: "#e8cd9c", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthView("register")}>سجل حساب جديد</span>
+              </div>
+              <div style={{ textAlign: "center", marginTop: 4, fontSize: 12, color: "#999" }}>
+                <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => setAuthView("reset")}>نسيت كلمة المرور؟</span>
+              </div>
+            </form>
+          )}
+
+          {authView === "register" && (
+            <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <Field label="الاسم الكامل"><input type="text" value={authName} onChange={e => setAuthName(e.target.value)} required /></Field>
+              <Field label="البريد الإلكتروني"><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></Field>
+              <Field label="كلمة المرور (6 أحرف على الأقل)"><input type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} required /></Field>
+              <button type="submit" style={styles.saveBtn}>إنشاء الحساب</button>
+              <div style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#c4c4c4" }}>
+                لديك حساب بالفعل؟ <span style={{ color: "#e8cd9c", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthView("login")}>تسجيل الدخول</span>
+              </div>
+            </form>
+          )}
+
+          {authView === "reset" && (
+            <form onSubmit={handleReset} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <Field label="أدخل بريدك الإلكتروني"><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></Field>
+              <button type="submit" style={styles.saveBtn}>إرسال رابط استعادة كلمة المرور</button>
+              <div style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#c4c4c4" }}>
+                <span style={{ color: "#e8cd9c", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthView("login")}>العودة لتسجيل الدخول</span>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     );
@@ -1176,7 +1205,7 @@ function EmployeeDetailsModal({ employee, salaryLog, onTerminate, onClose }) {
 }
 
 /* ============================================================
-   5. شاشة توزيع الأرباح الفائقة (صورة 3)
+   5. شاشة توزيع الأرباح الفائقة (صورة 3 - مع زر إعادة استثمار)
    ============================================================ */
 function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, withdrawalsLog, setWithdrawalsLog, distributionsLog, setDistributionsLog, totals, onBack, notify }) {
   const [periodFilter, setPeriodFilter] = useState("all");
@@ -1235,10 +1264,10 @@ function ProfitDistributionScreen({ partners, setPartners, expenses, salaryLog, 
     
     partnersCalculated.forEach((p) => {
       if (p.decision === "إعادة استثمار") {
-        // زيادة رأس مال الشريك بمبلغ أرباحه فتزيد نسبته في الشركة تلقائياً
+        // إعادة استثمار: يضيف نصيبه لرأس ماله فتزيد نسبته في الشركة
         setPartners(prev => prev.map(x => String(x.id) === String(p.id) ? { ...x, capital: x.capital + p.shareAmount } : x));
       } else {
-        // سحب فوري يسجل في المسحوبات
+        // سحب فوري: يسجل كمبلغ صرف في سجل المسحوبات
         const newW = { id: Date.now() + Math.random(), partnerId: p.id, partnerName: p.name, amount: p.shareAmount, date: new Date().toISOString().split("T")[0], notes: "توزيع أرباح - سحب فوري" };
         setWithdrawalsLog(prev => [...prev, newW]);
       }
