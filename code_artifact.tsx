@@ -1562,7 +1562,7 @@ function ReceiptModal({ receipt, onClose }) {
           <button type="button" onClick={handleDownloadImage} style={{ background: "#1b1b1d", border: "1px solid #404040", color: "#e8cd9c", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
             <Download size={16} /> تنزيل الصورة
           </button>
-          <button type="button" onClick={handleWhatsAppShare} style={{ gridColumn: "1 / -1", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", borderRadius: 10, padding: "11px", fontWeight 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+         <button type="button" onClick={handleWhatsAppShare} style={{ gridColumn: "1 / -1", background: "#213526", border: "1px solid #3d6b4a", color: "#bfe8cd", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
             <Share2 size={16} /> إرسال عبر الواتساب
           </button>
         </div>
