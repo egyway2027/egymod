@@ -202,26 +202,27 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
                   readOnly
                 />
                 <input
-                  type="date"
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    opacity: 0,
-                    cursor: "pointer",
-                    zIndex: 2
-                  }}
-                  value={form.contractDate || ""}
-                  onChange={handleContractDate}
-                  onClick={(e) => {
-                    if (e.target.showPicker) {
-                      e.target.showPicker();
-                    }
-                  }}
-                  required
-                />
+  type="date"
+  lang={isEN ? "en-US" : "ar-EG"}
+  style={{
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0,
+    cursor: "pointer",
+    zIndex: 2
+  }}
+  value={form.contractDate || ""}
+  onChange={handleContractDate}
+  onClick={(e) => {
+    if (e.target.showPicker) {
+      e.target.showPicker();
+    }
+  }}
+  required
+/>
               </div>
             </label>
 
