@@ -24,9 +24,8 @@ const fmtCleanInt = (val) => {
 export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
-  const [contractFocused, setContractFocused] = useState(false);
 
-  // تجاهل لغة المتصفح والاعتماد فقط على قاموس البرنامج (EGP = English / غير ذلك = عربي إجباري)
+  // تحديد هل اللغة هي الإنجليزية بحسب القاموس
   const isEN = t?.currency === "EGP";
 
   const live = useMemo(() => {
@@ -109,7 +108,6 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
 
   return (
     <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1050px", margin: "0 auto", padding: "10px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
-      {/* حل مشكلة تداخل المربعات نهائياً */}
       <style>{` * { box-sizing: border-box; } `}</style>
 
       {/* HEADER */}
@@ -193,12 +191,6 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px", marginBottom: "14px" }}>
             <label style={labelStyle}>
-              {/* SECTION 3: Dates & Notes */}
-          <div style={sectionLabelStyle}>
-            {t.datesAndNotes || (isEN ? "Dates & Notes" : "التواريخ والملاحظات")}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px", marginBottom: "14px" }}>
-            <label style={labelStyle}>
               <span>{t.contractDateLabel || (isEN ? "Contract Date *" : "تاريخ التعاقد *")}</span>
               <div style={{ position: "relative", width: "100%" }}>
                 <input
@@ -226,6 +218,7 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
                 />
               </div>
             </label>
+
             <label style={labelStyle}>
               <span>{t.firstDueDateLabel || (isEN ? "First Due Date (Auto +1 Mo)" : "تاريخ أول قسط (تلقائي + شهر)")}</span>
               <input
@@ -239,6 +232,7 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
               />
             </label>
           </div>
+
           <div>
             <label style={labelStyle}>
               <span>{t.notesLabel || (isEN ? "Notes" : "ملاحظات")}</span>
