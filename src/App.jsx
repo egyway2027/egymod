@@ -1,9 +1,12 @@
 import React, { useState, useMemo } from "react";
 import {
-  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X, Check
+  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X
 } from "lucide-react";
 
-// Qamus Dictionary for Translations
+// استدعاء شاشة إضافة عميل جديد
+import { AddClientScreen } from "./components/AddClientScreen";
+
+// القاموس المركزي للترجمة
 const translations = {
   ar: {
     appName: "نظام إدارة الأقساط والمبيعات",
@@ -29,7 +32,9 @@ const translations = {
     totalPortfolioSub: "المبالغ المتبقية في ذمة العملاء",
     currency: "ج.م",
     selectLang: "اختر لغة البرنامج",
-    selectTheme: "معرض الثيمات والمظهر"
+    selectTheme: "معرض الثيمات والمظهر",
+    appThemes: "الثيمات",
+    saveSuccess: "تم حفظ بيانات العقد بنجاح!"
   },
   en: {
     appName: "Pro Installment Management System",
@@ -55,7 +60,9 @@ const translations = {
     totalPortfolioSub: "Remaining client balances",
     currency: "EGP",
     selectLang: "Select Language",
-    selectTheme: "Themes Gallery"
+    selectTheme: "Themes Gallery",
+    appThemes: "Themes",
+    saveSuccess: "Contract saved successfully!"
   }
 };
 
@@ -71,34 +78,45 @@ const THEMES_LIST = [
 ];
 
 export function App() {
+  const [currentScreen, setCurrentScreen] = useState("dashboard"); // 'dashboard' | 'addClient'
   const [currentLang, setCurrentLang] = useState("ar");
   const [currentTheme, setCurrentTheme] = useState("royalGold");
   const [showLangModal, setShowLangModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [clientsList, setClientsList] = useState([]);
 
   const t = translations[currentLang];
   const isEN = currentLang === "en";
 
-  // Theme Styles
+  // الألوان والتنسيقات بحسب الثيم المختار
   const themeStyles = useMemo(() => {
     if (currentTheme === "light") {
       return {
         bg: "#f8fafc", card: "#ffffff", inputBg: "#f1f5f9", border: "#cbd5e1",
-        text: "#0f172a", subText: "#64748b", accentGold: "#b45309", accent: "#d97706"
+        text: "#0f172a", subText: "#64748b", accentGold: "#b45309", accent: "#d97706",
+        borderRadius: "14px"
       };
     }
     if (currentTheme === "dark") {
       return {
         bg: "#121316", card: "#1c1e22", inputBg: "#252830", border: "#2d3139",
-        text: "#f3f4f6", subText: "#9ca3af", accentGold: "#e07a5f", accent: "#c97a6d"
+        text: "#f3f4f6", subText: "#9ca3af", accentGold: "#e07a5f", accent: "#c97a6d",
+        borderRadius: "14px"
       };
     }
-    // Royal Gold Default
     return {
       bg: "#111111", card: "#1e1e1e", inputBg: "#252525", border: "#333333",
-      text: "#ffffff", subText: "#aaaaaa", accentGold: "#d4af37", accent: "#c5a028"
+      text: "#ffffff", subText: "#aaaaaa", accentGold: "#d4af37", accent: "#c5a028",
+      borderRadius: "14px"
     };
   }, [currentTheme]);
+
+  // حفظ العقد الجديد في القائمة والعودة للرئيسية
+  const handleSaveClient = (newClientData) => {
+    setClientsList(prev => [newClientData, ...prev]);
+    alert(t.saveSuccess);
+    setCurrentScreen("dashboard");
+  };
 
   const buttons = [
     { key: "addClient", label: t.addClient, icon: UserPlus, tone: "dark" },
@@ -117,87 +135,106 @@ export function App() {
 
   return (
     <div dir={isEN ? "ltr" : "rtl"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        
-        {/* HEADER */}
-        <header style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
-          borderRadius: 18, padding: "18px 24px", marginBottom: 20, color: "#fff"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>
-              {t.welcome} {t.generalSupervisor}
+      
+      {/* 1. شاشة إضافة عميل جديد */}
+      {currentScreen === "addClient" && (
+        <AddClientScreen
+          onSave={handleSaveClient}
+          onBack={() => setCurrentScreen("dashboard")}
+          t={t}
+          themeStyles={themeStyles}
+        />
+      )}
+
+      {/* 2. اللوحة الرئيسية (Dashboard) */}
+      {currentScreen === "dashboard" && (
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          
+          {/* HEADER */}
+          <header style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
+            borderRadius: 18, padding: "18px 24px", marginBottom: 20, color: "#fff"
+          }}>
+            <div style={{ display: "flex", itemsCenter: "center", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>
+                {t.welcome} {t.generalSupervisor}
+              </div>
+
+              <button onClick={() => setShowLangModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <Globe size={15} /> <span>{currentLang === "ar" ? "🇪🇬 العربية" : "🇺🇸 English"}</span>
+              </button>
+
+              <button onClick={() => setShowThemeModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <Palette size={15} /> <span>{t.appThemes}</span>
+              </button>
             </div>
 
-            <button onClick={() => setShowLangModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-              <Globe size={15} /> <span>{currentLang === "ar" ? "🇪🇬 العربية" : "🇺🇸 English"}</span>
-            </button>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 800 }}>{t.appName}</div>
+              <div style={{ fontSize: 11, opacity: 0.8 }}>Cloud Enterprise Active</div>
+            </div>
 
-            <button onClick={() => setShowThemeModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-              <Palette size={15} /> <span>الثيمات</span>
-            </button>
-          </div>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Calculator size={22} />
+            </div>
+          </header>
 
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>{t.appName}</div>
-            <div style={{ fontSize: 11, opacity: 0.8 }}>Cloud Enterprise Active</div>
-          </div>
+          {/* KPIs */}
+          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
+            <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 16, padding: "20px" }}>
+              <TrendingUp size={24} color={themeStyles.accentGold} />
+              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>0 {t.currency}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.netProfit}</div>
+              <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.netProfitSub}</div>
+            </div>
 
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Calculator size={22} />
-          </div>
-        </header>
+            <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 16, padding: "20px" }}>
+              <CalendarClock size={24} color={themeStyles.accentGold} />
+              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>0 {t.currency}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.monthlyDues}</div>
+              <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.monthlyDuesSub}</div>
+            </div>
 
-        {/* KPIs */}
-        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
-          <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 16, padding: "20px" }}>
-            <TrendingUp size={24} color={themeStyles.accentGold} />
-            <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>0 {t.currency}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.netProfit}</div>
-            <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.netProfitSub}</div>
-          </div>
+            <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 16, padding: "20px" }}>
+              <Wallet size={24} color={themeStyles.accentGold} />
+              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>21980 {t.currency}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
+              <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
+            </div>
+          </section>
 
-          <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 16, padding: "20px" }}>
-            <CalendarClock size={24} color={themeStyles.accentGold} />
-            <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>0 {t.currency}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.monthlyDues}</div>
-            <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.monthlyDuesSub}</div>
-          </div>
+          {/* BUTTONS GRID */}
+          <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+            {buttons.map((b) => {
+              const Icon = b.icon;
+              return (
+                <button
+                  key={b.key}
+                  onClick={() => {
+                    if (b.key === "addClient") {
+                      setCurrentScreen("addClient");
+                    }
+                  }}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : themeStyles.card,
+                    color: b.tone === "silver" || b.tone === "rose" ? "#111" : "#fff",
+                    border: `1px solid ${themeStyles.border}`, borderRadius: 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
+                  }}
+                >
+                  <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
+                  <span style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon size={18} />
+                  </span>
+                </button>
+              );
+            })}
+          </section>
+        </div>
+      )}
 
-          <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 16, padding: "20px" }}>
-            <Wallet size={24} color={themeStyles.accentGold} />
-            <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>21980 {t.currency}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
-            <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
-          </div>
-        </section>
-
-        {/* BUTTONS GRID */}
-        <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-          {buttons.map((b) => {
-            const Icon = b.icon;
-            return (
-              <button
-                key={b.key}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : themeStyles.card,
-                  color: b.tone === "silver" || b.tone === "rose" ? "#111" : "#fff",
-                  border: `1px solid ${themeStyles.border}`, borderRadius: 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
-                }}
-              >
-                <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
-                <span style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon size={18} />
-                </span>
-              </button>
-            );
-          })}
-        </section>
-      </div>
-
-      {/* LANG MODAL */}
+      {/* MODAL 1: LANGUAGES */}
       {showLangModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
           <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 20, padding: 20, width: "100%", maxWidth: 400 }}>
@@ -214,7 +251,7 @@ export function App() {
         </div>
       )}
 
-      {/* THEME MODAL */}
+      {/* MODAL 2: THEMES */}
       {showThemeModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
           <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 20, padding: 20, width: "100%", maxWidth: 400 }}>
