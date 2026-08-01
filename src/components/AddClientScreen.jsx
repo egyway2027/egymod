@@ -210,10 +210,16 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
                     width: "100%",
                     height: "100%",
                     opacity: 0,
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    zIndex: 2
                   }}
                   value={form.contractDate || ""}
                   onChange={handleContractDate}
+                  onClick={(e) => {
+                    if (e.target.showPicker) {
+                      e.target.showPicker();
+                    }
+                  }}
                   required
                 />
               </div>
