@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { ArrowRight, X } from "lucide-react";
 
 const emptyForm = {
@@ -27,7 +27,13 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
 
   // تحديد هل اللغة هي الإنجليزية بحسب القاموس
   const isEN = t?.currency === "EGP";
-
+// تغيير لغة المستند الجذرية تلقائياً ليقرأ المتصفح التقويم باللغة المختارة
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = isEN ? "en" : "ar";
+      document.documentElement.dir = isEN ? "ltr" : "rtl";
+    }
+  }, [isEN]);
   const live = useMemo(() => {
     const costNum = Math.round(parseFloat(form.cost) || 0);
     const saleNum = Math.round(parseFloat(form.sale) || 0);
