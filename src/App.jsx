@@ -1,12 +1,10 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X
 } from "lucide-react";
 
-// استدعاء شاشة إضافة عميل جديد
 import { AddClientScreen } from "./components/AddClientScreen";
 
-// القاموس المركزي للترجمة
 const translations = {
   ar: {
     appName: "نظام إدارة الأقساط والمبيعات",
@@ -78,7 +76,7 @@ const THEMES_LIST = [
 ];
 
 export function App() {
-  const [currentScreen, setCurrentScreen] = useState("dashboard"); // 'dashboard' | 'addClient'
+  const [currentScreen, setCurrentScreen] = useState("dashboard");
   const [currentLang, setCurrentLang] = useState("ar");
   const [currentTheme, setCurrentTheme] = useState("royalGold");
   const [showLangModal, setShowLangModal] = useState(false);
@@ -88,7 +86,33 @@ export function App() {
   const t = translations[currentLang];
   const isEN = currentLang === "en";
 
-  // الألوان والتنسيقات بحسب الثيم المختار
+  // معالجة زر الرجوع الخاص بالمتصفح أو الهاتف
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (event.state && event.state.screen) {
+        setCurrentScreen(event.state.screen);
+      } else {
+        setCurrentScreen("dashboard");
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // دالة للتنقل بين الشاشات وتسجيل الحركة في السجل
+  const navigateTo = (screenName) => {
+    setCurrentScreen(screenName);
+    window.history.pushState({ screen: screenName }, "", "");
+  };
+
+  const handleBack = () => {
+    setCurrentScreen("dashboard");
+    if (window.history.state && window.history.state.screen) {
+      window.history.back();
+    }
+  };
+
   const themeStyles = useMemo(() => {
     if (currentTheme === "light") {
       return {
@@ -111,11 +135,10 @@ export function App() {
     };
   }, [currentTheme]);
 
-  // حفظ العقد الجديد في القائمة والعودة للرئيسية
   const handleSaveClient = (newClientData) => {
     setClientsList(prev => [newClientData, ...prev]);
     alert(t.saveSuccess);
-    setCurrentScreen("dashboard");
+    handleBack();
   };
 
   const buttons = [
@@ -136,27 +159,24 @@ export function App() {
   return (
     <div dir={isEN ? "ltr" : "rtl"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
       
-      {/* 1. شاشة إضافة عميل جديد */}
       {currentScreen === "addClient" && (
         <AddClientScreen
           onSave={handleSaveClient}
-          onBack={() => setCurrentScreen("dashboard")}
+          onBack={handleBack}
           t={t}
           themeStyles={themeStyles}
         />
       )}
 
-      {/* 2. اللوحة الرئيسية (Dashboard) */}
       {currentScreen === "dashboard" && (
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           
-          {/* HEADER */}
           <header style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
             background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
             borderRadius: 18, padding: "18px 24px", marginBottom: 20, color: "#fff"
           }}>
-            <div style={{ display: "flex", itemsCenter: "center", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>
                 {t.welcome} {t.generalSupervisor}
               </div>
@@ -180,7 +200,6 @@ export function App() {
             </div>
           </header>
 
-          {/* KPIs */}
           <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
             <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 16, padding: "20px" }}>
               <TrendingUp size={24} color={themeStyles.accentGold} />
@@ -204,7 +223,6 @@ export function App() {
             </div>
           </section>
 
-          {/* BUTTONS GRID */}
           <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
             {buttons.map((b) => {
               const Icon = b.icon;
@@ -213,7 +231,7 @@ export function App() {
                   key={b.key}
                   onClick={() => {
                     if (b.key === "addClient") {
-                      setCurrentScreen("addClient");
+                      navigateTo("addClient");
                     }
                   }}
                   style={{
@@ -234,7 +252,6 @@ export function App() {
         </div>
       )}
 
-      {/* MODAL 1: LANGUAGES */}
       {showLangModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
           <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 20, padding: 20, width: "100%", maxWidth: 400 }}>
@@ -251,7 +268,6 @@ export function App() {
         </div>
       )}
 
-      {/* MODAL 2: THEMES */}
       {showThemeModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
           <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 20, padding: 20, width: "100%", maxWidth: 400 }}>
