@@ -24,6 +24,7 @@ const fmtCleanInt = (val) => {
 export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
+  const [contractFocused, setContractFocused] = useState(false);
 
   const isEN = useMemo(() => {
     return t?.lang === "en" || (typeof document !== "undefined" && document.documentElement.lang === "en");
@@ -276,7 +277,7 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
             </label>
           </div>
 
-          {/* SECTION 3: DATES & NOTES WITH FIX */}
+          {/* SECTION 3: FIXED DATES */}
           <div style={{ ...sectionLabelStyle, paddingTop: "8px", borderTop: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}` }}>
             {t.datesAndNotes || (isEN ? "Dates & Notes" : "التواريخ والملاحظات")}
           </div>
@@ -285,15 +286,16 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
             <label style={labelStyle}>
               <span>{t.contractDateLabel || (isEN ? "Contract Date *" : "تاريخ التعاقد *")}</span>
               <input
-                type="date"
-                dir="ltr"
+                type={form.contractDate || contractFocused ? "date" : "text"}
                 style={{
                   ...inputStyle,
-                  textAlign: "center",
-                  colorScheme: themeStyles?.isLight ? "light" : "dark"
+                  textAlign: "center"
                 }}
                 value={form.contractDate}
+                onFocus={() => setContractFocused(true)}
+                onBlur={(e) => { if (!e.target.value) setContractFocused(false); }}
                 onChange={handleContractDate}
+                placeholder={isEN ? "YYYY-MM-DD" : "سنة - شهر - يوم"}
                 required
               />
             </label>
@@ -301,16 +303,15 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
             <label style={labelStyle}>
               <span>{t.firstDueDateLabel || (isEN ? "First Due Date (Auto +1 Mo)" : "تاريخ أول قسط (تلقائي + شهر)")}</span>
               <input
-                type="date"
-                dir="ltr"
+                type={form.firstPayDate ? "date" : "text"}
                 style={{
                   ...inputStyle,
                   textAlign: "center",
                   color: "#888888",
-                  cursor: "not-allowed",
-                  colorScheme: themeStyles?.isLight ? "light" : "dark"
+                  cursor: "not-allowed"
                 }}
                 value={form.firstPayDate}
+                placeholder={isEN ? "YYYY-MM-DD" : "سنة - شهر - يوم"}
                 disabled
                 readOnly
               />
