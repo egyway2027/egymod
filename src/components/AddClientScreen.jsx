@@ -187,7 +187,12 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
             </label>
           </div>
 
-        <label style={labelStyle}>
+       {/* SECTION 3: Dates & Notes */}
+          <div style={sectionLabelStyle}>
+            {t.datesAndNotes || (isEN ? "Dates & Notes" : "التواريخ والملاحظات")}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px", marginBottom: "14px" }}>
+            <label style={labelStyle}>
   <span>{t.contractDateLabel || (isEN ? "Contract Date *" : "تاريخ التعاقد *")}</span>
   <div style={{ position: "relative", width: "100%" }}>
     <input
@@ -213,6 +218,13 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
       onChange={handleContractDate}
       required
     />
+  </div>
+</label>
+            <label style={labelStyle}>
+              <span>{t.firstDueDateLabel || (isEN ? "First Due Date (Auto +1 Mo)" : "تاريخ أول قسط (تلقائي + شهر)")}</span>
+              <input type="text" dir="ltr" style={{ ...inputStyle, textAlign: "center", color: themeStyles.subText || "#888888", cursor: "not-allowed" }} value={form.firstPayDate || ""} placeholder={isEN ? "YYYY-MM-DD" : "سنة - شهر - يوم"} disabled readOnly />
+            </label>
+          </div>
   </div>
 </label>
           <div>
