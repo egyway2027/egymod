@@ -164,7 +164,7 @@ export function WhatsAppHubModal({ isOpen, onClose, overdueContracts = [], t = {
                         <td style={{ padding: "10px", fontWeight: 700 }}>{client.name}</td>
                         <td style={{ padding: "10px" }} dir="ltr">{client.phone}</td>
                         <td style={{ padding: "10px", color: themeStyles.accentGold || "#e8cd9c" }}>{client.item}</td>
-                        <td style={{ padding: "10px", color: "#e07a5f", fontWeight 800 }}>{client.monthly} {t.currency || "ج.م"}</td>
+                        <td style={{ padding: "10px", color: "#e07a5f", fontWeight: 800 }}>{client.monthly} {t.currency || "ج.م"}</td>
                         <td style={{ padding: "10px" }}>
                           <button type="button" onClick={() => handleSingleSend(client)} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#25D366", color: "#111", border: "none", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontWeight: 800, fontSize: "11.5px" }}>
                             <Send size={13} /> إرسال الآن
