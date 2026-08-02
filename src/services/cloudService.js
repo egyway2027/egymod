@@ -9,7 +9,6 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-// ⚠️ استبدل القيم بالروابط والمفاتيح الخاصة بمشروعك من Supabase (Project Settings -> API)
 const SUPABASE_URL = "https://jvmowzfktfybjcvqnlcc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_lqpryj6bARHXiqDveRUrVw_scmwGO-0";
 
@@ -34,6 +33,9 @@ export const fetchContractsFromCloud = async () => {
 // 2. حفظ عقد جديد بالسحابة
 export const saveContractToCloud = async (contractData) => {
   try {
+    const saleNum = Number(contractData.sale) || 0;
+    const downNum = Number(contractData.down) || 0;
+
     const payload = {
       name: contractData.name,
       phone: contractData.phone,
@@ -41,14 +43,14 @@ export const saveContractToCloud = async (contractData) => {
       guarantorPhone: contractData.guarantorPhone || "",
       item: contractData.item,
       cost: Number(contractData.cost) || 0,
-      sale: Number(contractData.sale) || 0,
-      down: Number(contractData.down) || 0,
+      sale: saleNum,
+      down: downNum,
       monthly: Number(contractData.monthly) || 0,
       contractDate: contractData.contractDate || "",
       firstPayDate: contractData.firstPayDate || "",
       notes: contractData.notes || "",
       paidAmount: 0,
-      remainingAmount: Math.max(0, (Number(contractData.sale) || 0) - (Number(contractData.down) || 0))
+      remainingAmount: Math.max(0, saleNum - downNum)
     };
 
     const { data, error } = await supabase
@@ -64,24 +66,32 @@ export const saveContractToCloud = async (contractData) => {
   }
 };
 
-// 3. تحديث عقد حالي بالسحابة
+// 3. تحديث عقد حالي بالسحابة (مع إعادة حساب المتبقي تلقائياً)
 export const updateContractInCloud = async (contractData) => {
   try {
+    const saleNum = Number(contractData.sale) || 0;
+    const downNum = Number(contractData.down) || 0;
+    const paidNum = Number(contractData.paidAmount) || 0;
+    
+    // إعادة حساب المبلغ المتبقي المستحق تلقائياً بعد أي تعديل
+    const newRemaining = Math.max(0, saleNum - downNum - paidNum);
+
     const { data, error } = await supabase
       .from("contracts")
       .update({
         name: contractData.name,
         phone: contractData.phone,
-        guarantor: contractData.guarantor,
-        guarantorPhone: contractData.guarantorPhone,
+        guarantor: contractData.guarantor || "",
+        guarantorPhone: contractData.guarantorPhone || "",
         item: contractData.item,
         cost: Number(contractData.cost) || 0,
-        sale: Number(contractData.sale) || 0,
-        down: Number(contractData.down) || 0,
+        sale: saleNum,
+        down: downNum,
         monthly: Number(contractData.monthly) || 0,
         contractDate: contractData.contractDate,
         firstPayDate: contractData.firstPayDate,
-        notes: contractData.notes
+        notes: contractData.notes,
+        remainingAmount: newRemaining
       })
       .eq("id", contractData.id)
       .select();
