@@ -1,184 +1,237 @@
 /**
  * =========================================================
- * 📌 المكون: كارت تفاصيل وتعديل العقد (Client Detail & Edit Card)
+ * 📌 المكون: كارت تفاصيل وتعديل العقد (Client Detail Card)
  * 📁 المسار: src/components/clientQuery/ClientDetailCard.jsx
- * 📝 الوظيفة: عرض موقف العقد المالي، وإتاحة وضع التعديل المباشر
- *            لبيانات العميل والسلعة والتواريخ للحفظ السحابي.
+ * 📝 الوظيفة: عرض الموقف المالي وتعديل بيانات العقد مترجماً.
  * =========================================================
  */
 
-import React, { useState } from "react";
-import { Edit3, CheckCircle, XCircle } from "lucide-react";
-import { CustomDatePicker } from "../CustomDatePicker";
-import { getContractStatus } from "../../services/clientQueryService";
+import React, { useState, useEffect } from "react";
+import { Edit3, Save, X } from "lucide-react";
 
-export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles = {} }) {
-  const isEN = t?.currency === "EGP";
+export function ClientDetailCard({ contract, onUpdateContract, t, themeStyles }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ ...contract });
+  const [formData, setFormData] = useState({ ...contract });
 
-  if (!contract) return null;
+  useEffect(() => {
+    setFormData({ ...contract });
+  }, [contract]);
 
-  const status = getContractStatus(contract, isEN);
-
-  const inputStyle = {
-    width: "100%",
-    background: themeStyles.inputBg || "#121214",
-    border: `1px solid ${themeStyles.border || "#333333"}`,
-    borderRadius: "10px",
-    padding: "10px 12px",
-    color: themeStyles.text || "#ffffff",
-    fontSize: "13.5px",
-    outline: "none",
-    boxSizing: "border-box"
+  const calculateFinances = (data) => {
+    const sale = Number(data.sale) || 0;
+    const down = Number(data.down) || 0;
+    const paid = Number(data.paidAmount) || 0;
+    const totalCollected = down + paid;
+    const remaining = Math.max(0, sale - totalCollected);
+    return { totalCollected, remaining };
   };
 
-  const labelStyle = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    fontSize: "12.5px",
-    fontWeight: 700,
-    color: themeStyles.subText || "#aaaaaa"
-  };
+  const currentFinances = calculateFinances(formData);
 
-  const handleContractDateChange = (e) => {
-    const cDate = e.target.value;
-    if (!cDate) {
-      setEditForm((prev) => ({ ...prev, contractDate: "", firstPayDate: "" }));
-      return;
-    }
-    const d = new Date(cDate);
-    d.setMonth(d.getMonth() + 1);
-    const firstPay = d.toISOString().split("T")[0];
-    setEditForm((prev) => ({ ...prev, contractDate: cDate, firstPayDate: firstPay }));
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = () => {
-    if (onSaveUpdate) {
-      onSaveUpdate(editForm);
-    }
+    const finances = calculateFinances(formData);
+    const updatedPayload = {
+      ...formData,
+      cost: Number(formData.cost) || 0,
+      sale: Number(formData.sale) || 0,
+      down: Number(formData.down) || 0,
+      monthly: Number(formData.monthly) || 0,
+      paidAmount: Number(formData.paidAmount) || 0,
+      remainingAmount: finances.remaining
+    };
+
+    onUpdateContract(updatedPayload);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setFormData({ ...contract });
     setIsEditing(false);
   };
 
   return (
-    <div style={{ background: themeStyles.card || "#1a1a1c", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "16px", padding: "20px", marginTop: "16px" }}>
-      {/* Header Actions */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", borderBottom: `1px solid ${themeStyles.border || "#333333"}`, paddingBottom: "12px" }}>
-        <h3 style={{ margin: 0, color: themeStyles.accentGold || "#e8cd9c", fontSize: "16px", fontWeight: 800 }}>
-          {isEditing ? `تعديل بيانات العميل: ${contract.name}` : `بيانات عقد العميل: ${contract.name}`}
+    <div style={{
+      background: themeStyles.card,
+      border: `1px solid ${themeStyles.border}`,
+      borderRadius: themeStyles.cardRadius || 16,
+      padding: 24,
+      marginBottom: 20
+    }}>
+      {/* Header & Controls */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+        <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: themeStyles.accentGold || "#d4af37" }}>
+          {t.clientNameHeader}: {formData.name}
         </h3>
+        
         {!isEditing ? (
-          <button type="button" onClick={() => setIsEditing(true)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(224,122,95,0.15)", border: "1px solid #e07a5f", color: "#e07a5f", padding: "6px 14px", borderRadius: "8px", cursor: "pointer", fontSize: "12.5px", fontWeight: 700 }}>
-            <Edit3 size={14} /> تعديل بيانات العميل
+          <button
+            onClick={() => setIsEditing(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "transparent", border: `1px solid ${themeStyles.accentGold || "#d4af37"}`,
+              color: themeStyles.accentGold || "#d4af37", padding: "8px 16px", borderRadius: 10,
+              cursor: "pointer", fontWeight: 700, fontSize: 13
+            }}
+          >
+            <Edit3 size={15} /> {t.editClientData}
           </button>
         ) : (
-          <button type="button" onClick={() => setIsEditing(false)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,0.08)", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.text || "#ffffff", padding: "6px 14px", borderRadius: "8px", cursor: "pointer", fontSize: "12.5px", fontWeight: 700 }}>
-            <XCircle size={14} /> إلغاء التعديل
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={handleSave}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: "#16a34a", border: "none", color: "#fff",
+                padding: "8px 16px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13
+              }}
+            >
+              <Save size={15} /> {t.saveChanges}
+            </button>
+            <button
+              onClick={handleCancel}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: "#dc2626", border: "none", color: "#fff",
+                padding: "8px 16px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13
+              }}
+            >
+              <X size={15} /> {t.cancel}
+            </button>
+          </div>
         )}
       </div>
 
-      {/* SECTION 1: Client Info */}
-      <div style={{ color: themeStyles.accentGold || "#e07a5f", fontSize: "13px", fontWeight: 800, marginBottom: "10px" }}>بيانات العميل والضامن</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "16px" }}>
-        <label style={labelStyle}>
-          <span>اسم العميل *</span>
-          <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.name : contract.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-        </label>
-        <label style={labelStyle}>
-          <span>تليفون العميل *</span>
-          <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.phone : contract.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
-        </label>
-        <label style={labelStyle}>
-          <span>اسم الضامن</span>
-          <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.guarantor : (contract.guarantor || "-")} onChange={(e) => setEditForm({ ...editForm, guarantor: e.target.value })} />
-        </label>
-        <label style={labelStyle}>
-          <span>تليفون الضامن</span>
-          <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.guarantorPhone : (contract.guarantorPhone || "-")} onChange={(e) => setEditForm({ ...editForm, guarantorPhone: e.target.value })} />
-        </label>
+      {/* 1. بيانات العميل والضامن */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 16 }}>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.clientNameHeader} *</label>
+          <input
+            disabled={!isEditing}
+            type="text"
+            value={formData.name || ""}
+            onChange={(e) => handleChange("name", e.target.value)}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.clientPhoneHeader} *</label>
+          <input
+            disabled={!isEditing}
+            type="text"
+            value={formData.phone || ""}
+            onChange={(e) => handleChange("phone", e.target.value)}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.guarantorNameHeader}</label>
+          <input
+            disabled={!isEditing}
+            type="text"
+            value={formData.guarantor || ""}
+            onChange={(e) => handleChange("guarantor", e.target.value)}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.guarantorPhoneHeader}</label>
+          <input
+            disabled={!isEditing}
+            type="text"
+            value={formData.guarantorPhone || ""}
+            onChange={(e) => handleChange("guarantorPhone", e.target.value)}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+          />
+        </div>
       </div>
 
-      {/* SECTION 2: Item & Financials */}
-      <div style={{ color: themeStyles.accentGold || "#e07a5f", fontSize: "13px", fontWeight: 800, marginBottom: "10px" }}>بيانات السلعة والماليات</div>
-      <div style={{ marginBottom: "12px" }}>
-        <label style={labelStyle}>
-          <span>السلعة *</span>
-          <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.item : contract.item} onChange={(e) => setEditForm({ ...editForm, item: e.target.value })} />
-        </label>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px", marginBottom: "16px" }}>
-        <label style={labelStyle}>
-          <span>سعر التكلفة *</span>
-          <input style={inputStyle} disabled={!isEditing} type="number" value={isEditing ? editForm.cost : contract.cost} onChange={(e) => setEditForm({ ...editForm, cost: e.target.value })} />
-        </label>
-        <label style={labelStyle}>
-          <span>سعر البيع *</span>
-          <input style={inputStyle} disabled={!isEditing} type="number" value={isEditing ? editForm.sale : contract.sale} onChange={(e) => setEditForm({ ...editForm, sale: e.target.value })} />
-        </label>
-        <label style={labelStyle}>
-          <span>المقدم *</span>
-          <input style={inputStyle} disabled={!isEditing} type="number" value={isEditing ? editForm.down : contract.down} onChange={(e) => setEditForm({ ...editForm, down: e.target.value })} />
-        </label>
-        <label style={labelStyle}>
-          <span>القسط الشهري *</span>
-          <input style={inputStyle} disabled={!isEditing} type="number" value={isEditing ? editForm.monthly : contract.monthly} onChange={(e) => setEditForm({ ...editForm, monthly: e.target.value })} />
-        </label>
+      {/* 2. بيانات السلعة والماليات */}
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.itemHeader} *</label>
+        <input
+          disabled={!isEditing}
+          type="text"
+          value={formData.item || ""}
+          onChange={(e) => handleChange("item", e.target.value)}
+          style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+        />
       </div>
 
-      {/* SECTION 3: Live Position */}
-      {!isEditing && (
-        <>
-          <div style={{ color: themeStyles.accentGold || "#e07a5f", fontSize: "13px", fontWeight: 800, marginBottom: "10px" }}>الموقف المالي الحقيقي</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px", marginBottom: "16px" }}>
-            <div style={{ background: themeStyles.inputBg || "#121214", padding: "10px", borderRadius: "10px", textAlign: "center" }}>
-              <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888" }}>إجمالي المحصل</div>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#4caf50", marginTop: "4px" }}>{contract.paidAmount || (Number(contract.sale) - Number(contract.remainingAmount || 0))} ج.م</div>
-            </div>
-            <div style={{ background: themeStyles.inputBg || "#121214", padding: "10px", borderRadius: "10px", textAlign: "center" }}>
-              <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888" }}>إجمالي الأقساط المتبقية</div>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#e07a5f", marginTop: "4px" }}>{contract.remainingAmount ?? (Number(contract.sale) - Number(contract.down))} ج.م</div>
-            </div>
-            <div style={{ background: status.bg, border: `1px solid ${status.border}`, padding: "10px", borderRadius: "10px", textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888" }}>حالة العقد</div>
-              <div style={{ fontSize: "13px", fontWeight: 800, color: status.color, marginTop: "4px" }}>{status.label}</div>
-            </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.costPriceHeader} *</label>
+          <input
+            disabled={!isEditing}
+            type="number"
+            value={formData.cost || 0}
+            onChange={(e) => handleChange("cost", e.target.value)}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.salePriceHeader} *</label>
+          <input
+            disabled={!isEditing}
+            type="number"
+            value={formData.sale || 0}
+            onChange={(e) => handleChange("sale", e.target.value)}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.downPaymentHeader} *</label>
+          <input
+            disabled={!isEditing}
+            type="number"
+            value={formData.down || 0}
+            onChange={(e) => handleChange("down", e.target.value)}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.monthlyInstallmentHeader} *</label>
+          <input
+            disabled={!isEditing}
+            type="number"
+            value={formData.monthly || 0}
+            onChange={(e) => handleChange("monthly", e.target.value)}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+          />
+        </div>
+      </div>
+
+      {/* 3. الموقف المالي الحقيقي */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 16 }}>
+        <div style={{ background: themeStyles.inputBg, borderRadius: 12, padding: 16, border: `1px solid ${themeStyles.border}`, textAlign: "center" }}>
+          <div style={{ fontSize: 12, color: themeStyles.subText, fontWeight: 700 }}>{t.totalCollectedHeader}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#22c55e", marginTop: 4 }}>
+            {currentFinances.totalCollected} {t.currency}
           </div>
-        </>
-      )}
+        </div>
 
-      {/* SECTION 4: Dates & Notes */}
-      <div style={{ color: themeStyles.accentGold || "#e07a5f", fontSize: "13px", fontWeight: 800, marginBottom: "10px" }}>التواريخ والملاحظات</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "12px" }}>
-        <label style={labelStyle}>
-          <span>تاريخ التعاقد *</span>
-          {isEditing ? (
-            <CustomDatePicker value={editForm.contractDate} onChange={handleContractDateChange} isEN={isEN} themeStyles={themeStyles} inputStyle={inputStyle} />
-          ) : (
-            <input style={inputStyle} disabled value={contract.contractDate || "-"} />
-          )}
-        </label>
-        <label style={labelStyle}>
-          <span>تاريخ أول قسط (تلقائي + شهر)</span>
-          <input style={inputStyle} disabled value={isEditing ? editForm.firstPayDate : (contract.firstPayDate || "-")} />
-        </label>
-      </div>
-      <div>
-        <label style={labelStyle}>
-          <span>ملاحظات</span>
-          <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.notes : (contract.notes || "لا يوجد")} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
-        </label>
-      </div>
+        <div style={{ background: themeStyles.inputBg, borderRadius: 12, padding: 16, border: `1px solid ${themeStyles.border}`, textAlign: "center" }}>
+          <div style={{ fontSize: 12, color: themeStyles.subText, fontWeight: 700 }}>{t.totalRemainingHeader}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#ef4444", marginTop: 4 }}>
+            {currentFinances.remaining} {t.currency}
+          </div>
+        </div>
 
-      {/* SAVE BUTTON */}
-      {isEditing && (
-        <button type="button" onClick={handleSave} style={{ width: "100%", background: "linear-gradient(135deg, #e07a5f, #d4af37)", color: "#111111", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: 800, cursor: "pointer", marginTop: "16px" }}>
-          حفظ التعديلات بالسحابة
-        </button>
-      )}
+        <div style={{
+          background: currentFinances.remaining <= 0 ? "rgba(34, 197, 94, 0.1)" : "rgba(14, 116, 144, 0.1)",
+          borderRadius: 12, padding: 16,
+          border: `1px solid ${currentFinances.remaining <= 0 ? "#22c55e" : "#0e7490"}`,
+          textAlign: "center"
+        }}>
+          <div style={{ fontSize: 12, color: themeStyles.subText, fontWeight: 700 }}>{t.contractStatusHeader}</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: currentFinances.remaining <= 0 ? "#22c55e" : "#38bdf8", marginTop: 6 }}>
+            {currentFinances.remaining <= 0 ? t.contractPaidStatus : t.contractActiveStatus}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
-export default ClientDetailCard;
