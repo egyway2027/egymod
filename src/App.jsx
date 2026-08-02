@@ -9,12 +9,17 @@
 
 import React, { useState } from "react";
 import {
-  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X, Loader2
+  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, Power, TrendingUp, Calculator, Globe, Palette, X, Loader2, MessageSquare, FolderKanban
 } from "lucide-react";
 
 import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
+
+import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
+import { RecycleBinModal } from "./components/modals/RecycleBinModal";
+import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
+import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
 
 import { useNavigation } from "./hooks/useNavigation";
 import { useCloudData } from "./hooks/useCloudData";
@@ -41,6 +46,12 @@ export function App() {
   const [showLangModal, setShowLangModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
 
+  // 📌 حالات النوافذ المنفصلة الجديدة
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [showRecycleBinModal, setShowRecycleBinModal] = useState(false);
+  const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
+  const [showCentralRecordsModal, setShowCentralRecordsModal] = useState(false);
+
   // ☁️ حفظ عميل جديد
   const onSaveClientSubmit = async (newClientData) => {
     const res = await handleSaveClient(newClientData);
@@ -62,19 +73,20 @@ export function App() {
     }
   };
 
-  // أزرار شبكة التحكم الرئيسية
+  // أزرار شبكة التحكم الرئيسية المحدثة
   const buttons = [
     { key: "addClient", label: t.addClient, icon: UserPlus, tone: "dark" },
     { key: "pay", label: t.pay, icon: CreditCard, tone: "gold" },
-    { key: "search", label: t.search, icon: Search, tone: "silver" },
+    { key: "search", label: t.search || "البحث الشامل", icon: Search, tone: "silver" },
+    { key: "centralRecords", label: "مركز السجلات والتقارير", icon: FolderKanban, tone: "copper" },
     { key: "monthlyDues", label: t.monthlyDues, icon: CalendarClock, tone: "copper" },
     { key: "lateClients", label: t.lateClients, icon: UserX, tone: "rose" },
-    { key: "deleteClient", label: t.deleteClient, icon: Trash2, tone: "gold" },
+    { key: "deleteClient", label: "سلة المهملات الشاملة", icon: Trash2, tone: "gold" },
+    { key: "whatsapp", label: "مركز الواتساب الذكي", icon: MessageSquare, tone: "roseLight" },
     { key: "treasury", label: t.treasury, icon: Wallet, tone: "roseDark" },
     { key: "treasuryPartners", label: t.treasuryPartners, icon: Users, tone: "copper" },
     { key: "treasuryEmployees", label: t.treasuryEmployees, icon: UserCog, tone: "silver" },
     { key: "settings", label: t.settings, icon: Settings, tone: "tan" },
-    { key: "backup", label: t.backup, icon: UploadCloud, tone: "roseLight" },
     { key: "exit", label: t.exit, icon: Power, tone: "dark" },
   ];
 
@@ -198,9 +210,15 @@ export function App() {
                         if (b.key === "addClient") {
                           navigateTo("addClient");
                         } else if (b.key === "search") {
-                          navigateTo("clientQuery");
+                          setShowGlobalSearchModal(true);
                         } else if (b.key === "settings") {
                           navigateTo("settings");
+                        } else if (b.key === "whatsapp") {
+                          setShowWhatsAppModal(true);
+                        } else if (b.key === "deleteClient") {
+                          setShowRecycleBinModal(true);
+                        } else if (b.key === "centralRecords") {
+                          setShowCentralRecordsModal(true);
                         }
                       }}
                       style={{
@@ -222,6 +240,47 @@ export function App() {
           )}
         </>
       )}
+
+      {/* 📱 مركز الواتساب الذكي */}
+      <WhatsAppHubModal
+        isOpen={showWhatsAppModal}
+        onClose={() => setShowWhatsAppModal(false)}
+        overdueContracts={clientsList.filter(c => Number(c.remainingAmount) > 0)}
+        t={t}
+        themeStyles={themeStyles}
+      />
+
+      {/* 🗑️ سلة المهملات الشاملة */}
+      <RecycleBinModal
+        isOpen={showRecycleBinModal}
+        onClose={() => setShowRecycleBinModal(false)}
+        deletedItems={[]}
+        t={t}
+        themeStyles={themeStyles}
+      />
+
+      {/* 🔍 البحث الشامل عابر الشاشات */}
+      <GlobalSearchModal
+        isOpen={showGlobalSearchModal}
+        onClose={() => setShowGlobalSearchModal(false)}
+        contracts={clientsList}
+        onSelectResult={() => navigateTo("clientQuery")}
+        t={t}
+        themeStyles={themeStyles}
+      />
+
+      {/* 📊 مركز السجلات والتقارير الشامل */}
+      <CentralRecordsMenu
+        isOpen={showCentralRecordsModal}
+        onClose={() => setShowCentralRecordsModal(false)}
+        onSelectRecord={(recordId) => {
+          if (recordId === "active_contracts" || recordId === "all_clients_register" || recordId === "archived_contracts") {
+            navigateTo("clientQuery");
+          }
+        }}
+        t={t}
+        themeStyles={themeStyles}
+      />
 
       {/* 🌐 نافذة اختيار اللغات الـ 15 المكتملة */}
       {showLangModal && (
