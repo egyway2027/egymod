@@ -15,7 +15,7 @@ import { ArchivedContractsView } from "./ArchivedContractsView";
 import { ClientDetailCard } from "./ClientDetailCard";
 
 export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t = {}, themeStyles = {} }) {
-  const isEN = t?.currency === "EGP";
+  const isEN = t?.currency === "EGP" || document.documentElement.lang === "en" || document.documentElement.dir === "ltr";
   
   const [activeTab, setActiveTab] = useState("active"); // "active" | "archive"
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
@@ -86,7 +86,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
         }}
       >
         <FileSpreadsheet size={18} />
-        [ 📊 فتح سجل بيانات العملاء الشامل - نمط Excel ]
+        [ 📊 {t.openFullRegisterExcel || (isEN ? "Open Full Client Register - Excel Mode" : "فتح سجل بيانات العملاء الشامل - نمط Excel")} ]
       </button>
 
       {/* TABS NAVIGATION */}
@@ -110,7 +110,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
           }}
         >
           <FileText size={16} />
-          العقود النشطة ({activeCount})
+          {t.activeContracts || (isEN ? "Active Contracts" : "العقود النشطة")} ({activeCount})
         </button>
 
         <button
@@ -132,7 +132,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
           }}
         >
           <FolderArchive size={16} />
-          أرشيف العقود المسددة بالكامل ({archiveCount})
+          {t.archivedContracts || (isEN ? "Fully Paid Contracts Archive" : "أرشيف العقود المسددة بالكامل")} ({archiveCount})
         </button>
       </div>
 
@@ -141,13 +141,13 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
         <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "18px", padding: "20px" }}>
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 700, color: themeStyles.subText || "#aaaaaa", marginBottom: "8px" }}>
-              ابحث باسم العميل أو رقم التليفون أو السلعة
+              {t.searchPlaceholder || (isEN ? "Search by client name, phone, or item..." : "ابحث باسم العميل أو رقم التليفون أو السلعة")}
             </label>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="بحث باسم العميل أو التليفون أو السلعة..."
+              placeholder={t.searchPlaceholder || (isEN ? "Search by client name, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
               style={{
                 width: "100%",
                 background: themeStyles.inputBg || "#1b1b1d",
@@ -224,12 +224,12 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
           <div style={{ width: "100%", maxWidth: "500px", background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "16px", padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
               <h3 style={{ margin: 0, color: themeStyles.accentGold || "#e8cd9c", fontSize: "16px", fontWeight: 800 }}>
-                تنبيه: العميل لديه أكثر من عقد برقم التليفون
+                {t.multiContractAlertTitle || (isEN ? "Notice: Client has multiple contracts with this phone" : "تنبيه: العميل لديه أكثر من عقد برقم التليفون")}
               </h3>
               <button type="button" onClick={() => setIsMultiModalOpen(false)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer" }}><X size={18} /></button>
             </div>
             <p style={{ fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "16px" }}>
-              يرجى اختيار العقد المراد الاستعلام عن بياناته وتعديله من القائمة التالية:
+              {t.multiContractAlertDesc || (isEN ? "Please select the contract you want to view and edit from the following list:" : "يرجى اختيار العقد المراد الاستعلام عن بياناته وتعديله من القائمة التالية:")}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {multiContractList.map((c, idx) => (
@@ -250,12 +250,16 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
                     borderRadius: "10px",
                     color: themeStyles.text || "#ffffff",
                     cursor: "pointer",
-                    textAlign: "right"
+                    textAlign: isEN ? "left" : "right"
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>السلعة: {c.item}</div>
-                    <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888", marginTop: "2px" }}>تاريخ التعاقد: {c.contractDate || "-"}</div>
+                    <div style={{ fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>
+                      {(t.itemHeader || (isEN ? "Item" : "السلعة"))}: {c.item}
+                    </div>
+                    <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888", marginTop: "2px" }}>
+                      {(t.contractDateHeader || (isEN ? "Contract Date" : "تاريخ التعاقد"))}: {c.contractDate || "-"}
+                    </div>
                   </div>
                   <Layers size={18} style={{ color: themeStyles.accentGold || "#e07a5f" }} />
                 </button>
