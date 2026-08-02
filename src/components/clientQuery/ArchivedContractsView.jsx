@@ -2,7 +2,7 @@
  * =========================================================
  * 📌 المكون: شاشة أرشيف العقود المسددة (Archived Contracts View)
  * 📁 المسار: src/components/clientQuery/ArchivedContractsView.jsx
- * 📝 الوظيفة: عرض عقود العملاء المسددة بالكامل مترجمة.
+ * 📝 الوظيفة: عرض عقود العملاء المسددة بالكامل بدقة الأبعاد والمساحات.
  * =========================================================
  */
 
@@ -25,7 +25,7 @@ export function ArchivedContractsView({ archivedContracts = [], t, themeStyles }
   return (
     <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: 24 }}>
       {/* Header Actions */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 14 }}>
         <button
           onClick={() => window.print()}
           style={{
@@ -37,19 +37,39 @@ export function ArchivedContractsView({ archivedContracts = [], t, themeStyles }
           <Printer size={16} /> {t.printArchive}
         </button>
 
-        <div style={{ position: "relative", minWidth: 260 }}>
+        <div style={{ position: "relative", minWidth: 280, flex: 1, maxWidth: 400 }}>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={t.searchArchivePlaceholder}
             style={{
-              width: "100%", padding: "10px 14px", borderRadius: 10,
-              background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`,
-              color: themeStyles.text, fontWeight: 700, fontSize: 13
+              width: "100%",
+              paddingTop: 10,
+              paddingBottom: 10,
+              paddingLeft: isRTL ? 14 : 40,
+              paddingRight: isRTL ? 40 : 14,
+              borderRadius: 10,
+              background: themeStyles.inputBg,
+              border: `1px solid ${themeStyles.border}`,
+              color: themeStyles.text,
+              fontWeight: 700,
+              fontSize: 13,
+              boxSizing: "border-box"
             }}
           />
-          <Search size={16} style={{ position: "absolute", top: 12, left: isRTL ? "auto" : 12, right: isRTL ? 12 : "auto", color: themeStyles.subText }} />
+          <Search
+            size={16}
+            style={{
+              position: "absolute",
+              top: "50%",
+              transform: "translateY(-50%)",
+              left: isRTL ? "auto" : 14,
+              right: isRTL ? 14 : "auto",
+              color: themeStyles.subText,
+              pointerEvents: "none"
+            }}
+          />
         </div>
       </div>
 
