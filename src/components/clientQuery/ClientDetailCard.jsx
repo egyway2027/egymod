@@ -2,7 +2,7 @@
  * =========================================================
  * 📌 المكون: كارت تفاصيل وتعديل العقد (Client Detail Card)
  * 📁 المسار: src/components/clientQuery/ClientDetailCard.jsx
- * 📝 الوظيفة: عرض الموقف المالي وتعديل بيانات العقد مترجماً.
+ * 📝 الوظيفة: عرض الموقف المالي وتعديل بيانات العقد بمرونة كاملة.
  * =========================================================
  */
 
@@ -62,7 +62,7 @@ export function ClientDetailCard({ contract, onUpdateContract, t, themeStyles })
       marginBottom: 20
     }}>
       {/* Header & Controls */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: themeStyles.accentGold || "#d4af37" }}>
           {t.clientNameHeader}: {formData.name}
         </h3>
@@ -106,106 +106,106 @@ export function ClientDetailCard({ contract, onUpdateContract, t, themeStyles })
       </div>
 
       {/* 1. بيانات العميل والضامن */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 16 }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.clientNameHeader} *</label>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 6 }}>{t.clientNameHeader} *</label>
           <input
             disabled={!isEditing}
             type="text"
             value={formData.name || ""}
             onChange={(e) => handleChange("name", e.target.value)}
-            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700, boxSizing: "border-box" }}
           />
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.clientPhoneHeader} *</label>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 6 }}>{t.clientPhoneHeader} *</label>
           <input
             disabled={!isEditing}
             type="text"
             value={formData.phone || ""}
             onChange={(e) => handleChange("phone", e.target.value)}
-            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700, boxSizing: "border-box" }}
           />
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.guarantorNameHeader}</label>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 6 }}>{t.guarantorNameHeader}</label>
           <input
             disabled={!isEditing}
             type="text"
             value={formData.guarantor || ""}
             onChange={(e) => handleChange("guarantor", e.target.value)}
-            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700, boxSizing: "border-box" }}
           />
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.guarantorPhoneHeader}</label>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 6 }}>{t.guarantorPhoneHeader}</label>
           <input
             disabled={!isEditing}
             type="text"
             value={formData.guarantorPhone || ""}
             onChange={(e) => handleChange("guarantorPhone", e.target.value)}
-            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700, boxSizing: "border-box" }}
           />
         </div>
       </div>
 
       {/* 2. بيانات السلعة والماليات */}
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.itemHeader} *</label>
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 6 }}>{t.itemHeader} *</label>
         <input
           disabled={!isEditing}
           type="text"
           value={formData.item || ""}
           onChange={(e) => handleChange("item", e.target.value)}
-          style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+          style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700, boxSizing: "border-box" }}
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 20 }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.costPriceHeader} *</label>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 6 }}>{t.costPriceHeader} *</label>
           <input
             disabled={!isEditing}
             type="number"
             value={formData.cost || 0}
             onChange={(e) => handleChange("cost", e.target.value)}
-            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700, boxSizing: "border-box" }}
           />
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.salePriceHeader} *</label>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 6 }}>{t.salePriceHeader} *</label>
           <input
             disabled={!isEditing}
             type="number"
             value={formData.sale || 0}
             onChange={(e) => handleChange("sale", e.target.value)}
-            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700, boxSizing: "border-box" }}
           />
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.downPaymentHeader} *</label>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 6 }}>{t.downPaymentHeader} *</label>
           <input
             disabled={!isEditing}
             type="number"
             value={formData.down || 0}
             onChange={(e) => handleChange("down", e.target.value)}
-            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700, boxSizing: "border-box" }}
           />
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 4 }}>{t.monthlyInstallmentHeader} *</label>
+          <label style={{ display: "block", fontSize: 12, color: themeStyles.subText, marginBottom: 6 }}>{t.monthlyInstallmentHeader} *</label>
           <input
             disabled={!isEditing}
             type="number"
             value={formData.monthly || 0}
             onChange={(e) => handleChange("monthly", e.target.value)}
-            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700 }}
+            style={{ width: "100%", padding: 10, borderRadius: 8, background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`, color: themeStyles.text, fontWeight: 700, boxSizing: "border-box" }}
           />
         </div>
       </div>
 
       {/* 3. الموقف المالي الحقيقي */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 16 }}>
         <div style={{ background: themeStyles.inputBg, borderRadius: 12, padding: 16, border: `1px solid ${themeStyles.border}`, textAlign: "center" }}>
           <div style={{ fontSize: 12, color: themeStyles.subText, fontWeight: 700 }}>{t.totalCollectedHeader}</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: "#22c55e", marginTop: 4 }}>
