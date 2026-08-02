@@ -1,3 +1,11 @@
+/**
+ * =========================================================
+ * 📌 المكون: التقويم المخصص (Custom DatePicker Component)
+ * 📁 المسار: src/components/CustomDatePicker.jsx
+ * 📝 الوظيفة: نافذة تقويم منبثقة مستقلة تدعم اللغتين العربية والإنجليزي
+ *            وتعمل مع كافة ثيمات النظام دون الاعتماد على تقويم المتصفح.
+ * =========================================================
+ */
 import React, { useState, useEffect, useRef } from "react";
 import { Calendar as CalendarIcon, ChevronRight, ChevronLeft, X } from "lucide-react";
 
