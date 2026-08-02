@@ -1,35 +1,32 @@
 /**
  * =========================================================
- * 📌 النافذة: مركز الواتساب الذكي (WhatsApp Anti-Ban Hub)
+ * 📌 النافذة: مركز الواتساب الذكي (WhatsApp Smart Hub)
  * 📁 المسار: src/components/modals/WhatsAppHubModal.jsx
- * 📝 الوظيفة: إرسال تنبيهات المتأخرين يدوياً أو آلياً
- *            مع خوارزمية التمهيل الزمني والحماية من الحظر
- *            وربط الجهاز عبر كود QR.
+ * 📝 الوظيفة: طابور إرسال آلي موجه للعملاء المتأخرين
+ *            مع عداد أمان تنازلي للحماية من الحظر.
  * =========================================================
  */
 
-import React, { useState } from "react";
-import { Send, X, ShieldAlert, CheckCircle2, Clock, Play, Pause, QrCode, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Send, X, ShieldAlert, CheckCircle2, Play, Pause, RotateCcw, MessageSquare } from "lucide-react";
 
 export function WhatsAppHubModal({ isOpen, onClose, overdueContracts = [], t = {}, themeStyles = {} }) {
   const isEN = t?.currency === "EGP" || document.documentElement.lang === "en" || document.documentElement.dir === "ltr";
-  
-  const [activeTab, setActiveTab] = useState("qr"); // "qr" | "messages"
-  const [connectionStatus, setConnectionStatus] = useState("disconnected"); // "disconnected" | "scanning" | "connected"
+
   const [isAutoSending, setIsAutoSending] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sentCount, setSentCount] = useState(0);
   const [delaySeconds, setDelaySeconds] = useState(20);
+  const [countdown, setCountdown] = useState(20);
 
-  const handleConnectSim = () => {
-    setConnectionStatus("scanning");
-    setTimeout(() => {
-      setConnectionStatus("connected");
-      setActiveTab("messages");
-    }, 2500);
-  };
-
-  if (!isOpen) return null;
+  // إعادة ضبط الطابور عند إغلاق النافذة أو فتحها
+  useEffect(() => {
+    if (!isOpen) {
+      setIsAutoSending(false);
+      setCurrentIndex(0);
+      setSentCount(0);
+    }
+  }, [isOpen]);
 
   // تجهيز نص الرسالة المخصصة للعميل
   const generateMessage = (client) => {
@@ -41,7 +38,7 @@ export function WhatsAppHubModal({ isOpen, onClose, overdueContracts = [], t = {
     );
   };
 
-  // إرسال يدوي مباشر لعميل واحد
+  // إرسال مباشر لعميل واحد
   const handleSingleSend = (client) => {
     const cleanPhone = (client.phone || "").replace(/[^0-9]/g, "");
     const formattedPhone = cleanPhone.startsWith("0") ? "2" + cleanPhone : cleanPhone;
@@ -49,139 +46,194 @@ export function WhatsAppHubModal({ isOpen, onClose, overdueContracts = [], t = {
     window.open(url, "_blank");
   };
 
+  // محرك طابور الإرسال التلقائي
+  useEffect(() => {
+    let timer = null;
+
+    if (isAutoSending && overdueContracts.length > 0 && currentIndex < overdueContracts.length) {
+      if (countdown > 0) {
+        timer = setTimeout(() => {
+          setCountdown((prev) => prev - 1);
+        }, 1000);
+      } else {
+        // فتح محادثة العميل الحالي عند انتهاء العداد
+        const currentClient = overdueContracts[currentIndex];
+        if (currentClient) {
+          handleSingleSend(currentClient);
+          setSentCount((prev) => prev + 1);
+        }
+
+        // الانتقال للعميل التالي وتصفير العداد
+        if (currentIndex + 1 < overdueContracts.length) {
+          setCurrentIndex((prev) => prev + 1);
+          setCountdown(delaySeconds);
+        } else {
+          // انتهت القائمة بالكامل
+          setIsAutoSending(false);
+        }
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [isAutoSending, countdown, currentIndex, overdueContracts, delaySeconds]);
+
+  if (!isOpen) return null;
+
+  const totalClients = overdueContracts.length;
+  const progressPercent = totalClients > 0 ? Math.round((sentCount / totalClients) * 100) : 0;
+
+  const handleStartQueue = () => {
+    if (currentIndex >= totalClients) {
+      setCurrentIndex(0);
+      setSentCount(0);
+    }
+    setCountdown(delaySeconds);
+    setIsAutoSending(true);
+  };
+
+  const handleResetQueue = () => {
+    setIsAutoSending(false);
+    setCurrentIndex(0);
+    setSentCount(0);
+    setCountdown(delaySeconds);
+  };
+
   return (
     <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "15px" }} dir={isEN ? "ltr" : "rtl"}>
-      <div style={{ width: "100%", maxWidth: "900px", maxHeight: "90vh", background: themeStyles.card || "#1a1a1c", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "16px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ width: "100%", maxWidth: "920px", maxHeight: "90vh", background: themeStyles.card || "#1a1a1c", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "18px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 12px 35px rgba(0,0,0,0.6)" }}>
         
         {/* HEADER */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: `1px solid ${themeStyles.border || "#333333"}`, background: themeStyles.inputBg || "#141416" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: `1px solid ${themeStyles.border || "#333333"}`, background: themeStyles.inputBg || "#141416" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Send style={{ color: "#25D366" }} size={22} />
-            <h3 style={{ margin: 0, color: themeStyles.accentGold || "#e8cd9c", fontSize: "17px", fontWeight: 800 }}>
-              مركز الواتساب الذكي (WhatsApp Smart Hub)
-            </h3>
+            <MessageSquare style={{ color: "#25D366" }} size={22} />
+            <div>
+              <h3 style={{ margin: 0, color: themeStyles.accentGold || "#e8cd9c", fontSize: "17px", fontWeight: 800 }}>
+                مركز الواتساب الذكي — طابور الإرسال الموجه
+              </h3>
+              <span style={{ fontSize: "11.5px", color: "#888", display: "block", marginTop: "2px" }}>
+                نظام حماية ضد الحظر بفاصل زمني تلقائي بين الرسائل
+              </span>
+            </div>
           </div>
           <button type="button" onClick={onClose} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer" }}><X size={20} /></button>
         </div>
 
-        {/* CONNECTION & TABS BAR */}
-        <div style={{ padding: "12px 20px", background: themeStyles.inputBg || "#121214", borderBottom: `1px solid ${themeStyles.border || "#333333"}`, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button type="button" onClick={() => setActiveTab("qr")} style={{ background: activeTab === "qr" ? "#25D366" : "rgba(255,255,255,0.05)", color: activeTab === "qr" ? "#111" : "#fff", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 800, fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-              <QrCode size={15} /> ربط الجهاز (QR Code)
-            </button>
-            <button type="button" onClick={() => setActiveTab("messages")} style={{ background: activeTab === "messages" ? "#25D366" : "rgba(255,255,255,0.05)", color: activeTab === "messages" ? "#111" : "#fff", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 800, fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-              <Send size={15} /> قائمة المتأخرات والإرسال
-            </button>
+        {/* CONTROLS & PROGRESS BANNER */}
+        <div style={{ padding: "16px 22px", background: themeStyles.inputBg || "#121214", borderBottom: `1px solid ${themeStyles.border || "#333333"}`, display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+            
+            {/* ANTI-BAN DELAY SELECTOR */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <ShieldAlert size={18} style={{ color: "#25D366" }} />
+              <span style={{ fontSize: "12.5px", fontWeight: 700, color: "#fff" }}>فاصل الأمان:</span>
+              <select
+                value={delaySeconds}
+                disabled={isAutoSending}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setDelaySeconds(val);
+                  setCountdown(val);
+                }}
+                style={{ background: themeStyles.card || "#1a1a1c", color: "#fff", border: "1px solid #444", borderRadius: "8px", padding: "5px 10px", fontSize: "12px", outline: "none" }}
+              >
+                <option value={15}>15 ثانية (سريع)</option>
+                <option value={20}>20 ثانية (موصى به)</option>
+                <option value={30}>30 ثانية (أمان عالي)</option>
+              </select>
+            </div>
+
+            {/* ACTION BUTTONS */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              {isAutoSending ? (
+                <button type="button" onClick={() => setIsAutoSending(false)} style={{ background: "#ef4444", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontWeight: 800, fontSize: "12.5px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Pause size={15} /> إيقاف مؤقت
+                </button>
+              ) : (
+                <button type="button" onClick={handleStartQueue} disabled={totalClients === 0} style={{ background: totalClients === 0 ? "#555" : "#25D366", color: "#111", border: "none", padding: "8px 18px", borderRadius: "8px", cursor: totalClients === 0 ? "not-allowed" : "pointer", fontWeight: 800, fontSize: "12.5px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Play size={15} /> {currentIndex > 0 ? "استئناف الإرسال" : "بدء طابور الإرسال الآلي"}
+                </button>
+              )}
+
+              <button type="button" onClick={handleResetQueue} style={{ background: "rgba(255,255,255,0.08)", color: "#aaa", border: "1px solid #444", padding: "8px 14px", borderRadius: "8px", cursor: "pointer", fontWeight: 700, fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <RotateCcw size={14} /> إعادة ضبط
+              </button>
+            </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: 700, color: connectionStatus === "connected" ? "#25D366" : "#e07a5f" }}>
-            {connectionStatus === "connected" ? (
-              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><Wifi size={16} /> واتساب متصل الآن 🟢</span>
-            ) : (
-              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><WifiOff size={16} /> غير متصل 🔴</span>
-            )}
-          </div>
+          {/* PROGRESS BAR & COUNTDOWN */}
+          {totalClients > 0 && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 700, color: "#aaa", marginBottom: "6px" }}>
+                <span>التقدم: {sentCount} من {totalClients} عميل ({progressPercent}%)</span>
+                {isAutoSending && (
+                  <span style={{ color: "#25D366" }}>إرسال العميل التالي بعد: {countdown} ثانية</span>
+                )}
+              </div>
+              <div style={{ width: "100%", height: "8px", background: "#222", borderRadius: "4px", overflow: "hidden" }}>
+                <div style={{ width: `${progressPercent}%`, height: "100%", background: "#25D366", transition: "width 0.4s ease" }} />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* TAB 1: QR CODE LINKING */}
-        {activeTab === "qr" && (
-          <div style={{ padding: "30px 20px", textAlign: "center", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ background: "#fff", padding: "16px", borderRadius: "16px", display: "inline-block", boxShadow: "0 8px 25px rgba(0,0,0,0.4)" }}>
-              {connectionStatus === "scanning" ? (
-                <div style={{ width: "180px", height: "180px", display: "flex", alignItems: "center", justifyContent: "center", color: "#111", fontWeight: 800, gap: "8px" }}>
-                  <RefreshCw size={24} /> جاري الاقتران...
-                </div>
-              ) : connectionStatus === "connected" ? (
-                <div style={{ width: "180px", height: "180px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#25D366" }}>
-                  <CheckCircle2 size={50} />
-                  <span style={{ marginTop: "10px", fontWeight: 800, fontSize: "14px", color: "#111" }}>تم الربط بنجاح!</span>
-                </div>
-              ) : (
-                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=EGYMOD_WHATSAPP_SESSION_AUTH`} alt="QR Code" style={{ width: "180px", height: "180px", display: "block" }} />
-              )}
-            </div>
+        {/* CLIENTS TABLE */}
+        <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
+          <div style={{ overflowX: "auto", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "center" }}>
+              <thead>
+                <tr style={{ background: themeStyles.inputBg || "#121214", color: themeStyles.accentGold || "#e8cd9c" }}>
+                  <th style={{ padding: "10px" }}>#</th>
+                  <th style={{ padding: "10px" }}>اسم العميل</th>
+                  <th style={{ padding: "10px" }}>الهاتف</th>
+                  <th style={{ padding: "10px" }}>السلعة</th>
+                  <th style={{ padding: "10px" }}>القسط المستحق</th>
+                  <th style={{ padding: "10px" }}>حالة الإرسال</th>
+                  <th style={{ padding: "10px" }}>الإجراء</th>
+                </tr>
+              </thead>
+              <tbody>
+                {totalClients === 0 ? (
+                  <tr><td colSpan={7} style={{ padding: "24px", color: "#888" }}>لا يوجد عملاء متأخرين عن السداد حالياً.</td></tr>
+                ) : (
+                  overdueContracts.map((client, idx) => {
+                    const isCurrent = idx === currentIndex && isAutoSending;
+                    const isDone = idx < currentIndex;
 
-            <h4 style={{ margin: "16px 0 6px 0", color: themeStyles.accentGold || "#e8cd9c", fontSize: "16px", fontWeight: 800 }}>
-              {connectionStatus === "connected" ? "واتساب العميل/المؤسسة جاهز للإرسال الآلي" : "افتح الواتساب ⬅️ الأجهزة المرتبطة ⬅️ امسح الكود"}
-            </h4>
-            <p style={{ margin: 0, color: "#aaa", fontSize: "12px", maxWidth: "420px" }}>
-              تتيح لك هذه الأداة ربط الرقم برمز مشفر لإرسال الرسائل الآلية مباشرة في الخلفية دون فتح تبويبات جديدة.
-            </p>
-
-            {connectionStatus !== "connected" && (
-              <button type="button" onClick={handleConnectSim} style={{ marginTop: "18px", background: "#25D366", color: "#111", border: "none", padding: "10px 22px", borderRadius: "10px", fontWeight: 800, cursor: "pointer", fontSize: "13px" }}>
-                محاكاة مسح الكود والربط الآن
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* TAB 2: CLIENTS LIST & LIVE AUTO-SEND QUEUE */}
-        {activeTab === "messages" && (
-          <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
-            {/* LIVE AUTO SEND PROGRESS BAR */}
-            <div style={{ padding: "12px 16px", background: "rgba(37, 211, 102, 0.08)", border: "1px solid rgba(37, 211, 102, 0.2)", borderRadius: "10px", marginBottom: "16px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#25D366", fontSize: "12.5px", fontWeight: 700 }}>
-                <ShieldAlert size={16} />
-                <span>حماية الحظر: فاصل عشوائي ({delaySeconds}ث) بين الرسائل</span>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <label style={{ fontSize: "12px", color: "#aaa" }}>تأخير الأمان:</label>
-                <select value={delaySeconds} onChange={(e) => setDelaySeconds(Number(e.target.value))} style={{ background: themeStyles.inputBg || "#121214", color: "#fff", border: "1px solid #444", borderRadius: "6px", padding: "4px 8px", fontSize: "12px" }}>
-                  <option value={15}>15 ثانية (سريع)</option>
-                  <option value={20}>20 ثانية (موصى به)</option>
-                  <option value={30}>30 ثانية (أمان عالي)</option>
-                </select>
-
-                <button type="button" onClick={() => setIsAutoSending(!isAutoSending)} disabled={connectionStatus !== "connected"} style={{ background: isAutoSending ? "#ef4444" : "#25D366", color: "#111", opacity: connectionStatus !== "connected" ? 0.5 : 1, border: "none", padding: "6px 14px", borderRadius: "6px", cursor: connectionStatus !== "connected" ? "not-allowed" : "pointer", fontWeight: 800, fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
-                  {isAutoSending ? <><Pause size={14} /> إيقاف مؤقت</> : <><Play size={14} /> بدء الإرسال التلقائي</>}
-                </button>
-              </div>
-            </div>
-
-            {/* CLIENTS TABLE */}
-            <div style={{ overflowX: "auto", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "center" }}>
-                <thead>
-                  <tr style={{ background: themeStyles.inputBg || "#121214", color: themeStyles.accentGold || "#e8cd9c" }}>
-                    <th style={{ padding: "10px" }}>#</th>
-                    <th style={{ padding: "10px" }}>اسم العميل</th>
-                    <th style={{ padding: "10px" }}>الهاتف</th>
-                    <th style={{ padding: "10px" }}>السلعة</th>
-                    <th style={{ padding: "10px" }}>القسط المستحق</th>
-                    <th style={{ padding: "10px" }}>الإجراء</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overdueContracts.length === 0 ? (
-                    <tr><td colSpan={6} style={{ padding: "20px", color: "#888" }}>لا يوجد عملاء متأخرين عن السداد حالياً.</td></tr>
-                  ) : (
-                    overdueContracts.map((client, idx) => (
-                      <tr key={client.id || idx} style={{ borderBottom: `1px solid ${themeStyles.border || "#222224"}` }}>
+                    return (
+                      <tr key={client.id || idx} style={{ borderBottom: `1px solid ${themeStyles.border || "#222224"}`, background: isCurrent ? "rgba(37, 211, 102, 0.08)" : "transparent" }}>
                         <td style={{ padding: "10px", color: "#888" }}>{idx + 1}</td>
                         <td style={{ padding: "10px", fontWeight: 700 }}>{client.name}</td>
                         <td style={{ padding: "10px" }} dir="ltr">{client.phone}</td>
                         <td style={{ padding: "10px", color: themeStyles.accentGold || "#e8cd9c" }}>{client.item}</td>
                         <td style={{ padding: "10px", color: "#e07a5f", fontWeight: 800 }}>{client.monthly} {t.currency || "ج.م"}</td>
                         <td style={{ padding: "10px" }}>
-                          <button type="button" onClick={() => handleSingleSend(client)} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#25D366", color: "#111", border: "none", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontWeight: 800, fontSize: "11.5px" }}>
-                            <Send size={13} /> إرسال الآن
+                          {isDone ? (
+                            <span style={{ color: "#25D366", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <CheckCircle2 size={14} /> تم الإرسال
+                            </span>
+                          ) : isCurrent ? (
+                            <span style={{ color: "#e8cd9c", fontWeight: 700 }}>جاري الإرسال ({countdown}ث)</span>
+                          ) : (
+                            <span style={{ color: "#666" }}>في الانتظار</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "10px" }}>
+                          <button type="button" onClick={() => handleSingleSend(client)} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#25D366", color: "#111", border: "none", padding: "5px 12px", borderRadius: "6px", cursor: "pointer", fontWeight: 800, fontSize: "11.5px" }}>
+                            <Send size={13} /> إرسال مباشر
                           </button>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
 
         {/* FOOTER */}
-        <div style={{ padding: "14px 20px", borderTop: `1px solid ${themeStyles.border || "#333333"}`, background: themeStyles.inputBg || "#141416", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "12px", color: "#aaa" }}>إجمالي قائمة المتأخرين: {overdueContracts.length} عميل</span>
+        <div style={{ padding: "14px 22px", borderTop: `1px solid ${themeStyles.border || "#333333"}`, background: themeStyles.inputBg || "#141416", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: "12px", color: "#aaa" }}>إجمالي المتأخرين: {totalClients} عميل</span>
           <button type="button" onClick={onClose} style={{ background: themeStyles.card || "#222", border: "1px solid #444", color: "#fff", padding: "8px 20px", borderRadius: "8px", cursor: "pointer", fontWeight: 700, fontSize: "12.5px" }}>
             إغلاق
           </button>
