@@ -1,3 +1,12 @@
+/**
+ * =========================================================
+ * 📌 الشاشة: الشاشة الرئيسية للاستعلام (Client Query Main Screen)
+ * 📁 المسار: src/components/clientQuery/ClientQueryScreen.jsx
+ * 📝 الوظيفة: إدارة شريط البحث، التبديل بين التبويبات (النشطة / الأرشيف)،
+ *            ومعالجة تنبيه العقود المتعددة لنفس رقم الهاتف.
+ * =========================================================
+ */
+
 import React, { useState, useMemo } from "react";
 import { ArrowRight, X, FileSpreadsheet, FileText, FolderArchive, Layers } from "lucide-react";
 import { filterContracts, findContractsByPhone } from "../../services/clientQueryService";
