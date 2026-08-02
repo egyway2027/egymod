@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 
 import { AddClientScreen } from "./components/AddClientScreen";
+import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
 
 const translations = {
   ar: {
@@ -136,9 +137,15 @@ export function App() {
   }, [currentTheme]);
 
   const handleSaveClient = (newClientData) => {
-    setClientsList(prev => [newClientData, ...prev]);
+    setClientsList(prev => [{ ...newClientData, id: Date.now().toString() }, ...prev]);
     alert(t.saveSuccess);
     handleBack();
+  };
+
+  const handleUpdateContract = (updatedContract) => {
+    setClientsList(prev =>
+      prev.map(c => (c.id === updatedContract.id || c.name === updatedContract.name ? updatedContract : c))
+    );
   };
 
   const buttons = [
@@ -162,6 +169,16 @@ export function App() {
       {currentScreen === "addClient" && (
         <AddClientScreen
           onSave={handleSaveClient}
+          onBack={handleBack}
+          t={t}
+          themeStyles={themeStyles}
+        />
+      )}
+
+      {currentScreen === "clientQuery" && (
+        <ClientQueryScreen
+          contracts={clientsList}
+          onUpdateContract={handleUpdateContract}
           onBack={handleBack}
           t={t}
           themeStyles={themeStyles}
@@ -232,6 +249,8 @@ export function App() {
                   onClick={() => {
                     if (b.key === "addClient") {
                       navigateTo("addClient");
+                    } else if (b.key === "search") {
+                      navigateTo("clientQuery");
                     }
                   }}
                   style={{
