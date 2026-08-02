@@ -54,7 +54,7 @@ export function AllClientsRegisterModal({ isOpen, onClose, contracts = [], t = {
       <div
         style={{
           width: "100%",
-          maxWidth: "1150px",
+          maxWidth: "1380px",
           maxHeight: "92vh",
           background: themeStyles.card || "#1a1a1c",
           border: `1px solid ${themeStyles.border || "#333333"}`,
@@ -123,35 +123,41 @@ export function AllClientsRegisterModal({ isOpen, onClose, contracts = [], t = {
           </div>
 
           {/* TABLE */}
-          <div style={{ overflowX: "auto", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "12px" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px", textAlign: "center" }}>
+          <div style={{ overflowX: "hidden", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "12px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px", textAlign: "center" }}>
               <thead>
                 <tr style={{ background: themeStyles.inputBg || "#121214", color: themeStyles.accentGold || "#e8cd9c", borderBottom: `1px solid ${themeStyles.border || "#333333"}` }}>
-                  <th style={{ padding: "10px" }}>ID #</th>
-                  <th style={{ padding: "10px" }}>{t.clientNameLabel || (isEN ? "Client Name *" : "اسم العميل *")}</th>
-                  <th style={{ padding: "10px" }}>{t.clientPhoneLabel || (isEN ? "Client Phone *" : "تليفون العميل *")}</th>
-                  <th style={{ padding: "10px" }}>{t.guarantorNameLabel || (isEN ? "Guarantor Name" : "اسم الضامن")}</th>
-                  <th style={{ padding: "10px" }}>{t.guarantorPhoneLabel || (isEN ? "Guarantor Phone" : "تليفون الضامن")}</th>
-                  <th style={{ padding: "10px" }}>{t.itemLabel || (isEN ? "Item *" : "السلعة *")}</th>
-                  <th style={{ padding: "10px" }}>{t.costPriceLabel || (isEN ? "Cost Price *" : "سعر التكلفة *")}</th>
-                  <th style={{ padding: "10px" }}>{t.salePriceLabel || (isEN ? "Sale Price *" : "سعر البيع *")}</th>
-                  <th style={{ padding: "10px" }}>{t.downPaymentLabel || (isEN ? "Down Payment *" : "المقدم *")}</th>
-                  <th style={{ padding: "10px" }}>{t.monthlyInstallmentLabel || (isEN ? "Monthly Installment" : "القسط الشهري")}</th>
+                  <th style={{ padding: "8px 3px", width: "30px" }}>#</th>
+                  <th style={{ padding: "8px 3px" }}>{t.clientNameLabel || (isEN ? "Client Name" : "اسم العميل")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.clientPhoneLabel || (isEN ? "Phone" : "التليفون")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.guarantorNameLabel || (isEN ? "Guarantor" : "الضامن")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.guarantorPhoneLabel || (isEN ? "G.Phone" : "ت.الضامن")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.itemLabel || (isEN ? "Item" : "السلعة")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.costPriceLabel || (isEN ? "Cost" : "التكلفة")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.salePriceLabel || (isEN ? "Sale" : "البيع")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.downPaymentLabel || (isEN ? "Down" : "المقدم")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.monthlyInstallmentLabel || (isEN ? "Monthly" : "القسط")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.contractDateLabel || (isEN ? "Contract Date" : "تاريخ التعاقد")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.firstPayDateLabel || (isEN ? "First Pay Date" : "تاريخ القسط")}</th>
+                  <th style={{ padding: "8px 3px" }}>{t.notesLabel || (isEN ? "Notes" : "ملاحظات")}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredList.map((item, index) => (
                   <tr key={item.id || index} style={{ borderBottom: `1px solid ${themeStyles.border || "#222224"}` }}>
-                    <td style={{ padding: "10px", fontSize: "11px", color: themeStyles.subText || "#888888" }}>{item.id || index + 1}</td>
-                    <td style={{ padding: "10px", fontWeight: 700 }}>{item.name}</td>
-                    <td style={{ padding: "10px" }} dir="ltr">{item.phone}</td>
-                    <td style={{ padding: "10px" }}>{item.guarantor || "-"}</td>
-                    <td style={{ padding: "10px" }} dir="ltr">{item.guarantorPhone || "-"}</td>
-                    <td style={{ padding: "10px", color: themeStyles.accentGold || "#e8cd9c" }}>{item.item}</td>
-                    <td style={{ padding: "10px" }}>{item.cost}</td>
-                    <td style={{ padding: "10px", fontWeight: 700 }}>{item.sale}</td>
-                    <td style={{ padding: "10px" }}>{item.down}</td>
-                    <td style={{ padding: "10px", color: "#e07a5f", fontWeight: 800 }}>{item.monthly}</td>
+                    <td style={{ padding: "8px 3px", fontWeight: 800, color: themeStyles.subText || "#888888" }}>{index + 1}</td>
+                    <td style={{ padding: "8px 3px", fontWeight: 700 }}>{item.name}</td>
+                    <td style={{ padding: "8px 3px" }} dir="ltr">{item.phone}</td>
+                    <td style={{ padding: "8px 3px" }}>{item.guarantor || "-"}</td>
+                    <td style={{ padding: "8px 3px" }} dir="ltr">{item.guarantorPhone || "-"}</td>
+                    <td style={{ padding: "8px 3px", color: themeStyles.accentGold || "#e8cd9c" }}>{item.item}</td>
+                    <td style={{ padding: "8px 3px" }}>{item.cost}</td>
+                    <td style={{ padding: "8px 3px", fontWeight: 700 }}>{item.sale}</td>
+                    <td style={{ padding: "8px 3px" }}>{item.down}</td>
+                    <td style={{ padding: "8px 3px", color: "#e07a5f", fontWeight: 800 }}>{item.monthly}</td>
+                    <td style={{ padding: "8px 3px", color: themeStyles.subText || "#aaaaaa" }}>{item.contractDate || "-"}</td>
+                    <td style={{ padding: "8px 3px", color: themeStyles.subText || "#aaaaaa" }}>{item.firstPayDate || "-"}</td>
+                    <td style={{ padding: "8px 3px", color: themeStyles.subText || "#aaaaaa", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.notes || "-"}</td>
                   </tr>
                 ))}
               </tbody>
