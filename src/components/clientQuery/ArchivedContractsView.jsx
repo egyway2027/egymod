@@ -1,117 +1,98 @@
 /**
  * =========================================================
- * 📌 المكون: شاشة أرشيف العقود المسددة (Archived Contracts View)
+ * 📌 الشاشة: أرشيف العقود المنتهية (Archived Contracts View)
  * 📁 المسار: src/components/clientQuery/ArchivedContractsView.jsx
- * 📝 الوظيفة: عرض عقود العملاء المسددة بالكامل بدقة الأبعاد والمساحات.
+ * 📝 الوظيفة: عرض وتصفية وطباعة العقود التي تم سدادها بالكامل (المتبقي = 0).
  * =========================================================
  */
 
-import React, { useState } from "react";
-import { Printer, Search } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Printer } from "lucide-react";
+import { filterContracts, calculateTotals } from "../../services/clientQueryService";
 
-export function ArchivedContractsView({ archivedContracts = [], t, themeStyles }) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const isRTL = document.documentElement.dir === "rtl";
+export function ArchivedContractsView({ contracts = [], t = {}, themeStyles = {} }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const isEN = t?.currency === "EGP";
 
-  const filteredArchive = archivedContracts.filter(c => {
-    const term = searchTerm.toLowerCase();
-    return (
-      (c.name || "").toLowerCase().includes(term) ||
-      (c.phone || "").includes(term) ||
-      (c.item || "").toLowerCase().includes(term)
-    );
-  });
+  const archiveList = useMemo(() => {
+    return filterContracts(contracts, searchQuery, true);
+  }, [contracts, searchQuery]);
+
+  const totals = useMemo(() => calculateTotals(archiveList), [archiveList]);
 
   return (
-    <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: 24 }}>
-      {/* Header Actions */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 14 }}>
-        <button
-          onClick={() => window.print()}
-          style={{
-            display: "flex", alignItems: "center", gap: 8, padding: "10px 20px",
-            background: "linear-gradient(135deg, #d69a5f, #b06a35)", border: "none",
-            borderRadius: 10, color: "#fff", fontWeight: 800, cursor: "pointer"
-          }}
-        >
-          <Printer size={16} /> {t.printArchive}
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* Search & Print Bar */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+        <button type="button" onClick={() => window.print()} style={{ display: "flex", alignItems: "center", gap: "8px", background: "linear-gradient(135deg, #e07a5f, #d4af37)", color: "#111111", border: "none", borderRadius: "10px", padding: "10px 18px", fontWeight: 800, fontSize: "13.5px", cursor: "pointer" }}>
+          <Printer size={16} /> {t.printArchiveBtn || (isEN ? "Print Archive" : "طباعة أرشيف العقود")}
         </button>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={t.searchArchivePlaceholder || (isEN ? "Search archive clients, phone, item..." : "بحث بأسماء عملاء الأرشيف، الهاتف، أو السلعة...")}
+          style={{ width: "320px", background: themeStyles.inputBg || "#121214", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 14px", color: themeStyles.text || "#ffffff", fontSize: "13.5px", outline: "none" }}
+        />
+      </div>
 
-        <div style={{ position: "relative", minWidth: 280, flex: 1, maxWidth: 400 }}>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t.searchArchivePlaceholder}
-            style={{
-              width: "100%",
-              paddingTop: 10,
-              paddingBottom: 10,
-              paddingLeft: isRTL ? 14 : 40,
-              paddingRight: isRTL ? 40 : 14,
-              borderRadius: 10,
-              background: themeStyles.inputBg,
-              border: `1px solid ${themeStyles.border}`,
-              color: themeStyles.text,
-              fontWeight: 700,
-              fontSize: 13,
-              boxSizing: "border-box"
-            }}
-          />
-          <Search
-            size={16}
-            style={{
-              position: "absolute",
-              top: "50%",
-              transform: "translateY(-50%)",
-              left: isRTL ? "auto" : 14,
-              right: isRTL ? 14 : "auto",
-              color: themeStyles.subText,
-              pointerEvents: "none"
-            }}
-          />
+      {/* KPI Header Box */}
+      <div style={{ background: themeStyles.card || "#1a1a1c", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "14px", padding: "18px", textAlign: "center" }}>
+        <div style={{ fontSize: "16px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>إيجيمود لإدارة الأقساط</div>
+        <div style={{ fontSize: "12px", color: themeStyles.subText || "#aaaaaa", marginTop: "4px", marginBottom: "14px" }}>أرشيف العقود المسددة بالكامل — عدد الأقساط ({archiveList.length})</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px" }}>
+          <div style={{ background: themeStyles.inputBg || "#121214", padding: "10px", borderRadius: "10px" }}>
+            <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888" }}>سعر البيع *</div>
+            <div style={{ fontSize: "16px", fontWeight: 800, color: themeStyles.text || "#ffffff", marginTop: "4px" }}>{totals.totalSale} {t.currency || (isEN ? "EGP" : "ج.م")}</div>
+          </div>
+          <div style={{ background: themeStyles.inputBg || "#121214", padding: "10px", borderRadius: "10px" }}>
+            <div style={{ fontSize: "11px", color: "#4caf50" }}>إجمالي المحصل</div>
+            <div style={{ fontSize: "16px", fontWeight: 800, color: "#4caf50", marginTop: "4px" }}>{totals.totalPaid} {t.currency || (isEN ? "EGP" : "ج.م")}</div>
+          </div>
+          <div style={{ background: themeStyles.inputBg || "#121214", padding: "10px", borderRadius: "10px" }}>
+            <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888" }}>إجمالي الأقساط المتبقية</div>
+            <div style={{ fontSize: "16px", fontWeight: 800, color: "#4caf50", marginTop: "4px" }}>0 {t.currency || (isEN ? "EGP" : "ج.م")}</div>
+          </div>
         </div>
       </div>
 
-      <h3 style={{ textAlign: "center", margin: "0 0 16px 0", color: themeStyles.accentGold, fontSize: 18, fontWeight: 800 }}>
-        {t.archiveTitle} ({archivedContracts.length})
-      </h3>
-
-      {/* Table */}
-      {filteredArchive.length > 0 ? (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "start", fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: themeStyles.inputBg, color: themeStyles.accentGold, borderBottom: `2px solid ${themeStyles.border}` }}>
-                <th style={{ padding: 12 }}>{t.idHeader}</th>
-                <th style={{ padding: 12 }}>{t.clientNameHeader}</th>
-                <th style={{ padding: 12 }}>{t.clientPhoneHeader}</th>
-                <th style={{ padding: 12 }}>{t.itemHeader}</th>
-                <th style={{ padding: 12 }}>{t.salePriceHeader}</th>
-                <th style={{ padding: 12 }}>{t.totalCollectedHeader}</th>
-                <th style={{ padding: 12 }}>{t.contractStatusHeader}</th>
+      {/* Archive Table */}
+      <div style={{ overflowX: "auto", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "12px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px", textAlign: "center" }}>
+          <thead>
+            <tr style={{ background: themeStyles.inputBg || "#121214", color: themeStyles.accentGold || "#e8cd9c", borderBottom: `1px solid ${themeStyles.border || "#333333"}` }}>
+              <th style={{ padding: "10px" }}>ID #</th>
+              <th style={{ padding: "10px" }}>اسم العميل *</th>
+              <th style={{ padding: "10px" }}>تليفون العميل *</th>
+              <th style={{ padding: "10px" }}>اسم الضامن</th>
+              <th style={{ padding: "10px" }}>تليفون الضامن</th>
+              <th style={{ padding: "10px" }}>السلعة *</th>
+              <th style={{ padding: "10px" }}>سعر التكلفة *</th>
+              <th style={{ padding: "10px" }}>سعر البيع *</th>
+              <th style={{ padding: "10px" }}>المقدم *</th>
+              <th style={{ padding: "10px" }}>القسط الشهري</th>
+            </tr>
+          </thead>
+          <tbody>
+            {archiveList.map((item, index) => (
+              <tr key={item.id || index} style={{ borderBottom: `1px solid ${themeStyles.border || "#222224"}` }}>
+                <td style={{ padding: "10px", fontSize: "11px", color: themeStyles.subText || "#888888" }}>{item.id || index + 1}</td>
+                <td style={{ padding: "10px", fontWeight: 700 }}>{item.name}</td>
+                <td style={{ padding: "10px" }} dir="ltr">{item.phone}</td>
+                <td style={{ padding: "10px" }}>{item.guarantor || "-"}</td>
+                <td style={{ padding: "10px" }} dir="ltr">{item.guarantorPhone || "-"}</td>
+                <td style={{ padding: "10px", color: themeStyles.accentGold || "#e8cd9c" }}>{item.item}</td>
+                <td style={{ padding: "10px" }}>{item.cost}</td>
+                <td style={{ padding: "10px", fontWeight: 700 }}>{item.sale}</td>
+                <td style={{ padding: "10px" }}>{item.down}</td>
+                <td style={{ padding: "10px", color: "#e07a5f", fontWeight: 800 }}>{item.monthly}</td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredArchive.map((c) => (
-                <tr key={c.id} style={{ borderBottom: `1px solid ${themeStyles.border}` }}>
-                  <td style={{ padding: 12, fontSize: 11, color: themeStyles.subText }}>{c.id}</td>
-                  <td style={{ padding: 12, fontWeight: 700 }}>{c.name}</td>
-                  <td style={{ padding: 12 }}>{c.phone}</td>
-                  <td style={{ padding: 12 }}>{c.item}</td>
-                  <td style={{ padding: 12, fontWeight: 700 }}>{c.sale} {t.currency}</td>
-                  <td style={{ padding: 12, color: "#22c55e", fontWeight: 700 }}>{c.sale} {t.currency}</td>
-                  <td style={{ padding: 12, color: "#22c55e", fontWeight: 800 }}>{t.contractPaidStatus}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div style={{ textAlign: "center", padding: 30, color: themeStyles.subText, fontWeight: 700 }}>
-          {t.noDataFound}
-        </div>
-      )}
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
+
+export default ArchivedContractsView;
