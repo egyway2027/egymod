@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { ArrowRight, X } from "lucide-react";
-
+import { CustomDatePicker } from "./CustomDatePicker";
 const emptyForm = {
   name: "",
   phone: "",
@@ -191,57 +191,33 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
             </label>
           </div>
 
-          {/* SECTION 3: Dates & Notes */}
+         {/* SECTION 3: Dates & Notes */}
           <div style={sectionLabelStyle}>
             {t.datesAndNotes || (isEN ? "Dates & Notes" : "التواريخ والملاحظات")}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px", marginBottom: "14px" }}>
             <label style={labelStyle}>
               <span>{t.contractDateLabel || (isEN ? "Contract Date *" : "تاريخ التعاقد *")}</span>
-              <div style={{ position: "relative", width: "100%" }}>
-                <input
-                  type="text"
-                  dir="ltr"
-                  style={{ ...inputStyle, textAlign: "center", cursor: "pointer" }}
-                  value={form.contractDate || ""}
-                  placeholder={isEN ? "YYYY-MM-DD" : "سنة - شهر - يوم"}
-                  readOnly
-                />
-                <input
-  type="date"
-  lang={isEN ? "en-US" : "ar-EG"}
-  style={{
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    opacity: 0,
-    cursor: "pointer",
-    zIndex: 2
-  }}
-  value={form.contractDate || ""}
-  onChange={handleContractDate}
-  onClick={(e) => {
-    if (e.target.showPicker) {
-      e.target.showPicker();
-    }
-  }}
-  required
-/>
-              </div>
+              <CustomDatePicker
+                value={form.contractDate}
+                onChange={handleContractDate}
+                isEN={isEN}
+                placeholder={isEN ? "YYYY-MM-DD" : "سنة - شهر - يوم"}
+                themeStyles={themeStyles}
+                inputStyle={inputStyle}
+                required
+              />
             </label>
 
             <label style={labelStyle}>
               <span>{t.firstDueDateLabel || (isEN ? "First Due Date (Auto +1 Mo)" : "تاريخ أول قسط (تلقائي + شهر)")}</span>
-              <input
-                type="text"
-                dir="ltr"
-                style={{ ...inputStyle, textAlign: "center", color: themeStyles.subText || "#888888", cursor: "not-allowed" }}
-                value={form.firstPayDate || ""}
+              <CustomDatePicker
+                value={form.firstPayDate}
+                isEN={isEN}
                 placeholder={isEN ? "YYYY-MM-DD" : "سنة - شهر - يوم"}
+                themeStyles={themeStyles}
+                inputStyle={{ ...inputStyle, color: themeStyles.subText || "#888888" }}
                 disabled
-                readOnly
               />
             </label>
           </div>
