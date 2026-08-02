@@ -2,7 +2,7 @@
  * =========================================================
  * 📌 الملف: شاشة الاستعلام الرئيسية (Client Query Screen)
  * 📁 المسار: src/components/clientQuery/ClientQueryScreen.jsx
- * 📝 الوظيفة: محرك البحث والتنقل مع ضبط الأبعاد والاتجهات (RTL/LTR).
+ * 📝 الوظيفة: محرك البحث المشترط (لا يعرض أي عقود إلا بعد الكتابة).
  * =========================================================
  */
 
@@ -23,14 +23,19 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t,
   const activeContracts = contracts.filter(c => (Number(c.remainingAmount) || 0) > 0);
   const archivedContracts = contracts.filter(c => (Number(c.remainingAmount) || 0) <= 0);
 
-  const filteredActiveContracts = activeContracts.filter(c => {
-    const term = searchTerm.toLowerCase();
-    return (
-      (c.name || "").toLowerCase().includes(term) ||
-      (c.phone || "").includes(term) ||
-      (c.item || "").toLowerCase().includes(term)
-    );
-  });
+  // 🔍 تفعيل البحث المشترط (لا يرجع نتائج إلا إذا كتب المستخدم نصاً في مربع البحث)
+  const hasSearch = searchTerm.trim().length > 0;
+
+  const filteredActiveContracts = hasSearch
+    ? activeContracts.filter(c => {
+        const term = searchTerm.trim().toLowerCase();
+        return (
+          (c.name || "").toLowerCase().includes(term) ||
+          (c.phone || "").includes(term) ||
+          (c.item || "").toLowerCase().includes(term)
+        );
+      })
+    : [];
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 40 }}>
@@ -112,7 +117,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t,
       {/* 4. محتوى التبويب النشط */}
       {activeTab === "active" ? (
         <div>
-          {/* مربع البحث مع التموضع المضبوط حركياً */}
+          {/* مربع البحث */}
           <div style={{
             background: themeStyles.card, border: `1px solid ${themeStyles.border}`,
             borderRadius: themeStyles.cardRadius || 16, padding: 20, marginBottom: 20
@@ -156,8 +161,16 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t,
             </div>
           </div>
 
-          {/* قائمة كروت العقود النشطة */}
-          {filteredActiveContracts.length > 0 ? (
+          {/* التحكم بالظهور: إما رسالة لبدء البحث أو عرض النتائج المطابقة */}
+          {!hasSearch ? (
+            <div style={{
+              background: themeStyles.card, border: `1px solid ${themeStyles.border}`,
+              borderRadius: themeStyles.cardRadius || 16, padding: 40, textAlign: "center",
+              color: themeStyles.subText, fontWeight: 700
+            }}>
+              {isRTL ? "يرجى كتابة اسم العميل، رقم التليفون، أو السلعة في صندوق البحث أعلاه للبدء" : "Please enter a client name, phone, or item in the search box above to begin"}
+            </div>
+          ) : filteredActiveContracts.length > 0 ? (
             filteredActiveContracts.map((contract) => (
               <ClientDetailCard
                 key={contract.id}
@@ -170,7 +183,8 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t,
           ) : (
             <div style={{
               background: themeStyles.card, border: `1px solid ${themeStyles.border}`,
-              borderRadius: 16, padding: 40, textAlign: "center", color: themeStyles.subText, fontWeight: 700
+              borderRadius: themeStyles.cardRadius || 16, padding: 40, textAlign: "center",
+              color: themeStyles.subText, fontWeight: 700
             }}>
               {t.noDataFound}
             </div>
