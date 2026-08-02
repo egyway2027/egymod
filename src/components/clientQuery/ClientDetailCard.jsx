@@ -1,3 +1,12 @@
+/**
+ * =========================================================
+ * 📌 المكون: كارت تفاصيل وتعديل العقد (Client Detail & Edit Card)
+ * 📁 المسار: src/components/clientQuery/ClientDetailCard.jsx
+ * 📝 الوظيفة: عرض موقف العقد المالي، وإتاحة وضع التعديل المباشر
+ *            لبيانات العميل والسلعة والتواريخ للحفظ السحابي.
+ * =========================================================
+ */
+
 import React, { useState } from "react";
 import { Edit3, CheckCircle, XCircle } from "lucide-react";
 import { CustomDatePicker } from "../CustomDatePicker";
