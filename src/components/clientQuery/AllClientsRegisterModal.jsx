@@ -1,3 +1,12 @@
+/**
+ * =========================================================
+ * 📌 النافذة: سجل العملاء الشامل (Excel Mode Modal)
+ * 📁 المسار: src/components/clientQuery/AllClientsRegisterModal.jsx
+ * 📝 الوظيفة: عرض كافة بيانات العملاء في جدول تفصيلي شامل
+ *            يشبه شيت Excel مع إحصاءات مالية وأمر طباعة.
+ * =========================================================
+ */
+
 import React, { useState, useMemo } from "react";
 import { Printer, X, ArrowRight } from "lucide-react";
 import { calculateTotals } from "../../services/clientQueryService";
