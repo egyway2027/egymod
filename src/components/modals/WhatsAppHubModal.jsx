@@ -3,7 +3,8 @@
  * 📌 النافذة: مركز الواتساب الذكي (WhatsApp Anti-Ban Hub)
  * 📁 المسار: src/components/modals/WhatsAppHubModal.jsx
  * 📝 الوظيفة: إرسال تنبيهات المتأخرين يدوياً أو آلياً
- *            مع خوارزمية التمهيل الزمني للحماية من الحظر.
+ *            مع خوارزمية التمهيل الزمني والحماية من الحظر
+ *            وربط الجهاز عبر كود QR.
  * =========================================================
  */
 
@@ -20,7 +21,6 @@ export function WhatsAppHubModal({ isOpen, onClose, overdueContracts = [], t = {
   const [sentCount, setSentCount] = useState(0);
   const [delaySeconds, setDelaySeconds] = useState(20);
 
-  // محاكاة الاقتران والربط عبر كود QR
   const handleConnectSim = () => {
     setConnectionStatus("scanning");
     setTimeout(() => {
@@ -76,7 +76,11 @@ export function WhatsAppHubModal({ isOpen, onClose, overdueContracts = [], t = {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: 700, color: connectionStatus === "connected" ? "#25D366" : "#e07a5f" }}>
-            {connectionStatus === "connected" ? <><Wifi size={16} /> واتساب متصل الآن 🟢</> : <><WifiOff size={16} /> غير متصل 🔴</>}
+            {connectionStatus === "connected" ? (
+              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><Wifi size={16} /> واتساب متصل الآن 🟢</span>
+            ) : (
+              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><WifiOff size={16} /> غير متصل 🔴</span>
+            )}
           </div>
         </div>
 
@@ -136,42 +140,42 @@ export function WhatsAppHubModal({ isOpen, onClose, overdueContracts = [], t = {
                 </button>
               </div>
             </div>
-          <div style={{ overflowX: "auto", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "center" }}>
-              <thead>
-                <tr style={{ background: themeStyles.inputBg || "#121214", color: themeStyles.accentGold || "#e8cd9c" }}>
-                  <th style={{ padding: "10px" }}>#</th>
-                  <th style={{ padding: "10px" }}>اسم العميل</th>
-                  <th style={{ padding: "10px" }}>الهاتف</th>
-                  <th style={{ padding: "10px" }}>السلعة</th>
-                  <th style={{ padding: "10px" }}>القسط المستحق</th>
-                  <th style={{ padding: "10px" }}>الإجراء</th>
-                </tr>
-              </thead>
-              <tbody>
-                {overdueContracts.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: "20px", color: "#888" }}>لا يوجد عملاء متأخرين عن السداد حالياً.</td></tr>
-                ) : (
-                  overdueContracts.map((client, idx) => (
-                    <tr key={client.id || idx} style={{ borderBottom: `1px solid ${themeStyles.border || "#222224"}` }}>
-                      <td style={{ padding: "10px", color: "#888" }}>{idx + 1}</td>
-                      <td style={{ padding: "10px", fontWeight: 700 }}>{client.name}</td>
-                      <td style={{ padding: "10px" }} dir="ltr">{client.phone}</td>
-                      <td style={{ padding: "10px", color: themeStyles.accentGold || "#e8cd9c" }}>{client.item}</td>
-                      <td style={{ padding: "10px", color: "#e07a5f", fontWeight: 800 }}>{client.monthly} {t.currency || "ج.م"}</td>
-                      <td style={{ padding: "10px" }}>
-                        <button type="button" onClick={() => handleSingleSend(client)} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#25D366", color: "#111", border: "none", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontWeight: 800, fontSize: "11.5px" }}>
-                          <Send size={13} /> إرسال الآن
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
 
+            {/* CLIENTS TABLE */}
+            <div style={{ overflowX: "auto", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "center" }}>
+                <thead>
+                  <tr style={{ background: themeStyles.inputBg || "#121214", color: themeStyles.accentGold || "#e8cd9c" }}>
+                    <th style={{ padding: "10px" }}>#</th>
+                    <th style={{ padding: "10px" }}>اسم العميل</th>
+                    <th style={{ padding: "10px" }}>الهاتف</th>
+                    <th style={{ padding: "10px" }}>السلعة</th>
+                    <th style={{ padding: "10px" }}>القسط المستحق</th>
+                    <th style={{ padding: "10px" }}>الإجراء</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overdueContracts.length === 0 ? (
+                    <tr><td colSpan={6} style={{ padding: "20px", color: "#888" }}>لا يوجد عملاء متأخرين عن السداد حالياً.</td></tr>
+                  ) : (
+                    overdueContracts.map((client, idx) => (
+                      <tr key={client.id || idx} style={{ borderBottom: `1px solid ${themeStyles.border || "#222224"}` }}>
+                        <td style={{ padding: "10px", color: "#888" }}>{idx + 1}</td>
+                        <td style={{ padding: "10px", fontWeight: 700 }}>{client.name}</td>
+                        <td style={{ padding: "10px" }} dir="ltr">{client.phone}</td>
+                        <td style={{ padding: "10px", color: themeStyles.accentGold || "#e8cd9c" }}>{client.item}</td>
+                        <td style={{ padding: "10px", color: "#e07a5f", fontWeight 800 }}>{client.monthly} {t.currency || "ج.م"}</td>
+                        <td style={{ padding: "10px" }}>
+                          <button type="button" onClick={() => handleSingleSend(client)} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#25D366", color: "#111", border: "none", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontWeight: 800, fontSize: "11.5px" }}>
+                            <Send size={13} /> إرسال الآن
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
