@@ -10,7 +10,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 // ⚠️ استبدل القيم بالروابط والمفاتيح الخاصة بمشروعك من Supabase (Project Settings -> API)
-const SUPABASE_URL = "https://jvmowzfktfybjcvqnlcc.supabase.co/";
+const SUPABASE_URL = "https://jvmowzfktfybjcvqnlcc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_lqpryj6bARHXiqDveRUrVw_scmwGO-0";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
