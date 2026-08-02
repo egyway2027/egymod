@@ -2,8 +2,7 @@
  * =========================================================
  * 📌 الملف: شاشة الاستعلام الرئيسية (Client Query Screen)
  * 📁 المسار: src/components/clientQuery/ClientQueryScreen.jsx
- * 📝 الوظيفة: محرك البحث، التنقل بين العقود النشطة والأرشيف،
- *            وفتح مودال السجل الشامل مترجم بالكامل.
+ * 📝 الوظيفة: محرك البحث والتنقل مع ضبط الأبعاد والاتجهات (RTL/LTR).
  * =========================================================
  */
 
@@ -14,18 +13,16 @@ import { AllClientsRegisterModal } from "./AllClientsRegisterModal";
 import { ArchivedContractsView } from "./ArchivedContractsView";
 
 export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t, themeStyles }) {
-  const [activeTab, setActiveTab] = useState("active"); // 'active' | 'archived'
+  const [activeTab, setActiveTab] = useState("active");
   const [searchTerm, setSearchTerm] = useState("");
   const [showFullRegister, setShowFullRegister] = useState(false);
 
   const isRTL = document.documentElement.dir === "rtl";
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
 
-  // فصل العقود النشطة عن العقود المسددة بالكامل (الأرشيف)
   const activeContracts = contracts.filter(c => (Number(c.remainingAmount) || 0) > 0);
   const archivedContracts = contracts.filter(c => (Number(c.remainingAmount) || 0) <= 0);
 
-  // تصفية العقود النشطة بالبحث
   const filteredActiveContracts = activeContracts.filter(c => {
     const term = searchTerm.toLowerCase();
     return (
@@ -66,7 +63,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t,
         </button>
       </div>
 
-      {/* 2. زر فتح سجل بيانات العملاء الشامل - Excel Mode */}
+      {/* 2. زر فتح سجل بيانات العملاء الشامل */}
       <button
         onClick={() => setShowFullRegister(true)}
         style={{
@@ -81,7 +78,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t,
         <FileSpreadsheet size={20} /> {t.openFullRegisterExcel}
       </button>
 
-      {/* 3. تبويبات التنقل (العقود النشطة / أرشيف العقود) */}
+      {/* 3. تبويبات التنقل */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
         <button
           onClick={() => setActiveTab("active")}
@@ -115,7 +112,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t,
       {/* 4. محتوى التبويب النشط */}
       {activeTab === "active" ? (
         <div>
-          {/* مربع البحث */}
+          {/* مربع البحث مع التموضع المضبوط حركياً */}
           <div style={{
             background: themeStyles.card, border: `1px solid ${themeStyles.border}`,
             borderRadius: themeStyles.cardRadius || 16, padding: 20, marginBottom: 20
@@ -123,19 +120,39 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t,
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: themeStyles.text, marginBottom: 8 }}>
               {t.searchPlaceholder}
             </label>
-            <div style={{ position: "relative" }}>
+            <div style={{ position: "relative", width: "100%" }}>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder={t.searchPlaceholder}
                 style={{
-                  width: "100%", padding: "12px 16px", borderRadius: 10,
-                  background: themeStyles.inputBg, border: `1px solid ${themeStyles.border}`,
-                  color: themeStyles.text, fontWeight: 700, fontSize: 14
+                  width: "100%",
+                  paddingTop: 12,
+                  paddingBottom: 12,
+                  paddingLeft: isRTL ? 16 : 42,
+                  paddingRight: isRTL ? 42 : 16,
+                  borderRadius: 10,
+                  background: themeStyles.inputBg,
+                  border: `1px solid ${themeStyles.border}`,
+                  color: themeStyles.text,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  boxSizing: "border-box"
                 }}
               />
-              <Search size={18} style={{ position: "absolute", top: 12, left: isRTL ? "auto" : 12, right: isRTL ? 12 : "auto", color: themeStyles.subText }} />
+              <Search
+                size={18}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  left: isRTL ? "auto" : 14,
+                  right: isRTL ? 14 : "auto",
+                  color: themeStyles.subText,
+                  pointerEvents: "none"
+                }}
+              />
             </div>
           </div>
 
@@ -160,7 +177,6 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t,
           )}
         </div>
       ) : (
-        /* عرض الأرشيف */
         <ArchivedContractsView
           archivedContracts={archivedContracts}
           t={t}
