@@ -1,3 +1,12 @@
+/**
+ * =========================================================
+ * 📌 الملف: الشاشة الرئيسية للنظام (Main App Container)
+ * 📁 المسار: src/App.jsx
+ * 📝 الوظيفة: الموزع الرئيسي للشاشات، إدارة الثيمات واللغات،
+ *            والربط التلقائي للبيانات السحابية مع الواجهة.
+ * =========================================================
+ */
+
 import React, { useState, useMemo, useEffect } from "react";
 import {
   UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X
