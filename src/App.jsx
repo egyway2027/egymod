@@ -2,19 +2,20 @@
  * =========================================================
  * 📌 الملف: الشاشة الرئيسية للنظام (Main App Container)
  * 📁 المسار: src/App.jsx
- * 📝 الوظيفة: الموزع الرئيسي للشاشات، إدارة الثيمات واللغات،
- *            والربط التلقائي للبيانات السحابية مع الواجهة.
+ * 📝 الوظيفة: تجميع الشاشات بشكل نقي ومستقر باستخدام الهوكس
+ *            المستقلة (useNavigation & useCloudData).
  * =========================================================
  */
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X, Loader2
 } from "lucide-react";
 
 import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
-import { fetchContractsFromCloud, saveContractToCloud, updateContractInCloud } from "./services/cloudService";
+import { useNavigation } from "./hooks/useNavigation";
+import { useCloudData } from "./hooks/useCloudData";
 
 const translations = {
   ar: {
@@ -87,53 +88,16 @@ const THEMES_LIST = [
 ];
 
 export function App() {
-  const [currentScreen, setCurrentScreen] = useState("dashboard");
+  const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
+  const { clientsList, isLoading, handleSaveClient, handleUpdateContract } = useCloudData();
+
   const [currentLang, setCurrentLang] = useState("ar");
   const [currentTheme, setCurrentTheme] = useState("royalGold");
   const [showLangModal, setShowLangModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
-  const [clientsList, setClientsList] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   const t = translations[currentLang];
   const isEN = currentLang === "en";
-
-  // 🔄 جلب البيانات التلقائي من قاعدة بيانات Supabase فور فتح التطبيق
-  useEffect(() => {
-    async function loadCloudData() {
-      setIsLoading(true);
-      const data = await fetchContractsFromCloud();
-      setClientsList(data);
-      setIsLoading(false);
-    }
-    loadCloudData();
-  }, []);
-
-  // معالجة زر الرجوع الخاص بالمتصفح أو الهاتف
-  useEffect(() => {
-    const handlePopState = (event) => {
-      if (event.state && event.state.screen) {
-        setCurrentScreen(event.state.screen);
-      } else {
-        setCurrentScreen("dashboard");
-      }
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  const navigateTo = (screenName) => {
-    setCurrentScreen(screenName);
-    window.history.pushState({ screen: screenName }, "", "");
-  };
-
-  const handleBack = () => {
-    setCurrentScreen("dashboard");
-    if (window.history.state && window.history.state.screen) {
-      window.history.back();
-    }
-  };
 
   const themeStyles = useMemo(() => {
     if (currentTheme === "light") {
@@ -157,29 +121,21 @@ export function App() {
     };
   }, [currentTheme]);
 
-  // ☁️ حفظ عميل جديد في السحابة
-  const handleSaveClient = async (newClientData) => {
-    try {
-      const savedContract = await saveContractToCloud(newClientData);
-      if (savedContract) {
-        setClientsList(prev => [savedContract, ...prev]);
-        alert(t.saveSuccess);
-        handleBack();
-      }
-    } catch {
+  const onSaveClientSubmit = async (newClientData) => {
+    const res = await handleSaveClient(newClientData);
+    if (res?.success) {
+      alert(t.saveSuccess);
+      handleBack();
+    } else {
       alert("حدث خطأ أثناء حفظ العقد بالسحابة.");
     }
   };
 
-  // ☁️ تحديث بيانات عقد في السحابة
-  const handleUpdateContract = async (updatedContract) => {
-    try {
-      const saved = await updateContractInCloud(updatedContract);
-      if (saved) {
-        setClientsList(prev => prev.map(c => (c.id === saved.id ? saved : c)));
-        alert("تم تحديث البيانات سحابياً بنجاح!");
-      }
-    } catch {
+  const onUpdateContractSubmit = async (updatedContract) => {
+    const res = await handleUpdateContract(updatedContract);
+    if (res?.success) {
+      alert("تم تحديث البيانات سحابياً وتحديث الشاشة بنجاح!");
+    } else {
       alert("حدث خطأ أثناء تحديث البيانات بالسحابة.");
     }
   };
@@ -211,7 +167,7 @@ export function App() {
         <>
           {currentScreen === "addClient" && (
             <AddClientScreen
-              onSave={handleSaveClient}
+              onSave={onSaveClientSubmit}
               onBack={handleBack}
               t={t}
               themeStyles={themeStyles}
@@ -221,7 +177,7 @@ export function App() {
           {currentScreen === "clientQuery" && (
             <ClientQueryScreen
               contracts={clientsList}
-              onUpdateContract={handleUpdateContract}
+              onUpdateContract={onUpdateContractSubmit}
               onBack={handleBack}
               t={t}
               themeStyles={themeStyles}
