@@ -9,7 +9,7 @@
 
 import React, { useState } from "react";
 import {
-  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X, Loader2, MessageSquare, FolderKanban
+  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, Power, TrendingUp, Calculator, Globe, Palette, X, Loader2, MessageSquare, FolderKanban
 } from "lucide-react";
 
 import { AddClientScreen } from "./components/AddClientScreen";
@@ -46,7 +46,7 @@ export function App() {
   const [showLangModal, setShowLangModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
 
-  // 📌 حالات الاختصارات العلوية الجديدة
+  // 📌 حالات الاختصارات والنوافذ الجديدة
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [showRecycleBinModal, setShowRecycleBinModal] = useState(false);
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
@@ -73,7 +73,7 @@ export function App() {
     }
   };
 
-  // أزرار شبكة التحكم الرئيسية
+  // أزرار شبكة التحكم الرئيسية (تم استبدال النسخ الاحتياطي بالواتساب الذكي)
   const buttons = [
     { key: "addClient", label: t.addClient, icon: UserPlus, tone: "dark" },
     { key: "pay", label: t.pay, icon: CreditCard, tone: "gold" },
@@ -85,7 +85,7 @@ export function App() {
     { key: "treasuryPartners", label: t.treasuryPartners, icon: Users, tone: "copper" },
     { key: "treasuryEmployees", label: t.treasuryEmployees, icon: UserCog, tone: "silver" },
     { key: "settings", label: t.settings, icon: Settings, tone: "tan" },
-    { key: "backup", label: t.backup, icon: UploadCloud, tone: "roseLight" },
+    { key: "whatsapp", label: "مركز الواتساب الذكي", icon: MessageSquare, tone: "roseLight" },
     { key: "exit", label: t.exit, icon: Power, tone: "dark" },
   ];
 
@@ -163,22 +163,17 @@ export function App() {
                     <Palette size={15} /> <span>{t.appThemes} (100)</span>
                   </button>
 
-                  {/* 🔍 زر البحث الشامل العلوي */}
+                  {/* 🔍 اختصار البحث الشامل العلوي */}
                   <button onClick={() => setShowGlobalSearchModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
                     <Search size={15} /> <span>البحث الشامل</span>
                   </button>
 
-                  {/* 📂 زر مركز السجلات العلوي */}
+                  {/* 📂 اختصار مركز السجلات العلوي */}
                   <button onClick={() => setShowCentralRecordsModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
                     <FolderKanban size={15} /> <span>مركز السجلات</span>
                   </button>
 
-                  {/* 📱 زر مركز الواتساب العلوي */}
-                  <button onClick={() => setShowWhatsAppModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(37,211,102,0.4)", color: "#25D366", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                    <MessageSquare size={15} /> <span>الواتساب الذكي</span>
-                  </button>
-
-                  {/* 🗑️ زر سلة المهملات العلوي */}
+                  {/* 🗑️ اختصار سلة المهملات العلوي */}
                   <button onClick={() => setShowRecycleBinModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(239,68,68,0.4)", color: "#fca5a5", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
                     <Trash2 size={15} /> <span>سلة المهملات</span>
                   </button>
@@ -232,6 +227,10 @@ export function App() {
                           navigateTo("clientQuery");
                         } else if (b.key === "settings") {
                           navigateTo("settings");
+                        } else if (b.key === "whatsapp") {
+                          setShowWhatsAppModal(true);
+                        } else if (b.key === "deleteClient") {
+                          setShowRecycleBinModal(true);
                         }
                       }}
                       style={{
