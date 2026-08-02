@@ -9,12 +9,17 @@
 
 import React, { useState } from "react";
 import {
-  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X, Loader2
+  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X, Loader2, MessageSquare, FolderKanban
 } from "lucide-react";
 
 import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
+
+import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
+import { RecycleBinModal } from "./components/modals/RecycleBinModal";
+import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
+import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
 
 import { useNavigation } from "./hooks/useNavigation";
 import { useCloudData } from "./hooks/useCloudData";
@@ -40,6 +45,12 @@ export function App() {
 
   const [showLangModal, setShowLangModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
+
+  // 📌 حالات الاختصارات العلوية الجديدة
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [showRecycleBinModal, setShowRecycleBinModal] = useState(false);
+  const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
+  const [showCentralRecordsModal, setShowCentralRecordsModal] = useState(false);
 
   // ☁️ حفظ عميل جديد
   const onSaveClientSubmit = async (newClientData) => {
@@ -151,6 +162,26 @@ export function App() {
                   <button onClick={() => navigateTo("settings")} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
                     <Palette size={15} /> <span>{t.appThemes} (100)</span>
                   </button>
+
+                  {/* 🔍 زر البحث الشامل العلوي */}
+                  <button onClick={() => setShowGlobalSearchModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Search size={15} /> <span>البحث الشامل</span>
+                  </button>
+
+                  {/* 📂 زر مركز السجلات العلوي */}
+                  <button onClick={() => setShowCentralRecordsModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                    <FolderKanban size={15} /> <span>مركز السجلات</span>
+                  </button>
+
+                  {/* 📱 زر مركز الواتساب العلوي */}
+                  <button onClick={() => setShowWhatsAppModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(37,211,102,0.4)", color: "#25D366", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                    <MessageSquare size={15} /> <span>الواتساب الذكي</span>
+                  </button>
+
+                  {/* 🗑️ زر سلة المهملات العلوي */}
+                  <button onClick={() => setShowRecycleBinModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(239,68,68,0.4)", color: "#fca5a5", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Trash2 size={15} /> <span>سلة المهملات</span>
+                  </button>
                 </div>
 
                 <div style={{ textAlign: "center" }}>
@@ -222,6 +253,47 @@ export function App() {
           )}
         </>
       )}
+
+      {/* 📱 مركز الواتساب الذكي */}
+      <WhatsAppHubModal
+        isOpen={showWhatsAppModal}
+        onClose={() => setShowWhatsAppModal(false)}
+        overdueContracts={clientsList.filter(c => Number(c.remainingAmount) > 0)}
+        t={t}
+        themeStyles={themeStyles}
+      />
+
+      {/* 🗑️ سلة المهملات الشاملة */}
+      <RecycleBinModal
+        isOpen={showRecycleBinModal}
+        onClose={() => setShowRecycleBinModal(false)}
+        deletedItems={[]}
+        t={t}
+        themeStyles={themeStyles}
+      />
+
+      {/* 🔍 البحث الشامل عابر الشاشات */}
+      <GlobalSearchModal
+        isOpen={showGlobalSearchModal}
+        onClose={() => setShowGlobalSearchModal(false)}
+        contracts={clientsList}
+        onSelectResult={() => navigateTo("clientQuery")}
+        t={t}
+        themeStyles={themeStyles}
+      />
+
+      {/* 📊 مركز السجلات والتقارير الشامل */}
+      <CentralRecordsMenu
+        isOpen={showCentralRecordsModal}
+        onClose={() => setShowCentralRecordsModal(false)}
+        onSelectRecord={(recordId) => {
+          if (recordId === "active_contracts" || recordId === "all_clients_register" || recordId === "archived_contracts") {
+            navigateTo("clientQuery");
+          }
+        }}
+        t={t}
+        themeStyles={themeStyles}
+      />
 
       {/* 🌐 نافذة اختيار اللغات الـ 15 المكتملة */}
       {showLangModal && (
