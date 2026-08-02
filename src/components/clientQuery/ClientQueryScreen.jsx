@@ -1,3 +1,11 @@
+/**
+ * =========================================================
+ * 📌 الملف: شاشة الاستعلام عن عميل (Client Query Screen)
+ * 📁 المسار: src/components/clientQuery/ClientQueryScreen.jsx
+ * 📝 الوظيفة: استعلام ومزامنة بيانات العملاء مع دعم الترجمة الشاملة
+ * =========================================================
+ */
+
 import React, { useState, useMemo } from "react";
 import { ArrowRight, X, FileSpreadsheet, FileText, FolderArchive, Layers } from "lucide-react";
 import { filterContracts, findContractsByPhone } from "../../services/clientQueryService";
@@ -77,7 +85,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
         }}
       >
         <FileSpreadsheet size={18} />
-        {t.openFullRegisterExcel || (isEN ? "[ 📊 Open Full Client Register - Excel Mode ]" : "[ 📊 فتح سجل بيانات العملاء الشامل - نمط Excel ]")}
+        [ 📊 {t.openFullRegisterExcel || (isEN ? "Open Full Client Register - Excel Mode" : "فتح سجل بيانات العملاء الشامل - نمط Excel")} ]
       </button>
 
       {/* TABS NAVIGATION */}
