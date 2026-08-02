@@ -1,3 +1,11 @@
+/**
+ * =========================================================
+ * 📌 الشاشة: أرشيف العقود المنتهية (Archived Contracts View)
+ * 📁 المسار: src/components/clientQuery/ArchivedContractsView.jsx
+ * 📝 الوظيفة: عرض وتصفية وطباعة العقود التي تم سدادها بالكامل (المتبقي = 0).
+ * =========================================================
+ */
+
 import React, { useState, useMemo } from "react";
 import { Printer } from "lucide-react";
 import { filterContracts, calculateTotals } from "../../services/clientQueryService";
