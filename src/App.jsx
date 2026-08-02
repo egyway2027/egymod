@@ -2,125 +2,46 @@
  * =========================================================
  * 📌 الملف: الشاشة الرئيسية للنظام (Main App Container)
  * 📁 المسار: src/App.jsx
- * 📝 الوظيفة: تجميع الشاشات بشكل نقي ومستقر باستخدام الهوكس
- *            المستقلة (useNavigation & useCloudData).
+ * 📝 الوظيفة: الموزع الرئيسي للشاشات المربوط بـ 15 لغة و 100 ثيم
+ *            مع المزامنة السحابية والحفظ التلقائي للواجهة.
  * =========================================================
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
   UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X, Loader2
 } from "lucide-react";
 
 import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
+import { SettingsScreen } from "./components/SettingsScreen";
+
 import { useNavigation } from "./hooks/useNavigation";
 import { useCloudData } from "./hooks/useCloudData";
-
-const translations = {
-  ar: {
-    appName: "نظام إدارة الأقساط والمبيعات",
-    welcome: "مرحباً،",
-    generalSupervisor: "المشرف العام",
-    logout: "خروج",
-    addClient: "إضافة عميل جديد",
-    pay: "سداد الأقساط",
-    search: "استعلام عن عميل",
-    monthlyDues: "مستحقات هذا الشهر",
-    lateClients: "المتأخرين عن السداد",
-    deleteClient: "حذف حساب عميل",
-    treasury: "توزيع الأرباح والخزينة",
-    treasuryPartners: "الشركاء ورأس المال",
-    treasuryEmployees: "شؤون الموظفين والرواتب",
-    settings: "الإعدادات والصلاحيات",
-    backup: "النسخ الاحتياطي السحابي",
-    exit: "تسجيل الخروج",
-    netProfit: "صافي الأرباح حتى اليوم",
-    netProfitSub: "إجمالي أرباح العقود والتحصيلات الصافية",
-    monthlyDuesSub: "المطلوب تحصيله حالياً",
-    totalPortfolio: "إجمالي الأقساط المتبقية",
-    totalPortfolioSub: "المبالغ المتبقية في ذمة العملاء",
-    currency: "ج.م",
-    selectLang: "اختر لغة البرنامج",
-    selectTheme: "معرض الثيمات والمظهر",
-    appThemes: "الثيمات",
-    saveSuccess: "تم حفظ بيانات العقد بنجاح بالسحابة!"
-  },
-  en: {
-    appName: "Pro Installment Management System",
-    welcome: "Welcome,",
-    generalSupervisor: "General Supervisor",
-    logout: "Logout",
-    addClient: "Add New Client",
-    pay: "Pay Installments",
-    search: "Client Inquiry",
-    monthlyDues: "Current Month Dues",
-    lateClients: "Late Clients",
-    deleteClient: "Delete Client Account",
-    treasury: "Treasury & Profits",
-    treasuryPartners: "Partners & Capital",
-    treasuryEmployees: "Employees & Salaries",
-    settings: "Settings & Permissions",
-    backup: "Cloud Backup",
-    exit: "Logout",
-    netProfit: "Net Profit To Date",
-    netProfitSub: "Total net contract and collection profits",
-    monthlyDuesSub: "Total amount to collect currently",
-    totalPortfolio: "Total Remaining Portfolio",
-    totalPortfolioSub: "Remaining client balances",
-    currency: "EGP",
-    selectLang: "Select Language",
-    selectTheme: "Themes Gallery",
-    appThemes: "Themes",
-    saveSuccess: "Contract saved successfully to cloud!"
-  }
-};
-
-const LANGUAGES = [
-  { code: "ar", name: "العربية", flag: "🇪🇬" },
-  { code: "en", name: "English", flag: "🇺🇸" }
-];
-
-const THEMES_LIST = [
-  { id: "royalGold", name: "ذهبي ملكي", previewAccent: "#d4af37" },
-  { id: "dark", name: "داكن فاخر", previewAccent: "#e07a5f" },
-  { id: "light", name: "فاتح ناصع", previewAccent: "#2563eb" }
-];
+import { useThemeAndLang } from "./hooks/useThemeAndLang";
 
 export function App() {
   const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
   const { clientsList, isLoading, handleSaveClient, handleUpdateContract } = useCloudData();
+  
+  // 🌐🎨 محرك اللغات الـ 15 والثيمات الـ 100
+  const {
+    currentLang,
+    changeLang,
+    currentThemeId,
+    changeTheme,
+    t,
+    themeStyles,
+    isRTL,
+    LANGUAGES,
+    THEMES_LIST,
+    THEME_CATEGORIES
+  } = useThemeAndLang();
 
-  const [currentLang, setCurrentLang] = useState("ar");
-  const [currentTheme, setCurrentTheme] = useState("royalGold");
   const [showLangModal, setShowLangModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
 
-  const t = translations[currentLang];
-  const isEN = currentLang === "en";
-
-  const themeStyles = useMemo(() => {
-    if (currentTheme === "light") {
-      return {
-        bg: "#f8fafc", card: "#ffffff", inputBg: "#f1f5f9", border: "#cbd5e1",
-        text: "#0f172a", subText: "#64748b", accentGold: "#b45309", accent: "#d97706",
-        borderRadius: "14px"
-      };
-    }
-    if (currentTheme === "dark") {
-      return {
-        bg: "#121316", card: "#1c1e22", inputBg: "#252830", border: "#2d3139",
-        text: "#f3f4f6", subText: "#9ca3af", accentGold: "#e07a5f", accent: "#c97a6d",
-        borderRadius: "14px"
-      };
-    }
-    return {
-      bg: "#111111", card: "#1e1e1e", inputBg: "#252525", border: "#333333",
-      text: "#ffffff", subText: "#aaaaaa", accentGold: "#d4af37", accent: "#c5a028",
-      borderRadius: "14px"
-    };
-  }, [currentTheme]);
-
+  // ☁️ حفظ عميل جديد
   const onSaveClientSubmit = async (newClientData) => {
     const res = await handleSaveClient(newClientData);
     if (res?.success) {
@@ -131,15 +52,17 @@ export function App() {
     }
   };
 
+  // ☁️ تحديث بيانات عقد
   const onUpdateContractSubmit = async (updatedContract) => {
     const res = await handleUpdateContract(updatedContract);
     if (res?.success) {
-      alert("تم تحديث البيانات سحابياً وتحديث الشاشة بنجاح!");
+      alert(t.updateSuccess || "تم تحديث البيانات سحابياً وتحديث الشاشة بنجاح!");
     } else {
       alert("حدث خطأ أثناء تحديث البيانات بالسحابة.");
     }
   };
 
+  // أزرار شبكة التحكم الرئيسية
   const buttons = [
     { key: "addClient", label: t.addClient, icon: UserPlus, tone: "dark" },
     { key: "pay", label: t.pay, icon: CreditCard, tone: "gold" },
@@ -155,16 +78,19 @@ export function App() {
     { key: "exit", label: t.exit, icon: Power, tone: "dark" },
   ];
 
+  const currentLangObj = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
+
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
       
       {isLoading ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80vh", gap: "12px" }}>
           <Loader2 size={36} className="animate-spin" style={{ color: themeStyles.accentGold || "#d4af37" }} />
-          <span style={{ fontWeight: 700, fontSize: "14px", color: themeStyles.subText || "#aaaaaa" }}>جاري جلب البيانات من السحابة...</span>
+          <span style={{ fontWeight: 700, fontSize: "14px", color: themeStyles.subText || "#aaaaaa" }}>{t.loadingCloud}</span>
         </div>
       ) : (
         <>
+          {/* 1. شاشة إضافة عميل */}
           {currentScreen === "addClient" && (
             <AddClientScreen
               onSave={onSaveClientSubmit}
@@ -174,6 +100,7 @@ export function App() {
             />
           )}
 
+          {/* 2. شاشة الاستعلام عن عميل */}
           {currentScreen === "clientQuery" && (
             <ClientQueryScreen
               contracts={clientsList}
@@ -184,6 +111,24 @@ export function App() {
             />
           )}
 
+          {/* 3. شاشة الإعدادات الشاملة (15 لغة و 100 ثيم) */}
+          {currentScreen === "settings" && (
+            <SettingsScreen
+              currentLang={currentLang}
+              changeLang={changeLang}
+              currentThemeId={currentThemeId}
+              changeTheme={changeTheme}
+              t={t}
+              themeStyles={themeStyles}
+              isRTL={isRTL}
+              LANGUAGES={LANGUAGES}
+              THEMES_LIST={THEMES_LIST}
+              THEME_CATEGORIES={THEME_CATEGORIES}
+              onBack={handleBack}
+            />
+          )}
+
+          {/* 4. لوحة التحكم الرئيسية */}
           {currentScreen === "dashboard" && (
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
               
@@ -197,12 +142,14 @@ export function App() {
                     {t.welcome} {t.generalSupervisor}
                   </div>
 
+                  {/* زر اختيار اللغات الـ 15 */}
                   <button onClick={() => setShowLangModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                    <Globe size={15} /> <span>{currentLang === "ar" ? "🇪🇬 العربية" : "🇺🇸 English"}</span>
+                    <Globe size={15} /> <span>{currentLangObj.flag} {currentLangObj.name}</span>
                   </button>
 
-                  <button onClick={() => setShowThemeModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                    <Palette size={15} /> <span>{t.appThemes}</span>
+                  {/* زر المعرض الكامل للثيمات الـ 100 */}
+                  <button onClick={() => navigateTo("settings")} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Palette size={15} /> <span>{t.appThemes} (100)</span>
                   </button>
                 </div>
 
@@ -217,21 +164,21 @@ export function App() {
               </header>
 
               <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
-                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 16, padding: "20px" }}>
+                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
                   <TrendingUp size={24} color={themeStyles.accentGold} />
                   <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>0 {t.currency}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.netProfit}</div>
                   <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.netProfitSub}</div>
                 </div>
 
-                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 16, padding: "20px" }}>
+                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
                   <CalendarClock size={24} color={themeStyles.accentGold} />
                   <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>0 {t.currency}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.monthlyDues}</div>
                   <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.monthlyDuesSub}</div>
                 </div>
 
-                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 16, padding: "20px" }}>
+                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
                   <Wallet size={24} color={themeStyles.accentGold} />
                   <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
                     {clientsList.reduce((acc, curr) => acc + (Number(curr.remainingAmount) || 0), 0)} {t.currency}
@@ -252,13 +199,15 @@ export function App() {
                           navigateTo("addClient");
                         } else if (b.key === "search") {
                           navigateTo("clientQuery");
+                        } else if (b.key === "settings") {
+                          navigateTo("settings");
                         }
                       }}
                       style={{
                         display: "flex", alignItems: "center", justifyContent: "space-between",
                         background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : themeStyles.card,
                         color: b.tone === "silver" || b.tone === "rose" ? "#111" : "#fff",
-                        border: `1px solid ${themeStyles.border}`, borderRadius: 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
+                        border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.buttonRadius || 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
                       }}
                     >
                       <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
@@ -274,34 +223,35 @@ export function App() {
         </>
       )}
 
+      {/* 🌐 نافذة اختيار اللغات الـ 15 المكتملة */}
       {showLangModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 20, padding: 20, width: "100%", maxWidth: 400 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-              <span style={{ fontWeight: 800 }}>{t.selectLang}</span>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 20, padding: 24, width: "100%", maxWidth: 460, maxHeight: "85vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <span style={{ fontWeight: 800, fontSize: 18, color: themeStyles.accentGold }}>{t.selectLang} (15)</span>
               <X style={{ cursor: "pointer" }} onClick={() => setShowLangModal(false)} />
             </div>
-            {LANGUAGES.map(l => (
-              <button key={l.code} onClick={() => { setCurrentLang(l.code); setShowLangModal(false); }} style={{ width: "100%", padding: 12, marginBottom: 8, background: themeStyles.inputBg, border: "none", color: themeStyles.text, borderRadius: 10, textAlign: "start", fontWeight: 700, cursor: "pointer" }}>
-                {l.flag} {l.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {showThemeModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 20, padding: 20, width: "100%", maxWidth: 400 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-              <span style={{ fontWeight: 800 }}>{t.selectTheme}</span>
-              <X style={{ cursor: "pointer" }} onClick={() => setShowThemeModal(false)} />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(1, 1fr)", gap: 8 }}>
+              {LANGUAGES.map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => {
+                    changeLang(l.code);
+                    setShowLangModal(false);
+                  }}
+                  style={{
+                    width: "100%", padding: "12px 16px",
+                    background: currentLang === l.code ? "rgba(212, 175, 55, 0.2)" : themeStyles.inputBg,
+                    border: `1px solid ${currentLang === l.code ? themeStyles.accentGold : themeStyles.border}`,
+                    color: themeStyles.text, borderRadius: 10, textAlign: "start", fontWeight: 700, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "space-between"
+                  }}
+                >
+                  <span>{l.flag} {l.name}</span>
+                  <span style={{ fontSize: 12, opacity: 0.6 }}>{l.code.toUpperCase()}</span>
+                </button>
+              ))}
             </div>
-            {THEMES_LIST.map(tm => (
-              <button key={tm.id} onClick={() => { setCurrentTheme(tm.id); setShowThemeModal(false); }} style={{ width: "100%", padding: 12, marginBottom: 8, background: themeStyles.inputBg, border: "none", color: themeStyles.text, borderRadius: 10, textAlign: "start", fontWeight: 700, cursor: "pointer" }}>
-                {tm.name}
-              </button>
-            ))}
           </div>
         </div>
       )}
