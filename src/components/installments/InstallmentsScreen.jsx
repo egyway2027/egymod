@@ -21,17 +21,17 @@ export default function InstallmentsScreen({
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
-  // 1️⃣ العقد المحدد من قائمة السحابة الأصلية
+  // 1️⃣ العقد الأصلي المحدد مباشرة من قائمة السحابة
   const selectedContract = useMemo(() => {
     return contracts.find((c) => String(c.id) === String(selectedId)) || null;
   }, [contracts, selectedId]);
 
-  // 2️⃣ تجهيز البيانات للعرض بالواجهة بناءً على حقول جدول contracts الفعلي
+  // 2️⃣ صفوف العرض بالواجهة
   const rows = useMemo(() => {
     return contracts.map((c) => {
       const saleVal = Number(c.sale || 0);
       const downVal = Number(c.down || 0);
-      const paidVal = Number(c.paidAmount ?? c.paid_amount ?? c.totalPaid ?? 0);
+      const paidVal = Number(c.paidAmount ?? c.totalPaid ?? 0);
       const remVal = Number(c.remainingAmount ?? (saleVal - downVal - paidVal));
 
       return {
@@ -54,7 +54,7 @@ export default function InstallmentsScreen({
 
   const activeSelectedRow = rows.find((r) => String(r.id) === String(selectedId)) || null;
 
-  // جميع المدفوعات المسجلة عبر كل العقود
+  // جميع المدفوعات المسجلة
   const allPayments = useMemo(() => {
     return contracts.flatMap((c) => {
       const payArr = Array.isArray(c.payments) ? c.payments : [];
@@ -67,7 +67,7 @@ export default function InstallmentsScreen({
     });
   }, [contracts]);
 
-  // 3️⃣ إضافة عملية السداد وتحديث خانتي paidAmount و remainingAmount بالسحابة
+  // 3️⃣ عملية السداد مع تنظيف البيانات قبل إرسالها لـ Supabase
   const handlePaySubmit = async (e) => {
     e.preventDefault();
     if (!selectedContract) return;
@@ -75,7 +75,7 @@ export default function InstallmentsScreen({
     const numAmount = Math.round(parseFloat(amount) || 0);
     if (numAmount <= 0) return;
 
-    // الحسابات المباشرة
+    // أ) الحساب الدقيق للمسدد والمتبقي
     const prevPaid = Number(selectedContract.paidAmount ?? selectedContract.totalPaid ?? 0);
     const newPaid = prevPaid + numAmount;
 
@@ -85,6 +85,7 @@ export default function InstallmentsScreen({
 
     const paymentDateStr = payDate || new Date().toISOString().split("T")[0];
 
+    // ب) سجل عملية السداد الجديدة
     const newPaymentRecord = {
       id: String(Date.now()),
       clientId: String(selectedContract.id),
@@ -98,27 +99,33 @@ export default function InstallmentsScreen({
     };
 
     const existingPayments = Array.isArray(selectedContract.payments) ? selectedContract.payments : [];
+    const updatedPayments = [...existingPayments, newPaymentRecord];
 
-    // كائن العقد المحدث بهياكل الحقول الحقيقية للسحابة
-    const updatedContract = {
+    // ج) تنظيف الكائن تماماً ليكون مطاباقاً لأعمدة جدول contracts في Supabase بدون أي حقول زائدة
+    const cleanPayload = {
       ...selectedContract,
       paidAmount: newPaid,
       remainingAmount: newRemaining,
-      payments: [...existingPayments, newPaymentRecord]
+      payments: updatedPayments
     };
 
+    // د) إرسال التعديل للسحابة
     if (onUpdateContract) {
-      await onUpdateContract(updatedContract);
+      await onUpdateContract(cleanPayload);
     }
 
     setActiveReceipt({
-      client: updatedContract,
+      client: {
+        ...cleanPayload,
+        totalPaid: newPaid,
+        remaining: newRemaining
+      },
       payment: newPaymentRecord
     });
     setAmount("");
   };
 
-  // 4️⃣ حذف دفعة سداد وإعادة احتساب المبالغ
+  // 4️⃣ حذف الدفعة وإعادة الترحيل للسحابة
   const handleDeletePayment = async (paymentId) => {
     if (!selectedContract) return;
 
@@ -136,7 +143,7 @@ export default function InstallmentsScreen({
     const downPrice = Number(selectedContract.down || 0);
     const newRemaining = Math.max(0, totalPrice - downPrice - newPaid);
 
-    const updatedContract = {
+    const cleanPayload = {
       ...selectedContract,
       paidAmount: newPaid,
       remainingAmount: newRemaining,
@@ -144,7 +151,7 @@ export default function InstallmentsScreen({
     };
 
     if (onUpdateContract) {
-      await onUpdateContract(updatedContract);
+      await onUpdateContract(cleanPayload);
     }
   };
 
