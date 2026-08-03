@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { FileText, Loader2 } from "lucide-react";
-import { supabase } from "../../utils";
+import { supabase } from "../../supabase";
 import { ScreenHeader, BottomExitButton } from "../CommonUI";
 import CustomerSearchHeader from "./CustomerSearchHeader";
 import InstallmentsTable, { AllPaymentsRegisterModal } from "./InstallmentsTable";
