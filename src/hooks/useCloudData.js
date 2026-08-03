@@ -76,8 +76,7 @@ export function useCloudData() {
     refreshData,
     handleSaveClient,
     handleUpdateContract
-  };
-}
+
 return {
     clientsList,
     isLoading,
