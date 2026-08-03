@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, DollarSign } from 'lucide-react';
 
-export default function PaymentModal({ installment, customer, onClose, onSubmitPayment }) {
+export default function PaymentModal({ installment, customer, onClose, onSubmitPayment, themeStyles = {} }) {
   const remainingForInst = installment.amount - installment.paid;
   const [payAmount, setPayAmount] = useState(remainingForInst);
   const [selectedTreasury, setSelectedTreasury] = useState('main');
@@ -25,30 +25,25 @@ export default function PaymentModal({ installment, customer, onClose, onSubmitP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "16px" }}>
+      <div style={{ background: themeStyles.card || "#1e1e1e", width: "100%", maxWidth: "420px", borderRadius: "16px", border: `1px solid ${themeStyles.border || "#444"}`, overflow: "hidden" }}>
         
-        {/* الهيدر */}
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-blue-50/50 dark:bg-gray-900/50">
-          <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-blue-600" /> تحصيل القسط #{installment.number}
+        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${themeStyles.border || "#333"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ margin: 0, fontWeight: "800", color: themeStyles.text || "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
+            <DollarSign size={18} color="#d4af37" /> تحصيل القسط #{installment.number}
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
-            <X className="w-5 h-5" />
-          </button>
+          <X size={20} style={{ cursor: "pointer", color: "#888" }} onClick={onClose} />
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* اسم العميل */}
-          <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg text-sm">
-            <span className="text-gray-500 block text-xs">العميل:</span>
-            <span className="font-bold text-gray-800 dark:text-white">{customer.name}</span>
+        <form onSubmit={handleSubmit} style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ background: "rgba(255,255,255,0.05)", padding: "10px 14px", borderRadius: "8px", fontSize: "13px" }}>
+            <span style={{ color: "#aaa", display: "block", fontSize: "11px" }}>العميل:</span>
+            <span style={{ fontWeight: "700", color: themeStyles.text || "#fff" }}>{customer.name}</span>
           </div>
 
-          {/* المبلغ المطلوب */}
           <div>
-            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-              المبلغ المدفوع (المتبقي من القسط: {remainingForInst.toLocaleString()} ج.م):
+            <label style={{ display: "block", fontSize: "12px", fontWeight: "700", marginBottom: "6px", color: themeStyles.text || "#fff" }}>
+              المبلغ المدفوع (المتبقي: {remainingForInst.toLocaleString()} ج.م):
             </label>
             <input
               type="number"
@@ -56,19 +51,24 @@ export default function PaymentModal({ installment, customer, onClose, onSubmitP
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
               required
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 font-bold text-lg text-blue-600 dark:text-blue-400 outline-none focus:ring-2 focus:ring-blue-500"
+              style={{
+                width: "100%", padding: "10px 14px", borderRadius: "8px", border: `1px solid ${themeStyles.border || "#444"}`,
+                backgroundColor: themeStyles.inputBg || "#121212", color: "#d4af37", fontWeight: "800", fontSize: "18px", outline: "none", boxSizing: "border-box"
+              }}
             />
           </div>
 
-          {/* اختيار الخزينة المستلمة */}
           <div>
-            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+            <label style={{ display: "block", fontSize: "12px", fontWeight: "700", marginBottom: "6px", color: themeStyles.text || "#fff" }}>
               توجيه المبلغ إلى الخزينة:
             </label>
             <select
               value={selectedTreasury}
               onChange={(e) => setSelectedTreasury(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-sm font-medium outline-none"
+              style={{
+                width: "100%", padding: "10px", borderRadius: "8px", border: `1px solid ${themeStyles.border || "#444"}`,
+                backgroundColor: themeStyles.inputBg || "#121212", color: themeStyles.text || "#fff", fontSize: "13px", outline: "none"
+              }}
             >
               <option value="main">🏢 الخزينة الرئيسية (نقدي)</option>
               <option value="bank">🏦 الحساب البنكي (CIB)</option>
@@ -76,33 +76,34 @@ export default function PaymentModal({ installment, customer, onClose, onSubmitP
             </select>
           </div>
 
-          {/* خيار إرسال إشعار الواتساب */}
-          <div className="flex items-center gap-3 p-3 bg-emerald-50/60 dark:bg-emerald-950/20 rounded-lg border border-emerald-100 dark:border-emerald-900/40">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px", background: "rgba(16, 185, 129, 0.1)", borderRadius: "8px", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
             <input
               type="checkbox"
               id="whatsappNotify"
               checked={sendWhatsApp}
               onChange={(e) => setSendWhatsApp(e.target.checked)}
-              className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+              style={{ width: "16px", height: "16px", cursor: "pointer" }}
             />
-            <label htmlFor="whatsappNotify" className="text-xs font-bold text-emerald-800 dark:text-emerald-300 cursor-pointer flex items-center gap-1">
-              <Send className="w-3.5 h-3.5" /> إرسال إيصال سداد تلقائي للعميل عبر الواتساب
+            <label htmlFor="whatsappNotify" style={{ fontSize: "12px", fontWeight: "700", color: "#10b981", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+              <Send size={12} /> إرسال إيصال سداد تلقائي للعميل عبر الواتساب
             </label>
           </div>
 
-          {/* أزرار الحفظ */}
-          <div className="pt-2 flex gap-3">
+          <div style={{ display: "flex", gap: "10px", paddingTop: "8px" }}>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-bold transition shadow-md disabled:opacity-50"
+              style={{
+                flex: 1, background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#fff",
+                border: "none", padding: "12px", borderRadius: "8px", fontWeight: "800", cursor: "pointer"
+              }}
             >
-              {isSubmitting ? 'جاري التحصيل...' : 'تأكيد السداد وإصدار الإيصال'}
+              {isSubmitting ? 'جاري التحصيل...' : 'تأكيد السداد'}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-bold"
+              style={{ padding: "12px 16px", background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "700", cursor: "pointer" }}
             >
               إلغاء
             </button>
