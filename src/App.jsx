@@ -90,30 +90,6 @@ export function App() {
 
   const currentLangObj = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
 
-  // 1️⃣ تجهيز قائمة العملاء بشكل مرن يتوافق مع مسميات الشاشة
-  const formattedRows = (clientsList || []).map(c => ({
-    ...c,
-    id: c.id,
-    name: c.name || c.clientName || "عميل بدون اسم",
-    phone: c.phone || c.clientPhone || "",
-    item: c.item || c.itemName || "",
-    remaining: Number(c.remainingAmount ?? c.remaining ?? 0),
-    monthly: Number(c.monthlyInstallment ?? c.monthly ?? 0),
-    sale: Number(c.salePrice ?? c.sale ?? 0),
-    down: Number(c.downPayment ?? c.down ?? 0),
-    totalPaid: Number(c.totalPaid ?? 0)
-  }));
-
-  // 2️⃣ تجميع كل عمليات السداد من كافة العملاء لعرضها في سجل السداد الشامل
-  const allPayments = (clientsList || []).flatMap(c => 
-    (c.payments || []).map(p => ({
-      ...p,
-      clientId: String(p.clientId || c.id),
-      clientName: p.clientName || c.name || c.clientName || "عميل",
-      item: p.item || c.item || c.itemName || ""
-    }))
-  );
-
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
       
@@ -145,69 +121,9 @@ export function App() {
             />
           )}
 
-          {/* 3. شاشة سداد الأقساط المربوطة بالسحابة والحفظ التلقائي */}
+          {/* 3. شاشة سداد الأقساط المستقلة بالكامل */}
           {currentScreen === "pay" && (
             <InstallmentsScreen
-              rows={formattedRows}
-              payments={allPayments}
-              employees={[]}
-              storeInfo={{ name: "إيجيمود لإدارة الأقساط" }}
-              onPay={async (clientId, amount, payDate, method, collector) => {
-                const client = clientsList.find(c => String(c.id) === String(clientId));
-                if (!client) return false;
-
-                const numAmount = Math.round(Number(amount) || 0);
-                const currentRemaining = Number(client.remainingAmount ?? client.remaining ?? 0);
-                const newRemaining = Math.max(0, currentRemaining - numAmount);
-                const newTotalPaid = Math.round(Number(client.totalPaid || 0) + numAmount);
-
-                const newPaymentObj = {
-                  id: String(Date.now()),
-                  clientId: String(clientId),
-                  clientName: client.name || client.clientName || "",
-                  item: client.item || client.itemName || "",
-                  amount: numAmount,
-                  payDate: payDate || new Date().toISOString().split("T")[0],
-                  method: method || "نقداً / كاش",
-                  collector: collector || "المشرف",
-                  remainingAfter: newRemaining
-                };
-
-                const existingPayments = Array.isArray(client.payments) ? client.payments : [];
-                const updatedPayments = [...existingPayments, newPaymentObj];
-
-                const updatedContract = {
-                  ...client,
-                  remainingAmount: newRemaining,
-                  remaining: newRemaining,
-                  totalPaid: newTotalPaid,
-                  payments: updatedPayments
-                };
-
-                const res = await handleUpdateContract(updatedContract);
-                return res?.success ?? true;
-              }}
-              onDeletePayment={async (paymentId, clientId, amount) => {
-                const client = clientsList.find(c => String(c.id) === String(clientId));
-                if (!client) return;
-
-                const numAmount = Math.round(Number(amount) || 0);
-                const existingPayments = Array.isArray(client.payments) ? client.payments : [];
-                const updatedPayments = existingPayments.filter(p => String(p.id) !== String(paymentId));
-                const currentRemaining = Number(client.remainingAmount ?? client.remaining ?? 0);
-                const newRemaining = currentRemaining + numAmount;
-                const newTotalPaid = Math.max(0, Number(client.totalPaid || 0) - numAmount);
-
-                const updatedContract = {
-                  ...client,
-                  remainingAmount: newRemaining,
-                  remaining: newRemaining,
-                  totalPaid: newTotalPaid,
-                  payments: updatedPayments
-                };
-
-                await handleUpdateContract(updatedContract);
-              }}
               onBack={handleBack}
               t={t}
               themeStyles={themeStyles}
