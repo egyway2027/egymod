@@ -3,7 +3,7 @@
  * 📌 الملف: الشاشة الرئيسية للنظام (Main App Container)
  * 📁 المسار: src/App.jsx
  * 📝 الوظيفة: الموزع الرئيسي للشاشات المربوط بـ 15 لغة و 100 ثيم
- *            مع المزامنة السحابية والحفظ التلقائي للواجهة.
+ *             مع المزامنة السحابية والحفظ التلقائي للواجهة.
  * =========================================================
  */
 
@@ -56,7 +56,7 @@ export function App() {
   const onSaveClientSubmit = async (newClientData) => {
     const res = await handleSaveClient(newClientData);
     if (res?.success) {
-      alert(t.saveSuccess);
+      alert(t.saveSuccess || "تم حفظ العقد بنجاح!");
       handleBack();
     } else {
       alert("حدث خطأ أثناء حفظ العقد بالسحابة.");
@@ -91,6 +91,18 @@ export function App() {
 
   const currentLangObj = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
 
+  // تجهيز مصفوفة العقود المحولة لتطابق متطلبات شاشة السداد
+  const formattedRows = (clientsList || []).map(c => ({
+    ...c,
+    name: c.name || c.clientName || "",
+    item: c.item || c.itemName || "",
+    remaining: Number(c.remainingAmount ?? c.remaining ?? 0),
+    monthly: Number(c.monthlyInstallment ?? c.monthly ?? 0),
+    sale: Number(c.salePrice ?? c.sale ?? 0),
+    down: Number(c.downPayment ?? c.down ?? 0),
+    totalPaid: Number(c.totalPaid ?? 0)
+  }));
+
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
       
@@ -121,23 +133,52 @@ export function App() {
               themeStyles={themeStyles}
             />
           )}
-{/* شاشة سداد الأقساط المربوطة بالسحابة */}
-      {screen === "pay" && (
-        <InstallmentsScreen
-          rows={rows}
-          payments={appData.payments}
-          employees={appData.employees}
-          storeInfo={storeInfo}
-          onPay={appData.recordPayment}
-          onDeletePayment={appData.deletePayment}
-          onBack={() => handleNavigate("dashboard")}
-          t={t}
-          styles={styles}
-          themeStyles={themeStyles}
-        />
-      )}
-     
-          {/* 3. شاشة الإعدادات الشاملة (15 لغة و 100 ثيم) */}
+
+          {/* 3. شاشة سداد الأقساط المربوطة بالسحابة */}
+          {currentScreen === "pay" && (
+            <InstallmentsScreen
+              rows={formattedRows}
+              payments={clientsList.flatMap(c => c.payments || [])}
+              employees={[]}
+              storeInfo={{ name: "إيجيمود لإدارة الأقساط" }}
+              onPay={async (clientId, amount, payDate, method, collector) => {
+                const client = clientsList.find(c => String(c.id) === String(clientId));
+                if (!client) return false;
+                const currentRemaining = Number(client.remainingAmount ?? client.remaining ?? 0);
+                const newRemaining = Math.max(0, currentRemaining - amount);
+                const updatedPayments = [
+                  ...(client.payments || []),
+                  { id: String(Date.now()), clientId: String(clientId), clientName: client.name || client.clientName, item: client.item, amount, payDate, method, collector, remainingAfter: newRemaining }
+                ];
+                await onUpdateContractSubmit({
+                  ...client,
+                  remainingAmount: newRemaining,
+                  remaining: newRemaining,
+                  totalPaid: Number(client.totalPaid || 0) + amount,
+                  payments: updatedPayments
+                });
+                return true;
+              }}
+              onDeletePayment={async (paymentId, clientId, amount) => {
+                const client = clientsList.find(c => String(c.id) === String(clientId));
+                if (!client) return;
+                const updatedPayments = (client.payments || []).filter(p => String(p.id) !== String(paymentId));
+                const newRemaining = Number(client.remainingAmount ?? client.remaining ?? 0) + amount;
+                await onUpdateContractSubmit({
+                  ...client,
+                  remainingAmount: newRemaining,
+                  remaining: newRemaining,
+                  totalPaid: Math.max(0, Number(client.totalPaid || 0) - amount),
+                  payments: updatedPayments
+                });
+              }}
+              onBack={handleBack}
+              t={t}
+              themeStyles={themeStyles}
+            />
+          )}
+
+          {/* 4. شاشة الإعدادات الشاملة (15 لغة و 100 ثيم) */}
           {currentScreen === "settings" && (
             <SettingsScreen
               currentLang={currentLang}
@@ -154,7 +195,7 @@ export function App() {
             />
           )}
 
-          {/* 4. لوحة التحكم الرئيسية */}
+          {/* 5. لوحة التحكم الرئيسية */}
           {currentScreen === "dashboard" && (
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
               
@@ -222,7 +263,7 @@ export function App() {
                 <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
                   <Wallet size={24} color={themeStyles.accentGold} />
                   <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
-                    {clientsList.reduce((acc, curr) => acc + (Number(curr.remainingAmount) || 0), 0)} {t.currency}
+                    {clientsList.reduce((acc, curr) => acc + (Number(curr.remainingAmount ?? curr.remaining) || 0), 0)} {t.currency}
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
                   <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
@@ -236,11 +277,11 @@ export function App() {
                     <button
                       key={b.key}
                       onClick={() => {
-  if (b.key === "addClient") {
-    navigateTo("addClient");
-  } else if (b.key === "pay") {
-    navigateTo("pay");
-  } else if (b.key === "search") {
+                        if (b.key === "addClient") {
+                          navigateTo("addClient");
+                        } else if (b.key === "pay") {
+                          navigateTo("pay");
+                        } else if (b.key === "search") {
                           navigateTo("clientQuery");
                         } else if (b.key === "settings") {
                           navigateTo("settings");
@@ -274,7 +315,7 @@ export function App() {
       <WhatsAppHubModal
         isOpen={showWhatsAppModal}
         onClose={() => setShowWhatsAppModal(false)}
-        overdueContracts={clientsList.filter(c => Number(c.remainingAmount) > 0)}
+        overdueContracts={clientsList.filter(c => Number(c.remainingAmount ?? c.remaining) > 0)}
         t={t}
         themeStyles={themeStyles}
       />
