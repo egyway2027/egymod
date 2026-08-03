@@ -30,26 +30,15 @@ export default function InstallmentsScreen({
     return t?.lang === "en" || document.documentElement?.lang === "en";
   }, [t]);
 
-  // 🌐 1. جلب بيانات السحابة المستقل الخاص بشاشة السداد فقط
+  // 🌐 1. جلب البيانات المباشر الخاص بشاشة السداد فقط من السحابة
   const fetchCloudData = async () => {
     setLoading(true);
     try {
-      // جلب قائمة العملاء والعقود
-      const { data: clientsData, error: clientsErr } = await supabase
-        .from("clients")
-        .select("*");
+      const { data: clientsData } = await supabase.from("clients").select("*");
+      const { data: paymentsData } = await supabase.from("payments").select("*");
+      const { data: empData } = await supabase.from("employees").select("*");
 
-      // جلب جميع المدفوعات
-      const { data: paymentsData, error: payErr } = await supabase
-        .from("payments")
-        .select("*");
-
-      // جلب قائمة الموظفين
-      const { data: empData } = await supabase
-        .from("employees")
-        .select("*");
-
-      if (clientsData && !clientsErr) {
+      if (clientsData) {
         const formatted = clientsData.map((c) => {
           const saleVal = Number(c.salePrice ?? c.sale ?? 0);
           const downVal = Number(c.downPayment ?? c.down ?? 0);
@@ -71,20 +60,14 @@ export default function InstallmentsScreen({
         });
         setRows(formatted);
 
-        // تحديث بيانات العميل المحدد حالياً
         if (selected) {
           const updatedSel = formatted.find((r) => String(r.id) === String(selected.id));
           if (updatedSel) setSelected(updatedSel);
         }
       }
 
-      if (paymentsData && !payErr) {
-        setPayments(paymentsData);
-      }
-
-      if (empData) {
-        setEmployees(empData);
-      }
+      if (paymentsData) setPayments(paymentsData);
+      if (empData) setEmployees(empData);
     } catch (err) {
       console.error("Error fetching installment data:", err);
     } finally {
@@ -96,7 +79,7 @@ export default function InstallmentsScreen({
     fetchCloudData();
   }, []);
 
-  // ☁️ 2. دالة حفظ وتسجيل السداد المباشر في السحابة
+  // ☁️ 2. حفظ وتسجيل السداد المباشر في السحابة
   const handlePaySubmit = async (e) => {
     e.preventDefault();
     const numAmount = Math.round(parseFloat(amount) || 0);
@@ -113,7 +96,7 @@ export default function InstallmentsScreen({
     const paymentDateStr = payDate || new Date().toISOString().split("T")[0];
 
     try {
-      // أ) تحديث بيانات العميل في جدول السحابة clients
+      // أ) تحديث العميل في جدول clients
       const { error: updateErr } = await supabase
         .from("clients")
         .update({
@@ -133,7 +116,7 @@ export default function InstallmentsScreen({
           .eq("id", selected.id);
       }
 
-      // ب) إضافة عملية السداد في جدول payments
+      // ب) إدخال السداد في جدول payments
       const newPaymentRecord = {
         id: String(Date.now()),
         clientId: String(selected.id),
@@ -148,7 +131,7 @@ export default function InstallmentsScreen({
 
       await supabase.from("payments").insert([newPaymentRecord]);
 
-      // ج) فتح نافذة الإيصال المباشر
+      // ج) تجهيز فتح الإيصال
       setActiveReceipt({
         client: { ...selected, totalPaid: newTotalPaid, remaining: newRemaining },
         payment: {
@@ -161,7 +144,6 @@ export default function InstallmentsScreen({
       });
 
       setAmount("");
-      // د) إعادة مزامنة البيانات للحفظ والعرض الفوري
       await fetchCloudData();
     } catch (err) {
       console.error("Payment save error:", err);
@@ -169,7 +151,7 @@ export default function InstallmentsScreen({
     }
   };
 
-  // 🗑️ 3. دالة حذف الدفعة من السحابة
+  // 🗑️ 3. حذف الدفعة المباشر من السحابة
   const handleDeletePayment = async (paymentId, clientId, payAmount) => {
     if (!window.confirm(isEN ? "Are you sure you want to delete this payment?" : "هل أنت متأكد من حذف هذه الدفعة؟")) return;
 
@@ -180,10 +162,7 @@ export default function InstallmentsScreen({
         const newTotalPaid = Math.max(0, Math.round(Number(client.totalPaid || 0) - numAmount));
         const newRemaining = Math.round(Number(client.remaining || 0) + numAmount);
 
-        // حذف العملية من جدول المدفوعات
         await supabase.from("payments").delete().eq("id", paymentId);
-
-        // تعديل رصيد العميل
         await supabase
           .from("clients")
           .update({
@@ -221,7 +200,6 @@ export default function InstallmentsScreen({
         </div>
       ) : (
         <>
-          {/* زر فتح سجل السداد الشامل لجميع العملاء */}
           <div style={{ marginBottom: 16 }}>
             <button
               type="button"
@@ -248,7 +226,6 @@ export default function InstallmentsScreen({
           </div>
 
           <div style={{ background: themeStyles.card, border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`, borderRadius: themeStyles.borderRadius || 18, padding: 22 }}>
-            {/* مكون البحث والمدخلات والمؤشرات الحية */}
             <CustomerSearchHeader
               rows={rows}
               selected={selected}
@@ -267,7 +244,6 @@ export default function InstallmentsScreen({
               themeStyles={themeStyles}
             />
 
-            {/* جدول تاريخ السداد المباشر للعميل */}
             <InstallmentsTable
               selected={selected}
               clientPayments={clientPayments}
@@ -280,7 +256,6 @@ export default function InstallmentsScreen({
             <BottomExitButton onBack={onBack} t={t} />
           </div>
 
-          {/* نافذة الإيصال المطبوع */}
           {activeReceipt && (
             <PaymentModal
               receipt={activeReceipt}
@@ -291,7 +266,6 @@ export default function InstallmentsScreen({
             />
           )}
 
-          {/* سجل السداد الشامل لجميع العملاء */}
           {showAllPayments && (
             <AllPaymentsRegisterModal
               payments={payments}
