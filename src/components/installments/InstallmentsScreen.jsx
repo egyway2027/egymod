@@ -3,10 +3,8 @@ import CustomerSearchHeader from './CustomerSearchHeader';
 import InstallmentsTable from './InstallmentsTable';
 import PaymentModal from './PaymentModal';
 
-// 🌐 رابط سيرفر الواتساب المحلي المباشر
 const WHATSAPP_SERVER_URL = "http://localhost:5000";
 
-// بيانات تجريبية للهيكلة
 const INITIAL_CUSTOMERS = [
   {
     id: '1',
@@ -28,13 +26,12 @@ const INITIAL_CUSTOMERS = [
   }
 ];
 
-export default function InstallmentsScreen() {
+export default function InstallmentsScreen({ themeStyles = {} }) {
   const [customers, setCustomers] = useState(INITIAL_CUSTOMERS);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(INITIAL_CUSTOMERS[0]);
   const [activeInstallmentForPayment, setActiveInstallmentForPayment] = useState(null);
 
-  // إرسال رسالة الواتساب عبر السيرفر المحلي
   const sendWhatsAppNotification = async (phone, message) => {
     try {
       await fetch(`${WHATSAPP_SERVER_URL}/send-message`, {
@@ -47,7 +44,6 @@ export default function InstallmentsScreen() {
     }
   };
 
-  // معالجة عملية السداد وتحديث البيانات والخزينة
   const handlePaymentSubmit = async ({ installmentId, amount, treasury, sendWhatsApp, customer }) => {
     const updatedCustomers = customers.map(c => {
       if (c.id !== customer.id) return c;
@@ -72,7 +68,6 @@ export default function InstallmentsScreen() {
     const updatedCust = updatedCustomers.find(c => c.id === customer.id);
     setSelectedCustomer(updatedCust);
 
-    // إرسال إشعار الواتساب إذا تم اختياره
     if (sendWhatsApp) {
       const msg = `عزيزي ${customer.name}، تم استلام مبلغ ${amount.toLocaleString()} ج.م لحساب القسط الخاص بالعقد (${customer.contractId}). المتبقي الكلي عليك: ${updatedCust.remainingAmount.toLocaleString()} ج.م. شكراً لتعاملك معنا.`;
       await sendWhatsAppNotification(customer.phone, msg);
@@ -80,42 +75,42 @@ export default function InstallmentsScreen() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white">💳 إدارة وسداد الأقساط</h1>
-          <p className="text-xs text-gray-500">متابعة تحصيل المستحقات وإصدار الإيصالات وإشعارات الواتساب</p>
+          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: themeStyles.text || "#fff" }}>💳 إدارة وسداد الأقساط</h1>
+          <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#aaa" }}>متابعة تحصيل المستحقات وإصدار الإيصالات وإشعارات الواتساب</p>
         </div>
       </div>
 
-      {/* 1️⃣ قسم البحث وملخص العميل */}
       <CustomerSearchHeader
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         selectedCustomer={selectedCustomer}
         onSelectCustomer={setSelectedCustomer}
         customersList={customers}
+        themeStyles={themeStyles}
       />
 
-      {/* 2️⃣ جدول الأقساط */}
       {selectedCustomer ? (
         <InstallmentsTable
           installments={selectedCustomer.installments}
           onPayClick={(inst) => setActiveInstallmentForPayment(inst)}
+          themeStyles={themeStyles}
         />
       ) : (
-        <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300">
-          <p className="text-gray-500">برجاء البحث واختيار عميل لعرض جدول الأقساط الخاص به.</p>
+        <div style={{ padding: "40px", textAlign: "center", background: themeStyles.card || "#1e1e1e", borderRadius: "14px", border: `1px dashed ${themeStyles.border || "#444"}` }}>
+          <p style={{ color: "#aaa", margin: 0 }}>برجاء البحث واختيار عميل لعرض جدول الأقساط الخاص به.</p>
         </div>
       )}
 
-      {/* 3️⃣ نافذة التحصيل الهائمة */}
       {activeInstallmentForPayment && selectedCustomer && (
         <PaymentModal
           installment={activeInstallmentForPayment}
           customer={selectedCustomer}
           onClose={() => setActiveInstallmentForPayment(null)}
           onSubmitPayment={handlePaymentSubmit}
+          themeStyles={themeStyles}
         />
       )}
     </div>
