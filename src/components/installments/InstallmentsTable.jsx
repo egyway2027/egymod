@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Printer, Trash2 } from "lucide-react";
-import { Field, DateInput } from "../CommonUI.jsx";
+import { Field, DateInput } from "../CommonUI";
 
 const fmtCleanInt = (val) => {
   const num = Math.round(Number(val) || 0);
