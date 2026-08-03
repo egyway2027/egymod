@@ -44,6 +44,7 @@ export function App() {
   } = useThemeAndLang();
 
   const [showLangModal, setShowLangModal] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
 
   // 📌 حالات الاختصارات والنوافذ الجديدة
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
@@ -110,7 +111,7 @@ export function App() {
             />
           )}
 
-          {/* 2. شاشة الاستعلام عن عميل */}
+          {/* 2. شاشة الاستعلام عن عميل الأصيلة بدون أي تعديل */}
           {currentScreen === "clientQuery" && (
             <ClientQueryScreen
               contracts={clientsList}
@@ -121,16 +122,18 @@ export function App() {
             />
           )}
 
-          {/* 3. شاشة سداد الأقساط المستقلة بالكامل */}
+          {/* 3. شاشة سداد الأقساط المربوطة بـ clientsList و handleUpdateContract */}
           {currentScreen === "pay" && (
             <InstallmentsScreen
+              contracts={clientsList}
+              onUpdateContract={onUpdateContractSubmit}
               onBack={handleBack}
               t={t}
               themeStyles={themeStyles}
             />
           )}
 
-          {/* 4. شاشة الإعدادات الشاملة */}
+          {/* 4. شاشة الإعدادات الشاملة (15 لغة و 100 ثيم) */}
           {currentScreen === "settings" && (
             <SettingsScreen
               currentLang={currentLang}
