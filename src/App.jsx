@@ -136,11 +136,7 @@ export function App() {
           themeStyles={themeStyles}
         />
       )}
-      ← العودة للرئيسية
-    </button>
-    <InstallmentsScreen />
-  </div>
-)}
+     
           {/* 3. شاشة الإعدادات الشاملة (15 لغة و 100 ثيم) */}
           {currentScreen === "settings" && (
             <SettingsScreen
