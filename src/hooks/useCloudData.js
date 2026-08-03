@@ -78,3 +78,11 @@ export function useCloudData() {
     handleUpdateContract
   };
 }
+return {
+    clientsList,
+    isLoading,
+    refreshData,
+    handleSaveClient,
+    handleUpdateContract
+  };
+}
