@@ -1,115 +1,154 @@
-import React, { useState } from 'react';
-import CustomerSearchHeader from './CustomerSearchHeader';
-import InstallmentsTable from './InstallmentsTable';
-import PaymentModal from './PaymentModal';
+import React, { useState, useMemo } from "react";
+import { FileText } from "lucide-react";
+import { ScreenHeader, BottomExitButton } from "../CommonUI";
+import CustomerSearchHeader from "./CustomerSearchHeader";
+import InstallmentsTable, { AllPaymentsRegisterModal } from "./InstallmentsTable";
+import PaymentModal from "./PaymentModal";
 
-const WHATSAPP_SERVER_URL = "http://localhost:5000";
+export default function InstallmentsScreen({
+  rows = [],
+  payments = [],
+  employees = [],
+  storeInfo = {},
+  onPay,
+  onDeletePayment,
+  onBack,
+  t = {},
+  styles = {},
+  themeStyles = {}
+}) {
+  const [selected, setSelected] = useState(null);
+  const [amount, setAmount] = useState("");
+  const [payDate, setPayDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [method, setMethod] = useState("نقداً / كاش");
+  const [collector, setCollector] = useState("المشرف");
 
-const INITIAL_CUSTOMERS = [
-  {
-    id: '1',
-    name: 'محمود جمال',
-    phone: '201012345678',
-    contractId: 'CTR-2026-01',
-    totalAmount: 12000,
-    paidAmount: 4000,
-    remainingAmount: 8000,
-    overdueCount: 1,
-    installments: [
-      { id: '101', number: 1, dueDate: '2026-05-01', amount: 2000, paid: 2000, status: 'PAID' },
-      { id: '102', number: 2, dueDate: '2026-06-01', amount: 2000, paid: 2000, status: 'PAID' },
-      { id: '103', number: 3, dueDate: '2026-07-01', amount: 2000, paid: 0, status: 'OVERDUE' },
-      { id: '104', number: 4, dueDate: '2026-08-01', amount: 2000, paid: 0, status: 'PENDING' },
-      { id: '105', number: 5, dueDate: '2026-09-01', amount: 2000, paid: 0, status: 'PENDING' },
-      { id: '106', number: 6, dueDate: '2026-10-01', amount: 2000, paid: 0, status: 'PENDING' },
-    ]
-  }
-];
+  const [activeReceipt, setActiveReceipt] = useState(null);
+  const [showAllPayments, setShowAllPayments] = useState(false);
 
-export default function InstallmentsScreen({ themeStyles = {} }) {
-  const [customers, setCustomers] = useState(INITIAL_CUSTOMERS);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState(INITIAL_CUSTOMERS[0]);
-  const [activeInstallmentForPayment, setActiveInstallmentForPayment] = useState(null);
+  const isEN = useMemo(() => {
+    return t?.lang === "en" || document.documentElement?.lang === "en";
+  }, [t]);
 
-  const sendWhatsAppNotification = async (phone, message) => {
-    try {
-      await fetch(`${WHATSAPP_SERVER_URL}/send-message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, message }),
-      });
-    } catch (err) {
-      console.error('تعذر الاتصال بسيرفر الواتساب المحلي:', err);
+  const numAmount = parseFloat(amount) || 0;
+
+  const handleSubmitPayment = async (e) => {
+    e.preventDefault();
+    if (!selected || numAmount <= 0) return;
+    const cleanAmount = Math.round(numAmount);
+    
+    if (onPay) {
+      const ok = await onPay(selected.id, cleanAmount, payDate, method, collector);
+      if (ok) {
+        // تجهيز الإيصال للعرض الفوري
+        const remainingBefore = Number(selected.sale || 0) - Number(selected.down || 0) - Number(selected.totalPaid || 0);
+        const remainingAfter = Math.max(0, remainingBefore - cleanAmount);
+        
+        setActiveReceipt({
+          client: selected,
+          payment: {
+            amount: cleanAmount,
+            payDate,
+            method,
+            collector,
+            remainingAfter
+          }
+        });
+        setAmount("");
+      }
     }
   };
 
-  const handlePaymentSubmit = async ({ installmentId, amount, treasury, sendWhatsApp, customer }) => {
-    const updatedCustomers = customers.map(c => {
-      if (c.id !== customer.id) return c;
-
-      const updatedInstallments = c.installments.map(inst => {
-        if (inst.id !== installmentId) return inst;
-
-        const newPaid = inst.paid + amount;
-        const newStatus = newPaid >= inst.amount ? 'PAID' : 'PARTIAL';
-        return { ...inst, paid: newPaid, status: newStatus };
-      });
-
-      return {
-        ...c,
-        paidAmount: c.paidAmount + amount,
-        remainingAmount: c.remainingAmount - amount,
-        installments: updatedInstallments
-      };
-    });
-
-    setCustomers(updatedCustomers);
-    const updatedCust = updatedCustomers.find(c => c.id === customer.id);
-    setSelectedCustomer(updatedCust);
-
-    if (sendWhatsApp) {
-      const msg = `عزيزي ${customer.name}، تم استلام مبلغ ${amount.toLocaleString()} ج.م لحساب القسط الخاص بالعقد (${customer.contractId}). المتبقي الكلي عليك: ${updatedCust.remainingAmount.toLocaleString()} ج.م. شكراً لتعاملك معنا.`;
-      await sendWhatsAppNotification(customer.phone, msg);
-    }
-  };
+  const clientPayments = selected ? (payments || []).filter(p => String(p.clientId) === String(selected.id)) : [];
 
   return (
-    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: themeStyles.text || "#fff" }}>💳 إدارة وسداد الأقساط</h1>
-          <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#aaa" }}>متابعة تحصيل المستحقات وإصدار الإيصالات وإشعارات الواتساب</p>
-        </div>
-      </div>
-
-      <CustomerSearchHeader
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        selectedCustomer={selectedCustomer}
-        onSelectCustomer={setSelectedCustomer}
-        customersList={customers}
-        themeStyles={themeStyles}
+    <div style={styles.container || { maxWidth: 1100, margin: "0 auto" }}>
+      <ScreenHeader
+        title={t.pay || (isEN ? "Pay Installments" : "سداد الأقساط")}
+        onBack={onBack}
+        styles={styles}
+        t={t}
       />
 
-      {selectedCustomer ? (
-        <InstallmentsTable
-          installments={selectedCustomer.installments}
-          onPayClick={(inst) => setActiveInstallmentForPayment(inst)}
+      {/* زر فتح سجل السداد الشامل العلوي */}
+      <div style={{ marginBottom: 16 }}>
+        <button
+          type="button"
+          onClick={() => setShowAllPayments(true)}
+          style={{
+            width: "100%",
+            background: `linear-gradient(145deg, ${themeStyles.accentGold || "#d4af37"}, ${themeStyles.accent || "#c5a028"})`,
+            color: "#111111",
+            border: "none",
+            borderRadius: themeStyles.borderRadius || 12,
+            padding: "14px",
+            fontWeight: 800,
+            fontSize: 15,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            boxShadow: themeStyles.buttonShadow || "0 4px 12px rgba(0,0,0,0.3)"
+          }}
+        >
+          <FileText size={18} /> [ 🧾 {t.openAllPaymentsRegister || (isEN ? "Open All Clients Payment Register" : "فتح سجل السداد الشامل لجميع العملاء")} ]
+        </button>
+      </div>
+
+      <div style={styles.card || { background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 18, padding: 22 }}>
+        {/* المكون الأول: حقول البحث والإدخال والمؤشرات */}
+        <CustomerSearchHeader
+          rows={rows}
+          selected={selected}
+          setSelected={setSelected}
+          amount={amount}
+          setAmount={setAmount}
+          payDate={payDate}
+          setPayDate={setPayDate}
+          method={method}
+          setMethod={setMethod}
+          collector={collector}
+          setCollector={setCollector}
+          employees={employees}
+          onSubmitPayment={handleSubmitPayment}
+          t={t}
+          styles={styles}
           themeStyles={themeStyles}
         />
-      ) : (
-        <div style={{ padding: "40px", textAlign: "center", background: themeStyles.card || "#1e1e1e", borderRadius: "14px", border: `1px dashed ${themeStyles.border || "#444"}` }}>
-          <p style={{ color: "#aaa", margin: 0 }}>برجاء البحث واختيار عميل لعرض جدول الأقساط الخاص به.</p>
-        </div>
+
+        {/* المكون الثاني: جدول تاريخ السداد الخاص بالعقد المختار */}
+        <InstallmentsTable
+          selected={selected}
+          clientPayments={clientPayments}
+          onShowReceipt={(client, payment) => setActiveReceipt({ client, payment })}
+          onDeletePayment={onDeletePayment}
+          t={t}
+          themeStyles={themeStyles}
+        />
+
+        <BottomExitButton onBack={onBack} styles={styles} t={t} />
+      </div>
+
+      {/* المكون الثالث: نافذة إيصال القسط */}
+      {activeReceipt && (
+        <PaymentModal
+          receipt={activeReceipt}
+          storeInfo={storeInfo}
+          onClose={() => setActiveReceipt(null)}
+          themeStyles={themeStyles}
+          t={t}
+        />
       )}
 
-      {activeInstallmentForPayment && selectedCustomer && (
-        <PaymentModal
-          installment={activeInstallmentForPayment}
-          customer={selectedCustomer}
-          onClose={() => setActiveInstallmentForPayment(null)}
-          onSubmitPayment={handlePaymentSubmit}
+      {/* سجل السداد الشامل لجميع العملاء */}
+      {showAllPayments && (
+        <AllPaymentsRegisterModal
+          payments={payments}
+          storeInfo={storeInfo}
+          onClose={() => setShowAllPayments(false)}
+          t={t}
+          styles={styles}
           themeStyles={themeStyles}
         />
       )}
