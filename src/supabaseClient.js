@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
-// ضع رابط مشروعك ومفتاحك المباشرين هنا لضمان عمل التطبيق دائماً
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://xxxx.supabase.co";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJKV1QiLCJ...";
+// استبدل هذين السطرين بالرابط والمفتاح الحقيقيين لمشروعك
+const supabaseUrl = "https://your-project-id.supabase.co"; // ضع رابط مشروعك بدلاً من xxxx
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // ضع مفتاح anon الحقيقي هنا
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
