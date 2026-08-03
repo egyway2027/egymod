@@ -5,7 +5,7 @@ export function useCloudData() {
   const [clientsList, setClientsList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // جلب البيانات من السحابة
+  // 🔄 دالة جلب البيانات السحابية
   const refreshData = useCallback(async () => {
     setIsLoading(true);
     const { data, error } = await supabase
@@ -19,11 +19,12 @@ export function useCloudData() {
     setIsLoading(false);
   }, []);
 
+  // التحميل التلقائي فور تشغيل التطبيق
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  // حفظ عقد جديد
+  // ☁️ حفظ عقد جديد مع تحديث الواجهة فورياً
   const handleSaveClient = async (newClientData) => {
     try {
       const { data, error } = await supabase
@@ -43,7 +44,7 @@ export function useCloudData() {
     }
   };
 
-  // تحديث بيانات عقد
+  // ☁️ تحديث بيانات عقد مع عكس الأرقام على الشاشة فوراً
   const handleUpdateContract = async (updatedContract) => {
     try {
       const { id, ...updateData } = updatedContract;
@@ -71,13 +72,6 @@ export function useCloudData() {
   };
 
   return {
-    clientsList,
-    isLoading,
-    refreshData,
-    handleSaveClient,
-    handleUpdateContract
-
-return {
     clientsList,
     isLoading,
     refreshData,
