@@ -121,17 +121,21 @@ export function App() {
               themeStyles={themeStyles}
             />
           )}
-{/* شاشة سداد الأقساط */}
-{currentScreen === "pay" && (
-  <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-    <button 
-      onClick={handleBack}
-      style={{
-        marginBottom: 16, padding: "8px 16px", borderRadius: 8,
-        background: themeStyles.card, border: `1px solid ${themeStyles.border}`,
-        color: themeStyles.text, cursor: "pointer", fontWeight: 700
-      }}
-    >
+{/* شاشة سداد الأقساط المربوطة بالسحابة */}
+      {screen === "pay" && (
+        <InstallmentsScreen
+          rows={rows}
+          payments={appData.payments}
+          employees={appData.employees}
+          storeInfo={storeInfo}
+          onPay={appData.recordPayment}
+          onDeletePayment={appData.deletePayment}
+          onBack={() => handleNavigate("dashboard")}
+          t={t}
+          styles={styles}
+          themeStyles={themeStyles}
+        />
+      )}
       ← العودة للرئيسية
     </button>
     <InstallmentsScreen />
