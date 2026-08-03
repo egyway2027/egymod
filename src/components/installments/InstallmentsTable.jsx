@@ -1,64 +1,68 @@
 import React from 'react';
 import { DollarSign, Check, AlertTriangle, Clock } from 'lucide-react';
 
-export default function InstallmentsTable({ installments, onPayClick }) {
+export default function InstallmentsTable({ installments, onPayClick, themeStyles = {} }) {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'PAID':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"><Check className="w-3 h-3"/> مدفوع بالكامل</span>;
+        return <span style={{ background: "rgba(16, 185, 129, 0.2)", color: "#10b981", padding: "4px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "4px" }}><Check size={14}/> مدفوع بالكامل</span>;
       case 'PARTIAL':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"><Clock className="w-3 h-3"/> سداد جزئي</span>;
+        return <span style={{ background: "rgba(245, 158, 11, 0.2)", color: "#f59e0b", padding: "4px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "4px" }}><Clock size={14}/> سداد جزئي</span>;
       case 'OVERDUE':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300"><AlertTriangle className="w-3 h-3"/> متأخر</span>;
+        return <span style={{ background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", padding: "4px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "4px" }}><AlertTriangle size={14}/> متأخر</span>;
       default:
-        return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">مستحق</span>;
+        return <span style={{ background: "rgba(59, 130, 246, 0.2)", color: "#3b82f6", padding: "4px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: "700" }}>مستحق</span>;
     }
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-        <h3 className="font-bold text-gray-800 dark:text-white">📅 جدول ترتيب الأقساط</h3>
-        <span className="text-xs text-gray-500">إجمالي الأقساط: {installments.length}</span>
+    <div style={{ background: themeStyles.card || "#1e1e1e", borderRadius: "14px", border: `1px solid ${themeStyles.border || "#333"}`, overflow: "hidden" }}>
+      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${themeStyles.border || "#333"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3 style={{ margin: 0, fontWeight: "800", fontSize: "16px", color: themeStyles.text || "#fff" }}>📅 جدول ترتيب الأقساط</h3>
+        <span style={{ fontSize: "12px", color: "#aaa" }}>إجمالي الأقساط: {installments.length}</span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-right text-sm text-gray-600 dark:text-gray-300">
-          <thead className="bg-gray-50 dark:bg-gray-900/50 text-xs text-gray-500 uppercase">
-            <tr>
-              <th className="px-6 py-3">رقم القسط</th>
-              <th className="px-6 py-3">تاريخ الاستحقاق</th>
-              <th className="px-6 py-3">القيمة الأصلية</th>
-              <th className="px-6 py-3">المدفوع</th>
-              <th className="px-6 py-3">المتبقي</th>
-              <th className="px-6 py-3">الحالة</th>
-              <th className="px-6 py-3 text-center">الإجراء</th>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "right", fontSize: "14px", color: themeStyles.text || "#fff" }}>
+          <thead>
+            <tr style={{ background: "rgba(255,255,255,0.03)", borderBottom: `1px solid ${themeStyles.border || "#333"}`, color: "#aaa", fontSize: "12px" }}>
+              <th style={{ padding: "12px 16px" }}>رقم القسط</th>
+              <th style={{ padding: "12px 16px" }}>تاريخ الاستحقاق</th>
+              <th style={{ padding: "12px 16px" }}>القيمة الأصلية</th>
+              <th style={{ padding: "12px 16px" }}>المدفوع</th>
+              <th style={{ padding: "12px 16px" }}>المتبقي</th>
+              <th style={{ padding: "12px 16px" }}>الحالة</th>
+              <th style={{ padding: "12px 16px", textAlign: "center" }}>الإجراء</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+          <tbody>
             {installments.length === 0 ? (
               <tr>
-                <td colSpan="7" className="text-center py-8 text-gray-400">لا توجد أقساط مسجلة لهذا العميل.</td>
+                <td colSpan="7" style={{ textAlign: "center", padding: "24px", color: "#888" }}>لا توجد أقساط مسجلة لهذا العميل.</td>
               </tr>
             ) : (
               installments.map((inst) => (
-                <tr key={inst.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                  <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">قسط #{inst.number}</td>
-                  <td className="px-6 py-4 font-medium">{inst.dueDate}</td>
-                  <td className="px-6 py-4 font-bold">{inst.amount.toLocaleString()} ج.م</td>
-                  <td className="px-6 py-4 text-emerald-600 font-semibold">{inst.paid.toLocaleString()} ج.م</td>
-                  <td className="px-6 py-4 text-rose-600 font-semibold">{(inst.amount - inst.paid).toLocaleString()} ج.م</td>
-                  <td className="px-6 py-4">{getStatusBadge(inst.status)}</td>
-                  <td className="px-6 py-4 text-center">
+                <tr key={inst.id} style={{ borderBottom: `1px solid ${themeStyles.border || "#222"}` }}>
+                  <td style={{ padding: "14px 16px", fontWeight: "700" }}>قسط #{inst.number}</td>
+                  <td style={{ padding: "14px 16px" }}>{inst.dueDate}</td>
+                  <td style={{ padding: "14px 16px", fontWeight: "700" }}>{inst.amount.toLocaleString()} ج.م</td>
+                  <td style={{ padding: "14px 16px", color: "#10b981", fontWeight: "700" }}>{inst.paid.toLocaleString()} ج.م</td>
+                  <td style={{ padding: "14px 16px", color: "#ef4444", fontWeight: "700" }}>{(inst.amount - inst.paid).toLocaleString()} ج.م</td>
+                  <td style={{ padding: "14px 16px" }}>{getStatusBadge(inst.status)}</td>
+                  <td style={{ padding: "14px 16px", textAlign: "center" }}>
                     {inst.status !== 'PAID' ? (
                       <button
                         onClick={() => onPayClick(inst)}
-                        className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"
+                        style={{
+                          background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#fff",
+                          border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: "700",
+                          cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px"
+                        }}
                       >
-                        <DollarSign className="w-4 h-4" /> سداد
+                        <DollarSign size={14} /> سداد
                       </button>
                     ) : (
-                      <span className="text-xs text-emerald-500 font-semibold">تم السداد ✓</span>
+                      <span style={{ fontSize: "12px", color: "#10b981", fontWeight: "700" }}>تم السداد ✓</span>
                     )}
                   </td>
                 </tr>
