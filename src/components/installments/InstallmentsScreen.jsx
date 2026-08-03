@@ -21,30 +21,33 @@ export default function InstallmentsScreen({
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
-  // 1. تحديد العقد الحالي المختار من مصفوفة العقود السحابية
+  // 1️⃣ العقد المحدد من قائمة السحابة الأصلية
   const selectedContract = useMemo(() => {
     return contracts.find((c) => String(c.id) === String(selectedId)) || null;
   }, [contracts, selectedId]);
 
-  // 2. إعداد الصفوف للعرض في قائمة البحث والجدول
+  // 2️⃣ تجهيز البيانات للعرض بالواجهة بناءً على حقول جدول contracts الفعلي
   const rows = useMemo(() => {
     return contracts.map((c) => {
-      const saleVal = Number(c.salePrice ?? c.sale ?? 0);
-      const downVal = Number(c.downPayment ?? c.down ?? 0);
-      const paidVal = Number(c.totalPaid ?? c.total_paid ?? 0);
-      const remCalc = Math.max(0, saleVal - downVal - paidVal);
+      const saleVal = Number(c.sale || 0);
+      const downVal = Number(c.down || 0);
+      const paidVal = Number(c.paidAmount ?? c.paid_amount ?? c.totalPaid ?? 0);
+      const remVal = Number(c.remainingAmount ?? (saleVal - downVal - paidVal));
 
       return {
         ...c,
         id: c.id,
-        name: c.clientName || c.name || "عميل بدون اسم",
-        phone: c.clientPhone || c.phone || "",
-        item: c.itemName || c.item || "",
-        totalPaid: paidVal,
-        remaining: Number(c.remainingAmount ?? c.remaining ?? remCalc),
-        monthly: Number(c.monthlyInstallment ?? c.monthly ?? 0),
+        name: c.name || c.clientName || "عميل بدون اسم",
+        phone: c.phone || c.clientPhone || "",
+        item: c.item || c.itemName || "",
         sale: saleVal,
-        down: downVal
+        down: downVal,
+        monthly: Number(c.monthly || 0),
+        paidAmount: paidVal,
+        totalPaid: paidVal,
+        remainingAmount: remVal,
+        remaining: remVal,
+        payments: Array.isArray(c.payments) ? c.payments : []
       };
     });
   }, [contracts]);
@@ -53,10 +56,18 @@ export default function InstallmentsScreen({
 
   // جميع المدفوعات المسجلة عبر كل العقود
   const allPayments = useMemo(() => {
-    return contracts.flatMap((c) => c.payments || []);
+    return contracts.flatMap((c) => {
+      const payArr = Array.isArray(c.payments) ? c.payments : [];
+      return payArr.map((p) => ({
+        ...p,
+        clientId: String(p.clientId || c.id),
+        clientName: p.clientName || c.name || "",
+        item: p.item || c.item || ""
+      }));
+    });
   }, [contracts]);
 
-  // 3. إضافة عملية السداد وتحديث خانة المسدد والمتبقي في العقد
+  // 3️⃣ إضافة عملية السداد وتحديث خانتي paidAmount و remainingAmount بالسحابة
   const handlePaySubmit = async (e) => {
     e.preventDefault();
     if (!selectedContract) return;
@@ -64,22 +75,21 @@ export default function InstallmentsScreen({
     const numAmount = Math.round(parseFloat(amount) || 0);
     if (numAmount <= 0) return;
 
-    // حساب المسدد والمتبقي الجديد لملف العميل
-    const previousPaid = Number(selectedContract.totalPaid ?? selectedContract.total_paid ?? 0);
-    const newTotalPaid = previousPaid + numAmount;
+    // الحسابات المباشرة
+    const prevPaid = Number(selectedContract.paidAmount ?? selectedContract.totalPaid ?? 0);
+    const newPaid = prevPaid + numAmount;
 
-    const totalPrice = Number(selectedContract.salePrice ?? selectedContract.sale ?? 0);
-    const downPayment = Number(selectedContract.downPayment ?? selectedContract.down ?? 0);
-    const newRemaining = Math.max(0, totalPrice - downPayment - newTotalPaid);
+    const totalPrice = Number(selectedContract.sale || 0);
+    const downPrice = Number(selectedContract.down || 0);
+    const newRemaining = Math.max(0, totalPrice - downPrice - newPaid);
 
     const paymentDateStr = payDate || new Date().toISOString().split("T")[0];
 
-    // عنصر السداد الجديد
     const newPaymentRecord = {
       id: String(Date.now()),
       clientId: String(selectedContract.id),
-      clientName: selectedContract.clientName || selectedContract.name || "",
-      item: selectedContract.itemName || selectedContract.item || "",
+      clientName: selectedContract.name || "",
+      item: selectedContract.item || "",
       amount: numAmount,
       remainingAfter: newRemaining,
       payDate: paymentDateStr,
@@ -87,17 +97,16 @@ export default function InstallmentsScreen({
       collector
     };
 
-    // تجهيز العقد بنفس الهيكل الأصلي
+    const existingPayments = Array.isArray(selectedContract.payments) ? selectedContract.payments : [];
+
+    // كائن العقد المحدث بهياكل الحقول الحقيقية للسحابة
     const updatedContract = {
       ...selectedContract,
-      totalPaid: newTotalPaid,
-      total_paid: newTotalPaid,
+      paidAmount: newPaid,
       remainingAmount: newRemaining,
-      remaining: newRemaining,
-      payments: [...(selectedContract.payments || []), newPaymentRecord]
+      payments: [...existingPayments, newPaymentRecord]
     };
 
-    // إرسال العقد للتحديث السحابي المباشر
     if (onUpdateContract) {
       await onUpdateContract(updatedContract);
     }
@@ -109,29 +118,28 @@ export default function InstallmentsScreen({
     setAmount("");
   };
 
-  // 4. حذف السداد وإعادة تجميع المسدد والمتبقي
+  // 4️⃣ حذف دفعة سداد وإعادة احتساب المبالغ
   const handleDeletePayment = async (paymentId) => {
     if (!selectedContract) return;
 
-    const targetPayment = (selectedContract.payments || []).find((p) => String(p.id) === String(paymentId));
+    const existingPayments = Array.isArray(selectedContract.payments) ? selectedContract.payments : [];
+    const targetPayment = existingPayments.find((p) => String(p.id) === String(paymentId));
     if (!targetPayment) return;
 
     const payAmt = Number(targetPayment.amount || 0);
-    const updatedPayments = (selectedContract.payments || []).filter((p) => String(p.id) !== String(paymentId));
+    const updatedPayments = existingPayments.filter((p) => String(p.id) !== String(paymentId));
 
-    const previousPaid = Number(selectedContract.totalPaid ?? selectedContract.total_paid ?? 0);
-    const newTotalPaid = Math.max(0, previousPaid - payAmt);
+    const prevPaid = Number(selectedContract.paidAmount ?? selectedContract.totalPaid ?? 0);
+    const newPaid = Math.max(0, prevPaid - payAmt);
 
-    const totalPrice = Number(selectedContract.salePrice ?? selectedContract.sale ?? 0);
-    const downPayment = Number(selectedContract.downPayment ?? selectedContract.down ?? 0);
-    const newRemaining = Math.max(0, totalPrice - downPayment - newTotalPaid);
+    const totalPrice = Number(selectedContract.sale || 0);
+    const downPrice = Number(selectedContract.down || 0);
+    const newRemaining = Math.max(0, totalPrice - downPrice - newPaid);
 
     const updatedContract = {
       ...selectedContract,
-      totalPaid: newTotalPaid,
-      total_paid: newTotalPaid,
+      paidAmount: newPaid,
       remainingAmount: newRemaining,
-      remaining: newRemaining,
       payments: updatedPayments
     };
 
