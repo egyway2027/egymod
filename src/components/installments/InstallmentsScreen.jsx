@@ -21,12 +21,12 @@ export default function InstallmentsScreen({
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
-  // 1️⃣ العقد الأصلي المحدد مباشرة من السحابة
+  // 1️⃣ العقد الأصلي المحدد من مصفوفة السحابة
   const selectedContract = useMemo(() => {
     return contracts.find((c) => String(c.id) === String(selectedId)) || null;
   }, [contracts, selectedId]);
 
-  // 2️⃣ صفوف العرض بالواجهة
+  // 2️⃣ صفوف العرض المجهزة للواجهة
   const rows = useMemo(() => {
     return contracts.map((c) => {
       const saleVal = Number(c.sale || 0);
@@ -54,7 +54,7 @@ export default function InstallmentsScreen({
 
   const activeSelectedRow = rows.find((r) => String(r.id) === String(selectedId)) || null;
 
-  // جميع المدفوعات المسجلة
+  // جميع المدفوعات
   const allPayments = useMemo(() => {
     return contracts.flatMap((c) => {
       const payArr = Array.isArray(c.payments) ? c.payments : [];
@@ -67,7 +67,7 @@ export default function InstallmentsScreen({
     });
   }, [contracts]);
 
-  // 3️⃣ تنفيذ السداد مع فلترة الكائن لإرسال أعمدة جدول contracts الصريحة فقط
+  // 3️⃣ تنفيذ عملية السداد مع إرسال الكائن المنظّف تماماً لـ Supabase
   const handlePaySubmit = async (e) => {
     e.preventDefault();
     if (!selectedContract) return;
@@ -96,7 +96,7 @@ export default function InstallmentsScreen({
       collector
     };
 
-    // 🎯 تنظيف الكائن المرسل للسحابة: إرسال الحقول المطابقة لجدول contracts في Supabase فقط
+    // 🎯 الكائن النقي المطابق 100% لأعمدة جدول contracts بـ Supabase
     const cleanPayload = {
       id: selectedContract.id,
       name: selectedContract.name || "",
@@ -130,7 +130,7 @@ export default function InstallmentsScreen({
     setAmount("");
   };
 
-  // 4️⃣ حذف الدفعة بنفس فلترة الكائن
+  // 4️⃣ حذف الدفعة وتنظيف الكائن بنفس الدقة
   const handleDeletePayment = async (paymentId) => {
     if (!selectedContract) return;
 
