@@ -6,91 +6,100 @@ export default function CustomerSearchHeader({
   setSearchQuery, 
   selectedCustomer, 
   onSelectCustomer, 
-  customersList 
+  customersList,
+  themeStyles = {}
 }) {
+  const cardStyle = {
+    background: themeStyles.card || "#1e1e1e",
+    border: `1px solid ${themeStyles.border || "#333"}`,
+    borderRadius: "14px",
+    padding: "16px",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px"
+  };
+
   return (
-    <div className="space-y-4">
-      {/* شريط البحث واختيار العميل */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* 🔍 شريط البحث */}
+      <div style={{ background: themeStyles.card || "#1e1e1e", padding: "16px", borderRadius: "14px", border: `1px solid ${themeStyles.border || "#333"}` }}>
+        <label style={{ display: "block", fontSize: "14px", fontWeight: "700", marginBottom: "8px", color: themeStyles.text || "#fff" }}>
           🔍 البحث عن عميل أو رقم العقد:
         </label>
-        <div className="relative">
-          <Search className="absolute right-3 top-3.5 text-gray-400 w-5 h-5" />
+        <div style={{ position: "relative" }}>
+          <Search size={18} style={{ position: "absolute", right: "12px", top: "14px", color: "#888" }} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="اكتب اسم العميل، رقم الهاتف، أو رقم العقد..."
-            className="w-full pr-10 pl-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition"
+            style={{
+              width: "100%", paddingRight: "40px", paddingLeft: "12px", paddingTop: "12px", paddingBottom: "12px",
+              borderRadius: "8px", border: `1px solid ${themeStyles.border || "#444"}`,
+              backgroundColor: themeStyles.inputBg || "#121212", color: themeStyles.text || "#fff", outline: "none",
+              fontSize: "14px", boxSizing: "border-box"
+            }}
           />
         </div>
 
-        {/* قائمة اقتراحات البحث */}
+        {/* قائمة نتائج البحث */}
         {searchQuery && !selectedCustomer && (
-          <div className="mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          <div style={{ marginTop: "8px", backgroundColor: themeStyles.card || "#222", border: `1px solid ${themeStyles.border || "#444"}`, borderRadius: "8px", overflow: "hidden" }}>
             {customersList
               .filter(c => c.name.includes(searchQuery) || c.phone.includes(searchQuery) || c.contractId.includes(searchQuery))
               .map(customer => (
                 <button
                   key={customer.id}
-                  onClick={() => {
-                    onSelectCustomer(customer);
-                    setSearchQuery('');
+                  onClick={() => { onSelectCustomer(customer); setSearchQuery(''); }}
+                  style={{
+                    width: "100%", textAlign: "right", padding: "12px 16px", background: "transparent",
+                    border: "none", borderBottom: `1px solid ${themeStyles.border || "#333"}`, color: themeStyles.text || "#fff",
+                    display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer"
                   }}
-                  className="w-full text-right px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-800 border-b last:border-0 border-gray-100 dark:border-gray-800 flex justify-between items-center transition"
                 >
                   <div>
-                    <span className="font-bold text-gray-800 dark:text-white block">{customer.name}</span>
-                    <span className="text-xs text-gray-500">رقم العقد: {customer.contractId} | هاتف: {customer.phone}</span>
+                    <span style={{ fontWeight: "700", display: "block" }}>{customer.name}</span>
+                    <span style={{ fontSize: "12px", color: "#aaa" }}>عقد: {customer.contractId} | هاتف: {customer.phone}</span>
                   </div>
-                  <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-700 rounded">اختر</span>
+                  <span style={{ fontSize: "12px", padding: "4px 8px", background: "#d4af37", color: "#000", borderRadius: "4px", fontWeight: "700" }}>اختيار</span>
                 </button>
               ))}
           </div>
         )}
       </div>
 
-      {/* بطاقات المخص المالي للعميل المختار */}
+      {/* 📊 بطاقات الملخص المالي الأفقية */}
       {selectedCustomer && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center space-x-3 space-x-reverse">
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
-              <CreditCard className="w-6 h-6" />
-            </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+          <div style={cardStyle}>
+            <CreditCard size={28} color="#3b82f6" />
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">إجمالي المستحق</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{selectedCustomer.totalAmount.toLocaleString()} ج.م</p>
+              <span style={{ fontSize: "12px", color: "#aaa", display: "block" }}>إجمالي المستحق</span>
+              <span style={{ fontSize: "18px", fontWeight: "800", color: themeStyles.text || "#fff" }}>{selectedCustomer.totalAmount.toLocaleString()} ج.م</span>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center space-x-3 space-x-reverse">
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg">
-              <CheckCircle className="w-6 h-6" />
-            </div>
+          <div style={cardStyle}>
+            <CheckCircle size={28} color="#10b981" />
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">إجمالي المدفوع</p>
-              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{selectedCustomer.paidAmount.toLocaleString()} ج.م</p>
+              <span style={{ fontSize: "12px", color: "#aaa", display: "block" }}>إجمالي المدفوع</span>
+              <span style={{ fontSize: "18px", fontWeight: "800", color: "#10b981" }}>{selectedCustomer.paidAmount.toLocaleString()} ج.م</span>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center space-x-3 space-x-reverse">
-            <div className="p-3 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
-              <Clock className="w-6 h-6" />
-            </div>
+          <div style={cardStyle}>
+            <Clock size={28} color="#f59e0b" />
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">المتبقي عليه</p>
-              <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{selectedCustomer.remainingAmount.toLocaleString()} ج.م</p>
+              <span style={{ fontSize: "12px", color: "#aaa", display: "block" }}>المتبقي عليه</span>
+              <span style={{ fontSize: "18px", fontWeight: "800", color: "#f59e0b" }}>{selectedCustomer.remainingAmount.toLocaleString()} ج.م</span>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center space-x-3 space-x-reverse">
-            <div className="p-3 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg">
-              <AlertCircle className="w-6 h-6" />
-            </div>
+          <div style={cardStyle}>
+            <AlertCircle size={28} color="#ef4444" />
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">أقساط متأخرة</p>
-              <p className="text-lg font-bold text-rose-600 dark:text-rose-400">{selectedCustomer.overdueCount} أقساط</p>
+              <span style={{ fontSize: "12px", color: "#aaa", display: "block" }}>أقساط متأخرة</span>
+              <span style={{ fontSize: "18px", fontWeight: "800", color: "#ef4444" }}>{selectedCustomer.overdueCount} أقساط</span>
             </div>
           </div>
         </div>
