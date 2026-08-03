@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { FileText } from "lucide-react";
 import { ScreenHeader, BottomExitButton } from "../CommonUI";
 import CustomerSearchHeader from "./CustomerSearchHeader";
@@ -12,7 +12,7 @@ export default function InstallmentsScreen({
   t = {},
   themeStyles = {}
 }) {
-  const [selected, setSelected] = useState(null);
+  const [selectedId, setSelectedId] = useState("");
   const [amount, setAmount] = useState("");
   const [payDate, setPayDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [method, setMethod] = useState("نقداً / كاش");
@@ -21,86 +21,59 @@ export default function InstallmentsScreen({
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
-  const isEN = useMemo(() => {
-    return t?.lang === "en" || document.documentElement?.lang === "en";
-  }, [t]);
+  // 1️⃣ العقد المباشر من مصفوفة العقود الأصيلة
+  const selectedContract = contracts.find((c) => String(c.id) === String(selectedId)) || null;
 
-  // 1️⃣ توحيد قراءة وتنسيق بيانات العملاء كما في ملف المشروع الرئيسي
-  const rows = useMemo(() => {
-    return (contracts || []).map((c) => {
-      const saleVal = Number(c.salePrice ?? c.sale ?? 0);
-      const downVal = Number(c.downPayment ?? c.down ?? 0);
-      const paidVal = Number(c.totalPaid ?? c.total_paid ?? 0);
-      const remCalc = Math.max(0, saleVal - downVal - paidVal);
+  // 2️⃣ تحضير المصفوفة المجهزة للعرض فقط
+  const rows = contracts.map((c) => ({
+    ...c,
+    name: c.clientName || c.name || "",
+    phone: c.clientPhone || c.phone || "",
+    item: c.itemName || c.item || "",
+    remaining: Number(c.remainingAmount ?? c.remaining ?? 0),
+    monthly: Number(c.monthlyInstallment ?? c.monthly ?? 0),
+    sale: Number(c.salePrice ?? c.sale ?? 0),
+    down: Number(c.downPayment ?? c.down ?? 0),
+    totalPaid: Number(c.totalPaid ?? 0)
+  }));
 
-      return {
-        ...c,
-        id: c.id,
-        name: c.clientName || c.name || "عميل بدون اسم",
-        phone: c.clientPhone || c.phone || "",
-        item: c.itemName || c.item || "",
-        remaining: Number(c.remainingAmount ?? c.remaining ?? remCalc),
-        monthly: Number(c.monthlyInstallment ?? c.monthly ?? 0),
-        sale: saleVal,
-        down: downVal,
-        totalPaid: paidVal,
-        payments: c.payments || []
-      };
-    });
-  }, [contracts]);
+  const activeSelectedRow = rows.find((r) => String(r.id) === String(selectedId)) || null;
 
-  // متابعة العميل المحدد وتحديث بياناته فورياً عند التحديث السحابي
-  const activeSelected = useMemo(() => {
-    if (!selected) return null;
-    return rows.find((r) => String(r.id) === String(selected.id)) || selected;
-  }, [rows, selected]);
+  // تجميع كل المدفوعات
+  const allPayments = contracts.flatMap((c) => c.payments || []);
 
-  // تجميع كافة المدفوعات من جميع العقود
-  const allPayments = useMemo(() => {
-    return (contracts || []).flatMap((c) => 
-      (c.payments || []).map((p) => ({
-        ...p,
-        clientId: String(p.clientId || c.id),
-        clientName: p.clientName || c.clientName || c.name || "عميل",
-        item: p.item || c.itemName || c.item || ""
-      }))
-    );
-  }, [contracts]);
-
-  // 2️⃣ دالة حفظ السداد وإرسال التحديث لـ handleUpdateContract
+  // 3️⃣ تنفيذ عملية السداد بأسلوب التحديث الأصلي للنظام
   const handlePaySubmit = async (e) => {
     e.preventDefault();
-    const numAmount = Math.round(parseFloat(amount) || 0);
-    if (!activeSelected || numAmount <= 0) return;
+    if (!selectedContract) return;
 
-    const currentRemaining = Number(activeSelected.remaining || 0);
+    const numAmount = Math.round(parseFloat(amount) || 0);
+    if (numAmount <= 0) return;
+
+    const currentRemaining = Number(selectedContract.remainingAmount ?? selectedContract.remaining ?? 0);
     const newRemaining = Math.max(0, currentRemaining - numAmount);
-    const newTotalPaid = Math.round(Number(activeSelected.totalPaid || 0) + numAmount);
+    const newTotalPaid = Math.round(Number(selectedContract.totalPaid || 0) + numAmount);
     const paymentDateStr = payDate || new Date().toISOString().split("T")[0];
 
     const newPaymentRecord = {
       id: String(Date.now()),
-      clientId: String(activeSelected.id),
-      clientName: activeSelected.name,
-      item: activeSelected.item,
+      clientId: String(selectedContract.id),
+      clientName: selectedContract.clientName || selectedContract.name || "",
+      item: selectedContract.itemName || selectedContract.item || "",
       amount: numAmount,
       remainingAfter: newRemaining,
       payDate: paymentDateStr,
-      method: method || "نقداً / كاش",
-      collector: collector || "المشرف"
+      method,
+      collector
     };
 
-    const existingPayments = Array.isArray(activeSelected.payments) ? activeSelected.payments : [];
-    const updatedPayments = [...existingPayments, newPaymentRecord];
-
-    // الهيكل المطابق تماماً لقاعدة بيانات المشروع
+    // إرسال الكائن بنفس هيكل الاستعلام وتحديث العقد بالسحابة
     const updatedContract = {
-      ...activeSelected,
+      ...selectedContract,
       remainingAmount: newRemaining,
       remaining: newRemaining,
       totalPaid: newTotalPaid,
-      total_paid: newTotalPaid,
-      payments: updatedPayments
+      payments: [...(selectedContract.payments || []), newPaymentRecord]
     };
 
     if (onUpdateContract) {
@@ -108,44 +81,42 @@ export default function InstallmentsScreen({
     }
 
     setActiveReceipt({
-      client: { ...activeSelected, totalPaid: newTotalPaid, remaining: newRemaining },
+      client: updatedContract,
       payment: newPaymentRecord
     });
     setAmount("");
   };
 
-  // 3️⃣ دالة حذف الدفعة وتعديل الرصيد بالسحابة
-  const handleDeletePayment = async (paymentId, clientId, payAmount) => {
-    const client = contracts.find((c) => String(c.id) === String(clientId));
-    if (!client) return;
+  // 4️⃣ حذف الدفعة بنفس الطريقة الأصيلة
+  const handleDeletePayment = async (paymentId) => {
+    if (!selectedContract) return;
 
-    const numAmount = Math.round(Number(payAmount) || 0);
-    const existingPayments = Array.isArray(client.payments) ? client.payments : [];
-    const updatedPayments = existingPayments.filter((p) => String(p.id) !== String(paymentId));
+    const targetPayment = (selectedContract.payments || []).find((p) => String(p.id) === String(paymentId));
+    if (!targetPayment) return;
+
+    const payAmt = Number(targetPayment.amount || 0);
+    const updatedPayments = (selectedContract.payments || []).filter((p) => String(p.id) !== String(paymentId));
     
-    const currentRemaining = Number(client.remainingAmount ?? client.remaining ?? 0);
-    const newRemaining = currentRemaining + numAmount;
-    const newTotalPaid = Math.max(0, Number(client.totalPaid ?? client.total_paid ?? 0) - numAmount);
+    const currentRemaining = Number(selectedContract.remainingAmount ?? selectedContract.remaining ?? 0);
+    const newRemaining = currentRemaining + payAmt;
+    const newTotalPaid = Math.max(0, Number(selectedContract.totalPaid || 0) - payAmt);
+
+    const updatedContract = {
+      ...selectedContract,
+      remainingAmount: newRemaining,
+      remaining: newRemaining,
+      totalPaid: newTotalPaid,
+      payments: updatedPayments
+    };
 
     if (onUpdateContract) {
-      await onUpdateContract({
-        ...client,
-        remainingAmount: newRemaining,
-        remaining: newRemaining,
-        totalPaid: newTotalPaid,
-        total_paid: newTotalPaid,
-        payments: updatedPayments
-      });
+      await onUpdateContract(updatedContract);
     }
   };
 
-  const clientPayments = activeSelected
-    ? (activeSelected.payments || [])
-    : [];
-
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-      <ScreenHeader title={t.pay || (isEN ? "Pay Installments" : "سداد الأقساط")} onBack={onBack} t={t} />
+      <ScreenHeader title={t.pay || "سداد الأقساط"} onBack={onBack} t={t} />
 
       <div style={{ marginBottom: 16 }}>
         <button
@@ -167,15 +138,15 @@ export default function InstallmentsScreen({
             gap: 8
           }}
         >
-          <FileText size={18} /> [ 🧾 {t.openAllPaymentsRegister || (isEN ? "Open All Clients Payment Register" : "فتح سجل السداد الشامل لجميع العملاء")} ]
+          <FileText size={18} /> [ 🧾 فتح سجل السداد الشامل لجميع العملاء ]
         </button>
       </div>
 
       <div style={{ background: themeStyles.card, border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`, borderRadius: themeStyles.borderRadius || 18, padding: 22 }}>
         <CustomerSearchHeader
           rows={rows}
-          selected={activeSelected}
-          setSelected={setSelected}
+          selected={activeSelectedRow}
+          setSelected={(val) => setSelectedId(val ? val.id : "")}
           amount={amount}
           setAmount={setAmount}
           payDate={payDate}
@@ -191,10 +162,10 @@ export default function InstallmentsScreen({
         />
 
         <InstallmentsTable
-          selected={activeSelected}
-          clientPayments={clientPayments}
+          selected={activeSelectedRow}
+          clientPayments={selectedContract?.payments || []}
           onShowReceipt={(client, payment) => setActiveReceipt({ client, payment })}
-          onDeletePayment={handleDeletePayment}
+          onDeletePayment={(paymentId) => handleDeletePayment(paymentId)}
           t={t}
           themeStyles={themeStyles}
         />
