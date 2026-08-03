@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { FileText } from "lucide-react";
-import { ScreenHeader, BottomExitButton } from "../CommonUI";
+import { ScreenHeader, BottomExitButton } from "../CommonUI.jsx";
 import CustomerSearchHeader from "./CustomerSearchHeader";
 import InstallmentsTable, { AllPaymentsRegisterModal } from "./InstallmentsTable";
 import PaymentModal from "./PaymentModal";
