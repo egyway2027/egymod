@@ -1,11 +1,4 @@
-/**
- * =========================================================
- * 📌 الملف: هك البيانات السحابية والتحديث اللحظي (Cloud Data Hook)
- * 📁 المسار: src/hooks/useCloudData.js
- * 📝 الوظيفة: إدارة الجلب والتحديث اللحظي المباشر للبيانات
- *            من Supabase بدون الحاجة لإعادة تحميل الصفحة.
- * =========================================================
- import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 
 export function useCloudData() {
