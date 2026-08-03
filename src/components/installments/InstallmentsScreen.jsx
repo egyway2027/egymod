@@ -4,12 +4,14 @@ import { ScreenHeader, BottomExitButton } from "../CommonUI";
 import CustomerSearchHeader from "./CustomerSearchHeader";
 import InstallmentsTable, { AllPaymentsRegisterModal } from "./InstallmentsTable";
 import PaymentModal from "./PaymentModal";
-import { useCloudData } from "../../hooks/useCloudData";
 
-export default function InstallmentsScreen({ onBack, t = {}, themeStyles = {} }) {
-  // جلب البيانات والدوال مباشرة من هوك مشروعك الأصلي
-  const { clientsList, handleUpdateContract } = useCloudData();
-
+export default function InstallmentsScreen({
+  contracts = [],
+  onUpdateContract,
+  onBack,
+  t = {},
+  themeStyles = {}
+}) {
   const [selected, setSelected] = useState(null);
   const [amount, setAmount] = useState("");
   const [payDate, setPayDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -23,8 +25,8 @@ export default function InstallmentsScreen({ onBack, t = {}, themeStyles = {} })
     return t?.lang === "en" || document.documentElement?.lang === "en";
   }, [t]);
 
-  // تجهيز العقود
-  const rows = (clientsList || []).map((c) => ({
+  // تجهيز مصفوفة الصفوف
+  const rows = (contracts || []).map((c) => ({
     ...c,
     id: c.id,
     name: c.name || c.clientName || "",
@@ -37,7 +39,7 @@ export default function InstallmentsScreen({ onBack, t = {}, themeStyles = {} })
   }));
 
   // جميع المدفوعات
-  const payments = (clientsList || []).flatMap((c) => c.payments || []);
+  const payments = (contracts || []).flatMap((c) => c.payments || []);
 
   // دالة الحفظ
   const handlePaySubmit = async (e) => {
@@ -72,20 +74,20 @@ export default function InstallmentsScreen({ onBack, t = {}, themeStyles = {} })
       payments: updatedPayments
     };
 
-    const res = await handleUpdateContract(updatedContract);
-
-    if (res?.success) {
-      setActiveReceipt({
-        client: { ...selected, totalPaid: newTotalPaid, remaining: newRemaining },
-        payment: newPaymentRecord
-      });
-      setAmount("");
+    if (onUpdateContract) {
+      await onUpdateContract(updatedContract);
     }
+
+    setActiveReceipt({
+      client: { ...selected, totalPaid: newTotalPaid, remaining: newRemaining },
+      payment: newPaymentRecord
+    });
+    setAmount("");
   };
 
   // دالة الحذف
   const handleDeletePayment = async (paymentId, clientId, payAmount) => {
-    const client = clientsList.find((c) => String(c.id) === String(clientId));
+    const client = contracts.find((c) => String(c.id) === String(clientId));
     if (!client) return;
 
     const numAmount = Math.round(Number(payAmount) || 0);
@@ -93,13 +95,15 @@ export default function InstallmentsScreen({ onBack, t = {}, themeStyles = {} })
     const newRemaining = Number(client.remainingAmount ?? client.remaining ?? 0) + numAmount;
     const newTotalPaid = Math.max(0, Number(client.totalPaid || 0) - numAmount);
 
-    await handleUpdateContract({
-      ...client,
-      remainingAmount: newRemaining,
-      remaining: newRemaining,
-      totalPaid: newTotalPaid,
-      payments: updatedPayments
-    });
+    if (onUpdateContract) {
+      await onUpdateContract({
+        ...client,
+        remainingAmount: newRemaining,
+        remaining: newRemaining,
+        totalPaid: newTotalPaid,
+        payments: updatedPayments
+      });
+    }
   };
 
   const clientPayments = selected
