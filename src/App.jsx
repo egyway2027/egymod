@@ -15,7 +15,7 @@ import {
 import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
-
+import InstallmentsScreen from "./components/installments/InstallmentsScreen";
 import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
 import { RecycleBinModal } from "./components/modals/RecycleBinModal";
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
