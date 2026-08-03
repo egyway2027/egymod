@@ -21,10 +21,10 @@ export default function InstallmentsScreen({
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
-  // 1️⃣ العقد المباشر من مصفوفة العقود الأصيلة
+  // 1️⃣ العقد الأصلي المحدد مباشرة من قائمة السحابة
   const selectedContract = contracts.find((c) => String(c.id) === String(selectedId)) || null;
 
-  // 2️⃣ تحضير المصفوفة المجهزة للعرض فقط
+  // 2️⃣ صفوف الجدول والعرض
   const rows = contracts.map((c) => ({
     ...c,
     name: c.clientName || c.name || "",
@@ -38,11 +38,9 @@ export default function InstallmentsScreen({
   }));
 
   const activeSelectedRow = rows.find((r) => String(r.id) === String(selectedId)) || null;
-
-  // تجميع كل المدفوعات
   const allPayments = contracts.flatMap((c) => c.payments || []);
 
-  // 3️⃣ تنفيذ عملية السداد بأسلوب التحديث الأصلي للنظام
+  // 3️⃣ دالة تنفيذ السداد المربوطة بـ handleUpdateContract
   const handlePaySubmit = async (e) => {
     e.preventDefault();
     if (!selectedContract) return;
@@ -67,7 +65,7 @@ export default function InstallmentsScreen({
       collector
     };
 
-    // إرسال الكائن بنفس هيكل الاستعلام وتحديث العقد بالسحابة
+    // كائن العقد الجديد المحدث بالكامل
     const updatedContract = {
       ...selectedContract,
       remainingAmount: newRemaining,
@@ -77,17 +75,18 @@ export default function InstallmentsScreen({
     };
 
     if (onUpdateContract) {
-      await onUpdateContract(updatedContract);
+      const res = await onUpdateContract(updatedContract);
+      if (res?.success) {
+        setActiveReceipt({
+          client: res.contract || updatedContract,
+          payment: newPaymentRecord
+        });
+        setAmount("");
+      }
     }
-
-    setActiveReceipt({
-      client: updatedContract,
-      payment: newPaymentRecord
-    });
-    setAmount("");
   };
 
-  // 4️⃣ حذف الدفعة بنفس الطريقة الأصيلة
+  // 4️⃣ دالة حذف دفعة سداد
   const handleDeletePayment = async (paymentId) => {
     if (!selectedContract) return;
 
