@@ -5,17 +5,15 @@
  * 📝 الوظيفة: إدارة الجلب والتحديث اللحظي المباشر للبيانات
  *            من Supabase بدون الحاجة لإعادة تحميل الصفحة.
  * =========================================================
- */
-
-import { useState, useEffect, useCallback } from "react";
+ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 
 export function useCloudData() {
   const [clientsList, setClientsList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔄 دالة جلب البيانات السحابية
- const refreshData = useCallback(async () => {
+  // جلب البيانات من السحابة
+  const refreshData = useCallback(async () => {
     setIsLoading(true);
     const { data, error } = await supabase
       .from("contracts")
@@ -28,13 +26,12 @@ export function useCloudData() {
     setIsLoading(false);
   }, []);
 
-  // التحميل التلقائي فور تشغيل التطبيق
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  // ☁️ حفظ عقد جديد مع تحديث الواجهة فورياً
- const handleSaveClient = async (newClientData) => {
+  // حفظ عقد جديد
+  const handleSaveClient = async (newClientData) => {
     try {
       const { data, error } = await supabase
         .from("contracts")
@@ -53,8 +50,8 @@ export function useCloudData() {
     }
   };
 
-  // ☁️ تحديث بيانات عقد مع عكس الأرقام على الشاشة فوراً
- const handleUpdateContract = async (updatedContract) => {
+  // تحديث بيانات عقد
+  const handleUpdateContract = async (updatedContract) => {
     try {
       const { id, ...updateData } = updatedContract;
 
@@ -79,3 +76,12 @@ export function useCloudData() {
       return { success: false, error: err };
     }
   };
+
+  return {
+    clientsList,
+    isLoading,
+    refreshData,
+    handleSaveClient,
+    handleUpdateContract
+  };
+}
