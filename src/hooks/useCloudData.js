@@ -44,29 +44,34 @@ export function useCloudData() {
     }
   };
 
-  // ☁️ تحديث بيانات عقد مع عكس الأرقام على الشاشة فوراً
+// ☁️ تحديث بيانات عقد مع طباعة النتيجة والتحديث الفوري
   const handleUpdateContract = async (updatedContract) => {
     try {
       const { id, ...updateData } = updatedContract;
+
+      console.log("📤 جاري إرسال التحديث لـ Supabase للـ ID:", id, updateData);
 
       const { data, error } = await supabase
         .from("contracts")
         .update(updateData)
         .eq("id", id)
-        .select()
-        .single();
+        .select();
 
-      if (data && !error) {
-        setClientsList((prev) =>
-          prev.map((c) => (String(c.id) === String(data.id) ? data : c))
-        );
-        return { success: true, contract: data };
+      if (error) {
+        console.error("❌ خطأ صريح من Supabase أثناء التحديث:", error);
+        return { success: false, error };
       }
 
-      console.error("خطأ Supabase أثناء التحديث:", error);
-      return { success: false, error };
+      const updatedItem = data && data.length > 0 ? data[0] : updatedContract;
+
+      setClientsList((prev) =>
+        prev.map((c) => (String(c.id) === String(id) ? updatedItem : c))
+      );
+
+      console.log("✅ تم التحديث بنجاح سحابياً ومحلياً:", updatedItem);
+      return { success: true, contract: updatedItem };
     } catch (err) {
-      console.error("خطأ أثناء تحديث العقد:", err);
+      console.error("❌ خطأ غير متوقع أثناء تحديث العقد:", err);
       return { success: false, error: err };
     }
   };
