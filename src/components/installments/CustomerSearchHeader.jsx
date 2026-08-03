@@ -1,6 +1,6 @@
 import React from "react";
 import { Banknote, CheckCheck } from "lucide-react";
-import { Field, DateInput, NameComboBox, LiveStat } from "../CommonUI.jsx";
+import { Field, DateInput, NameComboBox, LiveStat } from "../CommonUI";
 
 // دالة تنظيف الأرقام من الفواصل
 const fmtCleanInt = (val) => {
