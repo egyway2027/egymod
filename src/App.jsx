@@ -121,7 +121,22 @@ export function App() {
               themeStyles={themeStyles}
             />
           )}
-
+{/* شاشة سداد الأقساط */}
+{currentScreen === "pay" && (
+  <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+    <button 
+      onClick={handleBack}
+      style={{
+        marginBottom: 16, padding: "8px 16px", borderRadius: 8,
+        background: themeStyles.card, border: `1px solid ${themeStyles.border}`,
+        color: themeStyles.text, cursor: "pointer", fontWeight: 700
+      }}
+    >
+      ← العودة للرئيسية
+    </button>
+    <InstallmentsScreen />
+  </div>
+)}
           {/* 3. شاشة الإعدادات الشاملة (15 لغة و 100 ثيم) */}
           {currentScreen === "settings" && (
             <SettingsScreen
@@ -221,9 +236,11 @@ export function App() {
                     <button
                       key={b.key}
                       onClick={() => {
-                        if (b.key === "addClient") {
-                          navigateTo("addClient");
-                        } else if (b.key === "search") {
+  if (b.key === "addClient") {
+    navigateTo("addClient");
+  } else if (b.key === "pay") {
+    navigateTo("pay");
+  } else if (b.key === "search") {
                           navigateTo("clientQuery");
                         } else if (b.key === "settings") {
                           navigateTo("settings");
