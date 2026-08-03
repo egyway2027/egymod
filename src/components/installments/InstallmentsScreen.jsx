@@ -25,38 +25,49 @@ export default function InstallmentsScreen({
     return t?.lang === "en" || document.documentElement?.lang === "en";
   }, [t]);
 
-  // تجهيز مصفوفة الصفوف
-  const rows = (contracts || []).map((c) => ({
-    ...c,
-    id: c.id,
-    name: c.name || c.clientName || "",
-    item: c.item || c.itemName || "",
-    remaining: Number(c.remainingAmount ?? c.remaining ?? 0),
-    monthly: Number(c.monthlyInstallment ?? c.monthly ?? 0),
-    sale: Number(c.salePrice ?? c.sale ?? 0),
-    down: Number(c.downPayment ?? c.down ?? 0),
-    totalPaid: Number(c.totalPaid ?? 0)
-  }));
+  // 1. إعداد القائمة بنفس حقول العقود
+  const rows = useMemo(() => {
+    return (contracts || []).map((c) => ({
+      ...c,
+      id: c.id,
+      name: c.clientName || c.name || "عميل بدون اسم",
+      phone: c.clientPhone || c.phone || "",
+      item: c.itemName || c.item || "",
+      remaining: Number(c.remainingAmount ?? c.remaining ?? 0),
+      monthly: Number(c.monthlyInstallment ?? c.monthly ?? 0),
+      sale: Number(c.salePrice ?? c.sale ?? 0),
+      down: Number(c.downPayment ?? c.down ?? 0),
+      totalPaid: Number(c.totalPaid ?? 0)
+    }));
+  }, [contracts]);
 
-  // جميع المدفوعات
-  const payments = (contracts || []).flatMap((c) => c.payments || []);
+  // تحديث بيانات العميل المحدد تلقائياً عند تجدد العقود من السحابة
+  const activeSelected = useMemo(() => {
+    if (!selected) return null;
+    return rows.find((r) => String(r.id) === String(selected.id)) || selected;
+  }, [rows, selected]);
 
-  // دالة الحفظ
+  // تجميع كافة عمليات السداد
+  const allPayments = useMemo(() => {
+    return (contracts || []).flatMap((c) => c.payments || []);
+  }, [contracts]);
+
+  // 2. دالة حفظ السداد المباشر (تستدعي نفس دالة تحديث العقد للسحابة)
   const handlePaySubmit = async (e) => {
     e.preventDefault();
     const numAmount = Math.round(parseFloat(amount) || 0);
-    if (!selected || numAmount <= 0) return;
+    if (!activeSelected || numAmount <= 0) return;
 
-    const currentRemaining = Number(selected.remaining || 0);
+    const currentRemaining = Number(activeSelected.remaining || 0);
     const newRemaining = Math.max(0, currentRemaining - numAmount);
-    const newTotalPaid = Math.round(Number(selected.totalPaid || 0) + numAmount);
+    const newTotalPaid = Math.round(Number(activeSelected.totalPaid || 0) + numAmount);
     const paymentDateStr = payDate || new Date().toISOString().split("T")[0];
 
     const newPaymentRecord = {
       id: String(Date.now()),
-      clientId: String(selected.id),
-      clientName: selected.name,
-      item: selected.item,
+      clientId: String(activeSelected.id),
+      clientName: activeSelected.name,
+      item: activeSelected.item,
       amount: numAmount,
       remainingAfter: newRemaining,
       payDate: paymentDateStr,
@@ -64,34 +75,39 @@ export default function InstallmentsScreen({
       collector: collector || "المشرف"
     };
 
-    const updatedPayments = [...(selected.payments || []), newPaymentRecord];
+    // إضافة الدفعة الجديدة لمصفوفة مدفوعات العميل الأصلية
+    const existingPayments = Array.isArray(activeSelected.payments) ? activeSelected.payments : [];
+    const updatedPayments = [...existingPayments, newPaymentRecord];
 
+    // إعداد العقد المحدث
     const updatedContract = {
-      ...selected,
+      ...activeSelected,
       remainingAmount: newRemaining,
       remaining: newRemaining,
       totalPaid: newTotalPaid,
       payments: updatedPayments
     };
 
+    // إرسال التحديث للسحابة بنفس دالة شاشة الاستعلام
     if (onUpdateContract) {
       await onUpdateContract(updatedContract);
     }
 
     setActiveReceipt({
-      client: { ...selected, totalPaid: newTotalPaid, remaining: newRemaining },
+      client: { ...activeSelected, totalPaid: newTotalPaid, remaining: newRemaining },
       payment: newPaymentRecord
     });
     setAmount("");
   };
 
-  // دالة الحذف
+  // 3. دالة حذف الدفعة
   const handleDeletePayment = async (paymentId, clientId, payAmount) => {
     const client = contracts.find((c) => String(c.id) === String(clientId));
     if (!client) return;
 
     const numAmount = Math.round(Number(payAmount) || 0);
-    const updatedPayments = (client.payments || []).filter((p) => String(p.id) !== String(paymentId));
+    const existingPayments = Array.isArray(client.payments) ? client.payments : [];
+    const updatedPayments = existingPayments.filter((p) => String(p.id) !== String(paymentId));
     const newRemaining = Number(client.remainingAmount ?? client.remaining ?? 0) + numAmount;
     const newTotalPaid = Math.max(0, Number(client.totalPaid || 0) - numAmount);
 
@@ -106,8 +122,8 @@ export default function InstallmentsScreen({
     }
   };
 
-  const clientPayments = selected
-    ? payments.filter((p) => String(p.clientId) === String(selected.id))
+  const clientPayments = activeSelected
+    ? allPayments.filter((p) => String(p.clientId) === String(activeSelected.id))
     : [];
 
   return (
@@ -141,7 +157,7 @@ export default function InstallmentsScreen({
       <div style={{ background: themeStyles.card, border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`, borderRadius: themeStyles.borderRadius || 18, padding: 22 }}>
         <CustomerSearchHeader
           rows={rows}
-          selected={selected}
+          selected={activeSelected}
           setSelected={setSelected}
           amount={amount}
           setAmount={setAmount}
@@ -158,7 +174,7 @@ export default function InstallmentsScreen({
         />
 
         <InstallmentsTable
-          selected={selected}
+          selected={activeSelected}
           clientPayments={clientPayments}
           onShowReceipt={(client, payment) => setActiveReceipt({ client, payment })}
           onDeletePayment={handleDeletePayment}
@@ -181,7 +197,7 @@ export default function InstallmentsScreen({
 
       {showAllPayments && (
         <AllPaymentsRegisterModal
-          payments={payments}
+          payments={allPayments}
           storeInfo={{ name: "إيجيمود لإدارة الأقساط" }}
           onClose={() => setShowAllPayments(false)}
           t={t}
