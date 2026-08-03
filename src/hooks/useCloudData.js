@@ -8,15 +8,22 @@ export function useCloudData() {
   // 🔄 دالة جلب البيانات السحابية
   const refreshData = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
-      .from("contracts")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("contracts")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      setClientsList(data);
+      if (!error && data) {
+        setClientsList(data);
+      } else if (error) {
+        console.error("❌ خطأ أثناء جلب العقود من Supabase:", error);
+      }
+    } catch (err) {
+      console.error("❌ خطأ غير متوقع أثناء جلب البيانات:", err);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   // التحميل التلقائي فور تشغيل التطبيق
@@ -37,14 +44,15 @@ export function useCloudData() {
         setClientsList((prev) => [data, ...prev]);
         return { success: true, contract: data };
       }
+      console.error("❌ خطأ أثناء حفظ العقد:", error);
       return { success: false, error };
     } catch (err) {
-      console.error("خطأ أثناء حفظ العقد:", err);
+      console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
       return { success: false, error: err };
     }
   };
 
-// ☁️ تحديث بيانات عقد مع طباعة النتيجة والتحديث الفوري
+  // ☁️ تحديث بيانات عقد مع طباعة النتيجة والتحديث الفوري
   const handleUpdateContract = async (updatedContract) => {
     try {
       const { id, ...updateData } = updatedContract;
