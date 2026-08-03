@@ -21,17 +21,17 @@ export default function InstallmentsScreen({
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
-  // 1️⃣ العقد الأصلي المحدد من مصفوفة السحابة
+  // 1️⃣ العقد الأصلي المحدد مباشرة من السحابة
   const selectedContract = useMemo(() => {
     return contracts.find((c) => String(c.id) === String(selectedId)) || null;
   }, [contracts, selectedId]);
 
-  // 2️⃣ صفوف العرض المجهزة للواجهة
+  // 2️⃣ صفوف العرض بالواجهة
   const rows = useMemo(() => {
     return contracts.map((c) => {
       const saleVal = Number(c.sale || 0);
       const downVal = Number(c.down || 0);
-      const paidVal = Number(c.paidAmount ?? 0);
+      const paidVal = Number(c.paidAmount ?? c.paid_amount ?? c.totalPaid ?? 0);
       const remVal = Number(c.remainingAmount ?? Math.max(0, saleVal - downVal - paidVal));
 
       return {
@@ -54,7 +54,6 @@ export default function InstallmentsScreen({
 
   const activeSelectedRow = rows.find((r) => String(r.id) === String(selectedId)) || null;
 
-  // جميع المدفوعات
   const allPayments = useMemo(() => {
     return contracts.flatMap((c) => {
       const payArr = Array.isArray(c.payments) ? c.payments : [];
@@ -67,7 +66,7 @@ export default function InstallmentsScreen({
     });
   }, [contracts]);
 
-  // 3️⃣ تنفيذ عملية السداد مع إرسال الكائن المنظّف تماماً لـ Supabase
+  // 3️⃣ عملية السداد مع استبعاد id من كائن التحديث الموجه لـ Supabase
   const handlePaySubmit = async (e) => {
     e.preventDefault();
     if (!selectedContract) return;
@@ -75,7 +74,7 @@ export default function InstallmentsScreen({
     const numAmount = Math.round(parseFloat(amount) || 0);
     if (numAmount <= 0) return;
 
-    const prevPaid = Number(selectedContract.paidAmount ?? 0);
+    const prevPaid = Number(selectedContract.paidAmount ?? selectedContract.paid_amount ?? 0);
     const newPaid = prevPaid + numAmount;
 
     const totalPrice = Number(selectedContract.sale || 0);
@@ -96,8 +95,8 @@ export default function InstallmentsScreen({
       collector
     };
 
-    // 🎯 الكائن النقي المطابق 100% لأعمدة جدول contracts بـ Supabase
-    const cleanPayload = {
+    // 🎯 كائن التحديث النقي (بدون تضمين id داخل الحقول المراد تعديلها)
+    const updatedContract = {
       id: selectedContract.id,
       name: selectedContract.name || "",
       phone: selectedContract.phone || "",
@@ -116,12 +115,12 @@ export default function InstallmentsScreen({
     };
 
     if (onUpdateContract) {
-      await onUpdateContract(cleanPayload);
+      await onUpdateContract(updatedContract);
     }
 
     setActiveReceipt({
       client: {
-        ...cleanPayload,
+        ...updatedContract,
         totalPaid: newPaid,
         remaining: newRemaining
       },
@@ -130,7 +129,7 @@ export default function InstallmentsScreen({
     setAmount("");
   };
 
-  // 4️⃣ حذف الدفعة وتنظيف الكائن بنفس الدقة
+  // 4️⃣ حذف الدفعة بنفس الضوابط
   const handleDeletePayment = async (paymentId) => {
     if (!selectedContract) return;
 
@@ -140,14 +139,14 @@ export default function InstallmentsScreen({
 
     const payAmt = Number(targetPayment.amount || 0);
 
-    const prevPaid = Number(selectedContract.paidAmount ?? 0);
+    const prevPaid = Number(selectedContract.paidAmount ?? selectedContract.paid_amount ?? 0);
     const newPaid = Math.max(0, prevPaid - payAmt);
 
     const totalPrice = Number(selectedContract.sale || 0);
     const downPrice = Number(selectedContract.down || 0);
     const newRemaining = Math.max(0, totalPrice - downPrice - newPaid);
 
-    const cleanPayload = {
+    const updatedContract = {
       id: selectedContract.id,
       name: selectedContract.name || "",
       phone: selectedContract.phone || "",
@@ -166,7 +165,7 @@ export default function InstallmentsScreen({
     };
 
     if (onUpdateContract) {
-      await onUpdateContract(cleanPayload);
+      await onUpdateContract(updatedContract);
     }
   };
 
