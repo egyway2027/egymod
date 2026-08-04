@@ -1,12 +1,12 @@
-SEARCH >>>>>>>
-import React, { useState } from "react";
-=======
-import React, { useState, useMemo } from "react";
-REPLACE <<<<<<<
 
-SEARCH >>>>>>>
+import React, { useState } from "react";
+
+import React, { useState, useMemo } from "react";
+
+
+
   const { clientsList, isLoading, handleSaveClient, handleUpdateContract } = useCloudData();
-=======
+
   const { clientsList, isLoading, handleSaveClient, handleUpdateContract } = useCloudData();
 
   // 📈 حساب صافي الأرباح ومستحقات الشهر ديناميكياً
