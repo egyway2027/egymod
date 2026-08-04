@@ -30,9 +30,9 @@ import React, { useState, useMemo } from "react";
       return acc + Math.min(monthly, remaining);
     }, 0);
   }, [clientsList]);
-REPLACE <<<<<<<
 
-SEARCH >>>>>>>
+
+
               <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
                 <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
                   <TrendingUp size={24} color={themeStyles.accentGold} />
@@ -57,7 +57,7 @@ SEARCH >>>>>>>
                   <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
                 </div>
               </section>
-=======
+
               <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
                 <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
                   <TrendingUp size={24} color={themeStyles.accentGold} />
@@ -86,4 +86,4 @@ SEARCH >>>>>>>
                   <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
                 </div>
               </section>
-REPLACE <<<<<<<
+
