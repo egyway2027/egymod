@@ -136,7 +136,7 @@ export function MonthlyDuesScreen({
       />
 
       {/* 2. بطاقات الإحصائيات العلوية الثلاث */}
-      <section style={{ ...styles.kpiRow, marginBottom: 16 }}>
+    <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 16 }}>
         <KPI
           icon={CalendarClock}
           label={t.totalMonthlyRequired || (isEN ? "Total Required This Month" : "إجمالي المطلوب هذا الشهر")}
@@ -194,16 +194,17 @@ export function MonthlyDuesScreen({
               key={btn.key}
               type="button"
               onClick={() => setStatusFilter(btn.key)}
-              style={{
-                background: statusFilter === btn.key ? themeStyles.accent : themeStyles.inputBg,
-                color: statusFilter === btn.key ? "#111111" : themeStyles.subText,
-                border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`,
-                padding: "8px 14px",
-                borderRadius: themeStyles.borderRadius || 8,
-                fontSize: 12.5,
-                fontWeight: 700,
-                cursor: "pointer"
-              }}
+
+   style={{
+  background: statusFilter === btn.key ? "#d69a5f" : "#1a1a1a",
+  color: statusFilter === btn.key ? "#000000" : "#aaaaaa",
+  border: `1px solid ${statusFilter === btn.key ? "#d69a5f" : "#333333"}`,
+  padding: "8px 16px",
+  borderRadius: 8,
+  fontSize: 13,
+  fontWeight: 800,
+  cursor: "pointer"
+}}
             >
               {btn.label}
             </button>
@@ -261,25 +262,25 @@ export function MonthlyDuesScreen({
                         fontWeight: 800,
                         padding: "4px 8px",
                         borderRadius: themeStyles.borderRadius || 6,
-                        background:
-                          item.monthStatus === "paid"
-                            ? "#213526"
-                            : item.monthStatus === "partial"
-                            ? "#3d3527"
-                            : "#3a2320",
-                        color:
-                          item.monthStatus === "paid"
-                            ? "#bfe8cd"
-                            : item.monthStatus === "partial"
-                            ? themeStyles.accentGold
-                            : "#f0c6bb",
-                        border: `1px solid ${
-                          item.monthStatus === "paid"
-                            ? "#3d6b4a"
-                            : item.monthStatus === "partial"
-                            ? "#b6935a"
-                            : "#7a4a3f"
-                        }`
+                  background:
+  item.monthStatus === "paid"
+    ? "#143820"
+    : item.monthStatus === "partial"
+    ? "#3d3019"
+    : "#3e1c24",
+color:
+  item.monthStatus === "paid"
+    ? "#4ade80"
+    : item.monthStatus === "partial"
+    ? "#fbbf24"
+    : "#f87171",
+border: `1px solid ${
+  item.monthStatus === "paid"
+    ? "#22c55e55"
+    : item.monthStatus === "partial"
+    ? "#f59e0b55"
+    : "#ef444455"
+}`
                       }}
                     >
                       {item.monthStatus === "paid"
