@@ -1,4 +1,72 @@
-// 3️⃣ عملية السداد مع استبعاد id من كائن التحديث الموجه لـ Supabase
+import React, { useState, useMemo } from "react";
+import { FileText } from "lucide-react";
+import { ScreenHeader, BottomExitButton } from "../CommonUI";
+import CustomerSearchHeader from "./CustomerSearchHeader";
+import InstallmentsTable, { AllPaymentsRegisterModal } from "./InstallmentsTable";
+import PaymentModal from "./PaymentModal";
+
+export default function InstallmentsScreen({
+  contracts = [],
+  onUpdateContract,
+  onBack,
+  t = {},
+  themeStyles = {}
+}) {
+  const [selectedId, setSelectedId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [payDate, setPayDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [method, setMethod] = useState("نقداً / كاش");
+  const [collector, setCollector] = useState("المشرف");
+
+  const [activeReceipt, setActiveReceipt] = useState(null);
+  const [showAllPayments, setShowAllPayments] = useState(false);
+
+  // 1️⃣ العقد الأصلي المحدد مباشرة من السحابة
+  const selectedContract = useMemo(() => {
+    return contracts.find((c) => String(c.id) === String(selectedId)) || null;
+  }, [contracts, selectedId]);
+
+  // 2️⃣ صفوف العرض بالواجهة
+  const rows = useMemo(() => {
+    return contracts.map((c) => {
+      const saleVal = Number(c.sale || 0);
+      const downVal = Number(c.down || 0);
+      const paidVal = Number(c.paidAmount ?? c.paid_amount ?? c.totalPaid ?? 0);
+      const remVal = Number(c.remainingAmount ?? Math.max(0, saleVal - downVal - paidVal));
+
+      return {
+        ...c,
+        id: c.id,
+        name: c.name || "عميل بدون اسم",
+        phone: c.phone || "",
+        item: c.item || "",
+        sale: saleVal,
+        down: downVal,
+        monthly: Number(c.monthly || 0),
+        paidAmount: paidVal,
+        totalPaid: paidVal,
+        remainingAmount: remVal,
+        remaining: remVal,
+        payments: Array.isArray(c.payments) ? c.payments : []
+      };
+    });
+  }, [contracts]);
+
+  const activeSelectedRow = rows.find((r) => String(r.id) === String(selectedId)) || null;
+
+  const allPayments = useMemo(() => {
+    return contracts.flatMap((c) => {
+      const payArr = Array.isArray(c.payments) ? c.payments : [];
+      return payArr.map((p) => ({
+        ...p,
+        clientId: String(p.clientId || c.id),
+        clientName: p.clientName || c.name || "",
+        item: p.item || c.item || ""
+      }));
+    });
+  }, [contracts]);
+
+  // 3️⃣ عملية السداد مع استبعاد id من كائن التحديث الموجه لـ Supabase
   const handlePaySubmit = async (e) => {
     e.preventDefault();
     if (!selectedContract) return;
@@ -109,3 +177,85 @@
       await onUpdateContract(updatedContract);
     }
   };
+
+  return (
+    <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <ScreenHeader title={t.pay || "سداد الأقساط"} onBack={onBack} t={t} />
+
+      <div style={{ marginBottom: 16 }}>
+        <button
+          type="button"
+          onClick={() => setShowAllPayments(true)}
+          style={{
+            width: "100%",
+            background: `linear-gradient(145deg, ${themeStyles.accentGold || "#d4af37"}, ${themeStyles.accent || "#c5a028"})`,
+            color: "#111111",
+            border: "none",
+            borderRadius: themeStyles.borderRadius || 12,
+            padding: "14px",
+            fontWeight: 800,
+            fontSize: 15,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8
+          }}
+        >
+          <FileText size={18} /> [ 🧾 فتح سجل السداد الشامل لجميع العملاء ]
+        </button>
+      </div>
+
+      <div style={{ background: themeStyles.card, border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`, borderRadius: themeStyles.borderRadius || 18, padding: 22 }}>
+        <CustomerSearchHeader
+          rows={rows}
+          selected={activeSelectedRow}
+          setSelected={(val) => setSelectedId(val ? val.id : "")}
+          amount={amount}
+          setAmount={setAmount}
+          payDate={payDate}
+          setPayDate={setPayDate}
+          method={method}
+          setMethod={setMethod}
+          collector={collector}
+          setCollector={setCollector}
+          employees={[]}
+          onSubmitPayment={handlePaySubmit}
+          t={t}
+          themeStyles={themeStyles}
+        />
+
+        <InstallmentsTable
+          selected={activeSelectedRow}
+          clientPayments={selectedContract?.payments || []}
+          onShowReceipt={(client, payment) => setActiveReceipt({ client, payment })}
+          onDeletePayment={(paymentId) => handleDeletePayment(paymentId)}
+          t={t}
+          themeStyles={themeStyles}
+        />
+
+        <BottomExitButton onBack={onBack} t={t} />
+      </div>
+
+      {activeReceipt && (
+        <PaymentModal
+          receipt={activeReceipt}
+          storeInfo={{ name: "إيجيمود لإدارة الأقساط" }}
+          onClose={() => setActiveReceipt(null)}
+          themeStyles={themeStyles}
+          t={t}
+        />
+      )}
+
+      {showAllPayments && (
+        <AllPaymentsRegisterModal
+          payments={allPayments}
+          storeInfo={{ name: "إيجيمود لإدارة الأقساط" }}
+          onClose={() => setShowAllPayments(false)}
+          t={t}
+          themeStyles={themeStyles}
+        />
+      )}
+    </div>
+  );
+}
