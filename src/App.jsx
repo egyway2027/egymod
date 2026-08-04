@@ -133,7 +133,14 @@ export function App() {
               themeStyles={themeStyles}
             />
           )}
-
+{/* 📌 شاشة مستحقات هذا الشهر */}
+{currentScreen === "monthlyDues" && (
+  <MonthlyDues
+    clientsList={clientsList}
+    onOpenPaymentModal={() => navigateTo("pay")}
+    onBack={handleBack}
+  />
+)}
           {/* 4. شاشة الإعدادات الشاملة (15 لغة و 100 ثيم) */}
           {currentScreen === "settings" && (
             <SettingsScreen
@@ -231,6 +238,8 @@ export function App() {
                           navigateTo("addClient");
                         } else if (b.key === "pay") {
                           navigateTo("pay");
+                          } else if (b.key === "monthlyDues") {
+  navigateTo("monthlyDues"); // 👈 التعديل هنا لتوجيه الشاشة
                         } else if (b.key === "search") {
                           navigateTo("clientQuery");
                         } else if (b.key === "settings") {
