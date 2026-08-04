@@ -1,183 +1,403 @@
-import React, { useMemo } from "react";
+import React, { useState, useMemo } from "react";
+import { Wallet, CalendarClock, TrendingUp } from "lucide-react";
+import { Field, ScreenHeader, BottomExitButton, KPI } from "./CommonUI";
 
-export default function MonthlyDues({ clientsList = [], onOpenPaymentModal, onBack }) {
-  // 🗓️ حساب مستحقات الشهر الحالي
-  const { currentMonthName, currentYear, dueInstallments, totalMonthlyAmount } =
-    useMemo(() => {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth();
+// دالة مساعدة لضمان عرض الأرقام كأعداد صحيحة مجردة
+const fmtCleanInt = (val) => {
+  const num = Math.round(Number(val) || 0);
+  return String(num);
+};
 
-      const monthName = now.toLocaleString("ar-EG", { month: "long" });
+export function MonthlyDuesScreen({
+  rows = [],
+  payments = [],
+  onBack,
+  onPay,
+  t = {},
+  styles = {},
+  themeStyles = {}
+}) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [payTarget, setPayTarget] = useState(null);
+  const [payAmount, setPayAmount] = useState("");
 
-      const dues = [];
-      let totalSum = 0;
+  const isEN = useMemo(() => {
+    return t?.lang === "en" || document.documentElement.lang === "en";
+  }, [t]);
 
-      clientsList.forEach((contract) => {
-        const installments = Array.isArray(contract.installments)
-          ? contract.installments
-          : [];
+  const today = new Date();
+  const currentMonthName = today.toLocaleDateString(
+    isEN ? "en-US" : t.localeCode || "ar-EG",
+    { month: "long", year: "numeric" }
+  );
 
-        installments.forEach((inst, index) => {
-          if (!inst.dueDate) return;
+  // 🗓️ استخراج فلترة الأقساط الخاصة بالشهر الحالي بناءً على المديونية والمطلوب
+  const processedRows = useMemo(() => {
+    return (rows || [])
+      .filter((r) => (r.remaining || 0) > 0 && (r.monthly || 0) > 0)
+      .map((r) => {
+        const monthlyReq = Math.round(Math.min(r.monthly, r.remaining));
+        const debt = Math.round(Number(r.debtAmount || 0));
+        let status = "unpaid";
+        let paidThisMonth = 0;
 
-          const instDate = new Date(inst.dueDate);
-          const isCurrentMonth =
-            instDate.getFullYear() === year && instDate.getMonth() === month;
-          const isPending = !inst.isPaid && (inst.amount || 0) > 0;
+        if (debt <= 0) {
+          status = "paid";
+          paidThisMonth = monthlyReq;
+        } else if (debt < monthlyReq) {
+          status = "partial";
+          paidThisMonth = monthlyReq - debt;
+        } else {
+          status = "unpaid";
+          paidThisMonth = 0;
+        }
 
-          if (isCurrentMonth && isPending) {
-            const amount = Number(inst.amount) || 0;
-            totalSum += amount;
-
-            dues.push({
-              contractId: contract.id,
-              clientName: contract.clientName || contract.name || "عميل بدون اسم",
-              clientPhone: contract.phone || contract.clientPhone || "غير مسجل",
-              itemName: contract.itemName || contract.item || "بضاعة / قسط",
-              installmentIndex: index,
-              dueDate: inst.dueDate,
-              amount: amount,
-              fullContract: contract,
-            });
-          }
-        });
+        return {
+          ...r,
+          dueThisMonth: monthlyReq,
+          paidThisMonth,
+          remainingThisMonth: Math.max(0, monthlyReq - paidThisMonth),
+          monthStatus: status
+        };
       });
+  }, [rows]);
 
-      return {
-        currentMonthName: monthName,
-        currentYear: year,
-        dueInstallments: dues,
-        totalMonthlyAmount: totalSum,
-      };
-    }, [clientsList]);
+  // 🔍 الفلترة بحسب نص البحث وحالة السداد
+  const filtered = useMemo(() => {
+    return processedRows.filter((r) => {
+      const q = search.trim().toLowerCase();
+      const matchSearch =
+        (r.name || "").toLowerCase().includes(q) ||
+        (r.phone || "").includes(q) ||
+        (r.item || "").toLowerCase().includes(q);
+
+      if (!matchSearch) return false;
+
+      if (statusFilter === "paid") return r.monthStatus === "paid";
+      if (statusFilter === "partial") return r.monthStatus === "partial";
+      if (statusFilter === "unpaid") return r.monthStatus === "unpaid";
+      return true;
+    });
+  }, [processedRows, search, statusFilter]);
+
+  // 📊 حساب الإحصائيات العلوية
+  const stats = useMemo(() => {
+    const totalDue = processedRows.reduce((s, r) => s + r.dueThisMonth, 0);
+    const totalCollected = processedRows.reduce((s, r) => s + r.paidThisMonth, 0);
+    const totalRemaining = totalDue - totalCollected;
+    const progressPct = totalDue > 0 ? Math.round((totalCollected / totalDue) * 100) : 0;
+    return { totalDue, totalCollected, totalRemaining, progressPct };
+  }, [processedRows]);
+
+  // 📱 إرسال رسالة تذكير عبر الواتساب
+  const handleSendWhatsApp = (client) => {
+    const msg = `${t.whatsAppReminderHeader || (isEN ? "Hello," : "السلام عليكم ورحمة الله، أستاذ/ة")} ${client.name}.\n${t.whatsAppDuesNotice || (isEN ? "We would like to remind you of the installment due for month" : "نود تذكيركم بحلول موعد قسط شهر")} (${currentMonthName}) ${t.whatsAppForItem || (isEN ? "for item" : "لقسط")} (${client.item}) ${t.whatsAppAmountLabel || (isEN ? "value" : "بقيمة")} ${fmtCleanInt(client.dueThisMonth)} ${t.currency || (isEN ? "EGP" : "ج.م")}.\n${t.whatsAppDuesFooter || (isEN ? "Please kindly pay on time. Thank you!" : "برجاء التكرم بالسداد في الموعد المحدد. شكراً لكم!")}`;
+    window.open(`https://wa.me/2${client.phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  // 💳 تأكيد تحصيل القسط سحابياً
+  const handleConfirmPay = async (e) => {
+    e.preventDefault();
+    if (!payTarget || !payAmount) return;
+    const cleanAmount = Math.round(parseFloat(payAmount) || 0);
+    if (onPay) {
+      await onPay(payTarget.id, cleanAmount, new Date().toISOString().split("T")[0]);
+    }
+    setPayTarget(null);
+    setPayAmount("");
+  };
 
   return (
-    <div style={{ padding: "20px", color: "#fff", direction: "rtl" }}>
-      {/* 🚀 الهيدر وملخص الإحصائيات */}
+    <div style={styles.container}>
+      {/* 1. الشريط العلوي */}
+      <ScreenHeader
+        title={`${t.monthlyDuesFor || (isEN ? "Monthly Dues for" : "مستحقات شهر")} ${currentMonthName}`}
+        onBack={onBack}
+        styles={styles}
+        t={t}
+      />
+
+      {/* 2. بطاقات الإحصائيات العلوية الثلاث */}
+      <section style={{ ...styles.kpiRow, marginBottom: 16 }}>
+        <KPI
+          icon={CalendarClock}
+          label={t.totalMonthlyRequired || (isEN ? "Total Required This Month" : "إجمالي المطلوب هذا الشهر")}
+          sub={t.sumDueInstallments || (isEN ? "Sum of due installments" : "مجموع الأقساط المستحقة")}
+          value={`${fmtCleanInt(stats.totalDue)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
+          styles={styles}
+          themeStyles={themeStyles}
+        />
+        <KPI
+          icon={Wallet}
+          label={t.collectedSoFar || (isEN ? "Collected So Far" : "تم تحصيله حتى الآن")}
+          sub={`${t.completionRate || (isEN ? "Completion Rate" : "نسبة الإنجاز")} %${fmtCleanInt(stats.progressPct)}`}
+          value={`${fmtCleanInt(stats.totalCollected)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
+          styles={styles}
+          themeStyles={themeStyles}
+        />
+        <KPI
+          icon={TrendingUp}
+          label={t.remainingToCollect || (isEN ? "Remaining To Collect" : "المتبقي تحصيله")}
+          sub={t.duesUnderFollowUp || (isEN ? "Dues under follow-up" : "مستحقات جاري متابعتها")}
+          value={`${fmtCleanInt(stats.totalRemaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
+          styles={styles}
+          themeStyles={themeStyles}
+        />
+      </section>
+
+      {/* 3. حقل البحث وأزرار التصفية السريعة */}
       <div
         style={{
+          ...styles.card,
+          marginBottom: 16,
+          padding: 16,
           display: "flex",
-          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
           alignItems: "center",
-          marginBottom: "20px",
-          background: "#1e1e1e",
-          padding: "15px 20px",
-          borderRadius: "10px",
-          border: "1px solid #333",
+          justifyContent: "space-between"
         }}
       >
-        <div>
-          <h2 style={{ margin: 0, fontSize: "1.4rem", color: "#f39c12" }}>
-            📅 مستحقات شهر {currentMonthName} {currentYear}
-          </h2>
-          <p style={{ margin: "5px 0 0 0", color: "#aaa", fontSize: "0.9rem" }}>
-            إجمالي الحالات المطلوبة تحصيلها خلال هذا الشهر
-          </p>
-        </div>
+        <input
+          style={{ ...styles.input, maxWidth: 300 }}
+          placeholder={t.searchClientPlaceholder || (isEN ? "Search by client, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
-        <div style={{ textAlign: "left" }}>
-          <span style={{ fontSize: "0.85rem", color: "#bbb", display: "block" }}>
-            إجمالي المستحق
-          </span>
-          <span style={{ fontSize: "1.6rem", fontWeight: "bold", color: "#2ecc71" }}>
-            {totalMonthlyAmount.toLocaleString()} ج.م
-          </span>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {[
+            { key: "all", label: `${t.allFilter || (isEN ? "All" : "الكل")} (${fmtCleanInt(processedRows.length)})` },
+            { key: "unpaid", label: t.unpaidFilter || (isEN ? "لم يسدد" : "لم يسدد") },
+            { key: "partial", label: t.partialFilter || (isEN ? "سداد جزئي" : "سداد جزئي") },
+            { key: "paid", label: t.paidFilter || (isEN ? "تم السداد" : "تم السداد") }
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              type="button"
+              onClick={() => setStatusFilter(btn.key)}
+              style={{
+                background: statusFilter === btn.key ? themeStyles.accent : themeStyles.inputBg,
+                color: statusFilter === btn.key ? "#111111" : themeStyles.subText,
+                border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`,
+                padding: "8px 14px",
+                borderRadius: themeStyles.borderRadius || 8,
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              {btn.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 📋 جدول المستحقات */}
-      {dueInstallments.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "40px",
-            background: "#141414",
-            borderRadius: "10px",
-            color: "#888",
-          }}
-        >
-          🎉 لا توجد أقساط مستحقة للتحصيل في شهر {currentMonthName}!
-        </div>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              background: "#141414",
-              borderRadius: "10px",
-              overflow: "hidden",
-            }}
-          >
-            <thead>
-              <tr style={{ background: "#252525", color: "#f39c12", textAlign: "right" }}>
-                <th style={{ padding: "12px" }}>#</th>
-                <th style={{ padding: "12px" }}>اسم العميل</th>
-                <th style={{ padding: "12px" }}>الهاتف</th>
-                <th style={{ padding: "12px" }}>السلعة</th>
-                <th style={{ padding: "12px" }}>تاريخ الاستحقاق</th>
-                <th style={{ padding: "12px" }}>قيمة القسط</th>
-                <th style={{ padding: "12px", textAlign: "center" }}>الإجراء</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dueInstallments.map((item, idx) => (
-                <tr
-                  key={`${item.contractId}-${item.installmentIndex}`}
-                  style={{
-                    borderBottom: "1px solid #222",
-                    transition: "background 0.2s",
-                  }}
-                >
-                  <td style={{ padding: "12px" }}>{idx + 1}</td>
-                  <td style={{ padding: "12px", fontWeight: "bold" }}>{item.clientName}</td>
-                  <td style={{ padding: "12px", color: "#aaa" }}>{item.clientPhone}</td>
-                  <td style={{ padding: "12px" }}>{item.itemName}</td>
-                  <td style={{ padding: "12px", color: "#e74c3c" }}>{item.dueDate}</td>
-                  <td style={{ padding: "12px", fontWeight: "bold", color: "#2ecc71" }}>
-                    {item.amount.toLocaleString()} ج.م
-                  </td>
-                  <td style={{ padding: "12px", textAlign: "center" }}>
-                    <button
-                      onClick={() => onOpenPaymentModal && onOpenPaymentModal(item.fullContract)}
+      {/* 4. قائمة كروت العملاء والمستحقات */}
+      <div style={styles.card}>
+        {filtered.length === 0 ? (
+          <div style={styles.emptyState}>
+            {t.noDuesNote || (isEN ? "No dues match the search query." : "لا توجد مستحقات تنطبق عليها معايير البحث.")}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {filtered.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  background: themeStyles.inputBg,
+                  border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`,
+                  borderRadius: themeStyles.borderRadius || 12,
+                  padding: 16,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: themeStyles.text }}>{item.name}</div>
+                  <div style={{ fontSize: 13, color: themeStyles.accentGold, marginTop: 2 }}>
+                    {item.item} · {item.phone}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: themeStyles.subText }}>
+                      {t.monthInstallment || (isEN ? "Monthly Installment" : "قسط الشهر")}
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: themeStyles.accentGold }}>
+                      {fmtCleanInt(item.dueThisMonth)} {t.currency || (isEN ? "EGP" : "ج.م")}
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: themeStyles.subText }}>
+                      {t.paymentStatus || (isEN ? "Payment Status" : "حالة السداد")}
+                    </div>
+                    <div
                       style={{
-                        background: "#f39c12",
-                        color: "#000",
-                        border: "none",
-                        padding: "6px 14px",
-                        borderRadius: "5px",
-                        fontWeight: "bold",
-                        cursor: "pointer",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        padding: "4px 8px",
+                        borderRadius: themeStyles.borderRadius || 6,
+                        background:
+                          item.monthStatus === "paid"
+                            ? "#213526"
+                            : item.monthStatus === "partial"
+                            ? "#3d3527"
+                            : "#3a2320",
+                        color:
+                          item.monthStatus === "paid"
+                            ? "#bfe8cd"
+                            : item.monthStatus === "partial"
+                            ? themeStyles.accentGold
+                            : "#f0c6bb",
+                        border: `1px solid ${
+                          item.monthStatus === "paid"
+                            ? "#3d6b4a"
+                            : item.monthStatus === "partial"
+                            ? "#b6935a"
+                            : "#7a4a3f"
+                        }`
                       }}
                     >
-                      تسديد الآن 💳
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                      {item.monthStatus === "paid"
+                        ? isEN ? "Paid" : "تم السداد"
+                        : item.monthStatus === "partial"
+                        ? isEN ? "Partially Paid" : "سداد جزئي"
+                        : isEN ? "Unpaid" : "لم يسدد"}
+                    </div>
+                  </div>
 
-      {/* ↩️ زر العودة */}
-      {onBack && (
-        <button
-          onClick={onBack}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      type="button"
+                      title={t.whatsapp || (isEN ? "WhatsApp" : "واتساب")}
+                      onClick={() => handleSendWhatsApp(item)}
+                      style={{
+                        background: "#213526",
+                        border: "1px solid #3d6b4a",
+                        color: "#bfe8cd",
+                        padding: "8px 12px",
+                        borderRadius: themeStyles.borderRadius || 8,
+                        cursor: "pointer",
+                        fontSize: 12,
+                        fontWeight: 700
+                      }}
+                    >
+                      {t.whatsapp || (isEN ? "WhatsApp" : "واتساب")}
+                    </button>
+
+                    {item.phone && (
+                      <a
+                        href={`tel:${item.phone}`}
+                        style={{
+                          background: "#1b2a38",
+                          border: "1px solid #385a7c",
+                          color: "#b2d4f5",
+                          padding: "8px 12px",
+                          borderRadius: themeStyles.borderRadius || 8,
+                          textDecoration: "none",
+                          fontSize: 12,
+                          fontWeight: 700
+                        }}
+                      >
+                        {t.call || (isEN ? "Call" : "اتصال")}
+                      </a>
+                    )}
+
+                    {item.monthStatus !== "paid" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPayTarget(item);
+                          setPayAmount(item.remainingThisMonth);
+                        }}
+                        style={{
+                          background: `linear-gradient(145deg, ${themeStyles.accentGold}, ${themeStyles.accent})`,
+                          color: "#111111",
+                          border: "none",
+                          padding: "8px 14px",
+                          borderRadius: themeStyles.borderRadius || 8,
+                          cursor: "pointer",
+                          fontSize: 12,
+                          fontWeight: 800,
+                          boxShadow: themeStyles.buttonShadow
+                        }}
+                      >
+                        {t.collect || (isEN ? "Collect" : "تحصيل")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <BottomExitButton onBack={onBack} styles={styles} t={t} />
+      </div>
+
+      {/* 5. مودال السداد المباشر عند الضغط على زر "تحصيل" */}
+      {payTarget && (
+        <div
           style={{
-            marginTop: "20px",
-            background: "#333",
-            color: "#fff",
-            border: "none",
-            padding: "10px 20px",
-            borderRadius: "6px",
-            cursor: "pointer",
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.75)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+            padding: 16
           }}
         >
-          خروج والعودة للشاشة الرئيسية
-        </button>
+          <div style={{ ...styles.card, width: "100%", maxWidth: 400 }}>
+            <h3 style={{ color: themeStyles.accentGold, fontSize: 17, fontWeight: 800, marginBottom: 12 }}>
+              {t.collectInstallment || (isEN ? "Collect Installment" : "تحصيل قسط")}: {payTarget.name}
+            </h3>
+            <form onSubmit={handleConfirmPay} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Field label={t.amountToCollect || (isEN ? "Amount to Collect" : "المبلغ المراد تحصيله")} styles={styles}>
+                <input
+                  type="number"
+                  step="1"
+                  style={styles.input}
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  placeholder="0"
+                  required
+                />
+              </Field>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button type="submit" style={{ ...styles.saveBtn, flex: 1, marginTop: 0 }}>
+                  {t.confirmCollection || (isEN ? "Confirm Collection" : "تأكيد التحصيل")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPayTarget(null)}
+                  style={{
+                    background: themeStyles.inputBg,
+                    border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`,
+                    color: themeStyles.text,
+                    borderRadius: themeStyles.borderRadius || 12,
+                    padding: "12px 16px",
+                    cursor: "pointer",
+                    fontWeight: 700
+                  }}
+                >
+                  {t.cancel || (isEN ? "Cancel" : "إلغاء")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
 }
+
+export default MonthlyDuesScreen;
