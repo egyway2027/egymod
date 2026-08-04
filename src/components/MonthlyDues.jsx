@@ -126,7 +126,7 @@ export function MonthlyDuesScreen({
   };
 
   return (
-    <div style={styles.container}>
+    <div style={{ maxWidth: 1050, margin: "0 auto", padding: "16px 20px", ...styles.container }}>
       {/* 1. الشريط العلوي */}
       <ScreenHeader
         title={`${t.monthlyDuesFor || (isEN ? "Monthly Dues for" : "مستحقات شهر")} ${currentMonthName}`}
@@ -164,24 +164,36 @@ export function MonthlyDuesScreen({
       </section>
 
       {/* 3. حقل البحث وأزرار التصفية السريعة */}
-      <div
-        style={{
-          ...styles.card,
-          marginBottom: 16,
-          padding: 16,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 12,
-          alignItems: "center",
-          justifyContent: "space-between"
-        }}
-      >
+<div
+  style={{
+    background: "#141414",
+    border: "1px solid #262626",
+    borderRadius: 16,
+    marginBottom: 16,
+    padding: "14px 18px",
+    display: "flex",
+    flexWrap: "wrap-reverse",
+    gap: 12,
+    alignItems: "center",
+    justifyContent: "space-between"
+  }}
+>
         <input
-          style={{ ...styles.input, maxWidth: 300 }}
-          placeholder={t.searchClientPlaceholder || (isEN ? "Search by client, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+  style={{
+    background: "#1a1a1a",
+    border: "1px solid #333333",
+    color: "#ffffff",
+    padding: "10px 16px",
+    borderRadius: 10,
+    fontSize: 13,
+    width: "100%",
+    maxWidth: 320,
+    outline: "none"
+  }}
+  placeholder={t.searchClientPlaceholder || (isEN ? "Search by client, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+/>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {[
@@ -213,7 +225,7 @@ export function MonthlyDuesScreen({
       </div>
 
       {/* 4. قائمة كروت العملاء والمستحقات */}
-      <div style={styles.card}>
+     <div style={{ background: "#141414", border: "1px solid #262626", borderRadius: 16, padding: 16 }}>
         {filtered.length === 0 ? (
           <div style={styles.emptyState}>
             {t.noDuesNote || (isEN ? "No dues match the search query." : "لا توجد مستحقات تنطبق عليها معايير البحث.")}
