@@ -35,10 +35,10 @@ export function MonthlyDuesScreen({
   // 🗓️ استخراج فلترة الأقساط الخاصة بالشهر الحالي بناءً على المديونية والمطلوب
   const processedRows = useMemo(() => {
     return (rows || [])
-      .filter((r) => (r.remaining || 0) > 0 && (r.monthly || 0) > 0)
+     .filter((r) => Number(r.remainingAmount ?? r.remaining ?? 0) > 0 && Number(r.monthly ?? r.monthlyInstallment ?? 0) > 0)
       .map((r) => {
         const monthlyReq = Math.round(Math.min(r.monthly, r.remaining));
-        const debt = Math.round(Number(r.debtAmount || 0));
+     const debt = r.debtAmount !== undefined ? Math.round(Number(r.debtAmount)) : monthlyReq;
         let status = "unpaid";
         let paidThisMonth = 0;
 
