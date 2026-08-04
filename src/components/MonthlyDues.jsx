@@ -36,19 +36,23 @@ export function MonthlyDuesScreen({
   const processedRows = useMemo(() => {
     return (rows || [])
       .map((r) => {
-        const sale = Number(r.sale ?? r.salePrice ?? r.sale_price ?? 0);
-        const down = Number(r.down ?? r.downPayment ?? r.down_payment ?? 0);
-        const totalPaid = Number(r.totalPaid ?? r.total_paid ?? 0);
+        const sale = Number(r.sale || r.salePrice || r.sale_price || 0);
+        const down = Number(r.down || r.downPayment || r.down_payment || 0);
+        const totalPaid = Number(r.totalPaid || r.total_paid || 0);
 
-        const remaining = Number(r.remaining ?? r.remainingAmount ?? r.remaining_amount ?? (sale - down - totalPaid)) || 0;
-        const monthly = Number(r.monthly ?? r.monthlyInstallment ?? r.monthly_installment ?? 0) || 0;
+        const name = r.name || r.clientName || r.client_name || "عميل";
+        const item = r.item || r.itemName || r.item_name || "سلعة";
+        const phone = r.phone || r.clientPhone || r.client_phone || "";
 
-        return { ...r, remaining, monthly };
+        const remaining = Number(r.remaining || r.remainingAmount || r.remaining_amount || (sale - down - totalPaid)) || 0;
+        const monthly = Number(r.monthly || r.monthlyInstallment || r.monthly_installment || 0) || 0;
+
+        return { ...r, name, item, phone, remaining, monthly };
       })
       .filter((r) => r.remaining > 0 && r.monthly > 0)
       .map((r) => {
         const monthlyReq = Math.round(Math.min(r.monthly, r.remaining));
-        const debt = r.debtAmount !== undefined ? Math.round(Number(r.debtAmount)) : monthlyReq;
+        const debt = (Number(r.debtAmount) > 0) ? Math.round(Number(r.debtAmount)) : monthlyReq;
         let status = "unpaid";
         let paidThisMonth = 0;
 
