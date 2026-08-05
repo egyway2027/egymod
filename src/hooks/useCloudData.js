@@ -37,12 +37,13 @@ export function useCloudData() {
           const totalPaidCalculated = downPayment + paidFromInstallments;
           const remainingCalculated = Math.max(0, total - totalPaidCalculated);
 
-          return {
+      return {
             ...item,
+            is_deleted: Boolean(item.is_deleted),
+            status: item.status || (item.is_deleted ? "archived" : "active"),
             installments: inst,
             remaining: item.remaining ?? item.remainingAmount ?? remainingCalculated,
             totalPaid: item.totalPaid ?? totalPaidCalculated
-          };
         });
 
         setClientsList(normalizedData);
