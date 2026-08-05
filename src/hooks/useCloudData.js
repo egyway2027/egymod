@@ -52,22 +52,26 @@ export function useCloudData() {
     }
   };
 
- // ☁️ تحديث بيانات أو حالة عقد (نقل للمهملات / استعادة / تعديل) مع المعالجة الذكية لرفض الأعمدة
+// ☁️ تحديث بيانات أو حالة عقد مع تنقية الأعمدة لضمان الحفظ السحابي
   const handleUpdateContract = async (updatedContract) => {
     try {
       const { id, is_permanently_deleted, ...updateData } = updatedContract;
 
-      // 🔴 1. طلب الحذف النهائي من قاعدة البيانات مباشرة
       if (is_permanently_deleted) {
         return await handleDeleteContract(id);
       }
 
-      console.log("📤 جاري إرسال التحديث لـ Supabase للـ ID:", id, updateData);
+      // 🧹 تنقية البيانات وإرسال أعمدة الجدول المقبولة فقط في Supabase
+      const payload = {
+        status: updateData.status || (updateData.is_deleted ? "archived" : "active"),
+        is_deleted: Boolean(updateData.is_deleted)
+      };
 
-      // 🟡 2. المحاولة الأولى: إرسال التحديث الكامل
-      let { data, error } = await supabase
+      console.log("📤 جاري إرسال حالة الأرشفة المنقاة لـ Supabase للـ ID:", id, payload);
+
+      const { data, error } = await supabase
         .from("contracts")
-        .update(updateData)
+        .update(payload)
         .eq("id", id)
         .select();
 
