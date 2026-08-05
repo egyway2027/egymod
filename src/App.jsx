@@ -280,8 +280,8 @@ const netProfit = useMemo(() => {
                         } else if (b.key === "whatsapp") {
                           setShowWhatsAppModal(true);
                        } else if (b.key === "deleteClient") {
-  navigateTo("deleteClient");
-}
+                          navigateTo("deleteClient");
+                        }
                       }}
                       style={{
                         display: "flex", alignItems: "center", justifyContent: "space-between",
