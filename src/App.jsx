@@ -117,11 +117,15 @@ const netProfit = useMemo(() => {
 
   const monthlyDues = useMemo(() => {
     return (clientsList || []).reduce((acc, curr) => {
-      const sale = Number(curr.sale ?? curr.salePrice ?? curr.sale_price ?? 0);
-      const down = Number(curr.down ?? curr.downPayment ?? curr.down_payment ?? 0);
+      // استبعاد العقود المحذوفة والمؤرشفة
+      if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
+
+      const total = Number(curr.total ?? curr.sale ?? curr.salePrice ?? curr.sale_price ?? 0);
+      const down = Number(curr.downPayment ?? curr.down ?? curr.down_payment ?? 0);
       const totalPaid = Number(curr.totalPaid ?? curr.total_paid ?? 0);
-      const remaining = Number(curr.remainingAmount ?? curr.remaining ?? (sale - down - totalPaid)) || 0;
-      const monthly = Number(curr.monthly ?? curr.monthlyInstallment ?? curr.monthly_installment ?? 0);
+      const remaining = Number(curr.remaining ?? curr.remainingAmount ?? (total - down - totalPaid)) || 0;
+      const monthly = Number(curr.monthlyInstallment ?? curr.monthly ?? curr.monthly_installment ?? 0);
+
       if (remaining <= 0 || monthly <= 0) return acc;
       return acc + Math.min(monthly, remaining);
     }, 0);
