@@ -5,7 +5,7 @@ export function useCloudData() {
   const [clientsList, setClientsList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔄 دالة جلب البيانات السحابية
+  // 🔄 دالة جلب البيانات السحابية مع معالجة وتطبيع البيانات المرجعة
   const refreshData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -15,7 +15,30 @@ export function useCloudData() {
         .order("created_at", { ascending: false });
 
       if (!error && data) {
-        setClientsList(data);
+        // 🧹 تطبيع البيانات لتفادي قيم null وتصفير الأقساط عند التحميل
+        const normalizedData = data.map((item) => {
+          let inst = item.installments;
+          if (typeof inst === "string") {
+            try { inst = JSON.parse(inst); } catch { inst = []; }
+          }
+          inst = Array.isArray(inst) ? inst : [];
+
+          const total = Number(item.total) || 0;
+          const downPayment = Number(item.downPayment || item.down_payment) || 0;
+          
+          const paidFromInstallments = inst.filter(i => i.paid).reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+          const totalPaidCalculated = downPayment + paidFromInstallments;
+          const remainingCalculated = Math.max(0, total - totalPaidCalculated);
+
+          return {
+            ...item,
+            installments: inst,
+            remaining: item.remaining ?? item.remainingAmount ?? remainingCalculated,
+            totalPaid: item.totalPaid ?? totalPaidCalculated
+          };
+        });
+
+        setClientsList(normalizedData);
       } else if (error) {
         console.error("❌ خطأ أثناء جلب العقود من Supabase:", error);
       }
@@ -26,19 +49,23 @@ export function useCloudData() {
     }
   }, []);
 
-  // التحميل التلقائي فور تشغيل التطبيق
-  useEffect(() => {
-    refreshData();
-  }, [refreshData]);
-
- // ☁️ حفظ عقد جديد مع الحفاظ على جدول الأقساط والماليات كاملة
+// ☁️ حفظ عقد جديد مع الحفاظ الكامل على الأقساط والماليات
   const handleSaveClient = async (newClientData) => {
     try {
-      // 🧹 استبعاد حقول العرض المرادفة فقط دون المساس ببيانات الأقساط والماليات
-      const { clientName, clientPhone, itemName, remainingAmount, totalPaid, ...cleanData } = newClientData || {};
+      const { clientName, clientPhone, itemName, remainingAmount, ...cleanData } = newClientData || {};
+
+      const installments = Array.isArray(newClientData?.installments) ? newClientData.installments : [];
+      const total = Number(newClientData?.total) || 0;
+      const downPayment = Number(newClientData?.downPayment) || 0;
+      const remaining = newClientData?.remaining ?? (total - downPayment);
 
       const payload = {
         ...cleanData,
+        installments,
+        total,
+        downPayment,
+        remaining,
+        totalPaid: newClientData?.totalPaid ?? downPayment,
         is_deleted: false,
         status: "active"
       };
@@ -56,6 +83,22 @@ export function useCloudData() {
         return { success: false, error };
       }
 
+      const fullContract = {
+        ...newClientData,
+        ...(data || {}),
+        installments,
+        remaining,
+        totalPaid: payload.totalPaid
+      };
+
+      setClientsList((prev) => [fullContract, ...prev]);
+      console.log("✅ تم حفظ العقد الجديد بنجاح مع الأقساط:", fullContract);
+      return { success: true, contract: fullContract };
+    } catch (err) {
+      console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
+      return { success: false, error: err };
+    }
+  };
       // 🟢 دمج معرف السحابة مع كائن العقد الأصلي لضمان عدم ضياع جدول الأقساط
       const fullContract = {
         ...newClientData,
