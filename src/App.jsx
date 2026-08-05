@@ -21,7 +21,7 @@ import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
 import { RecycleBinModal } from "./components/modals/RecycleBinModal";
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
 import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
-
+import DeleteClientScreen from "./components/DeleteClientScreen";
 import { useNavigation } from "./hooks/useNavigation";
 import { useCloudData } from "./hooks/useCloudData";
 import { useThemeAndLang } from "./hooks/useThemeAndLang";
@@ -162,6 +162,16 @@ const netProfit = useMemo(() => {
     onBack={handleBack}
   />
 )}
+ {/* 📌 شاشة إدارة وحذف حسابات العملاء */}
+{currentScreen === "deleteClient" && (
+  <DeleteClientScreen
+    clientsList={clientsList}
+    onUpdateContract={onUpdateContractSubmit}
+    onBack={handleBack}
+    t={t}
+    themeStyles={themeStyles}
+  />
+)}
           {/* 4. شاشة الإعدادات الشاملة (15 لغة و 100 ثيم) */}
           {currentScreen === "settings" && (
             <SettingsScreen
@@ -270,6 +280,9 @@ const netProfit = useMemo(() => {
                         } else if (b.key === "deleteClient") {
                           setShowRecycleBinModal(true);
                         }
+                     } else if (b.key === "deleteClient") {
+  navigateTo("deleteClient");
+}
                       }}
                       style={{
                         display: "flex", alignItems: "center", justifyContent: "space-between",
