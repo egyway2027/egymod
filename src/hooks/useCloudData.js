@@ -41,8 +41,8 @@ export function useCloudData() {
             is_deleted: Boolean(item.is_deleted),
             status: item.status || (item.is_deleted ? "archived" : "active"),
             installments: inst,
-            remaining: item.remaining ?? item.remainingAmount ?? remainingCalculated,
-            totalPaid: item.totalPaid ?? totalPaidCalculated
+            remaining: Number(item.remaining) > 0 ? Number(item.remaining) : remainingCalculated,
+            totalPaid: Number(item.totalPaid) > 0 ? Number(item.totalPaid) : totalPaidCalculated
           };
         });
 
