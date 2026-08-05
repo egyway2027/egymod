@@ -19,8 +19,9 @@ export function DeleteClientScreen({
     const active = [];
     const trashed = [];
 
-    (clientsList || []).forEach((client) => {
-      if (client.is_deleted || client.status === "archived") {
+  (clientsList || []).forEach((client) => {
+      const isArchived = client.is_deleted === true || client.is_deleted === "true" || client.status === "archived" || client.status === "deleted";
+      if (isArchived) {
         trashed.push(client);
       } else {
         active.push(client);
