@@ -52,10 +52,38 @@ export function useCloudData() {
     }
   };
 
-  // ☁️ تحديث بيانات عقد مع طباعة النتيجة والتحديث الفوري
+// 🗑️ دالة الحذف النهائي الحقيقي من قاعدة بيانات Supabase
+  const handleDeleteContract = async (clientId) => {
+    try {
+      console.log("🔥 جاري تنفيذ الحذف النهائي من Supabase للـ ID:", clientId);
+      const { error } = await supabase
+        .from("contracts")
+        .delete()
+        .eq("id", clientId);
+
+      if (error) {
+        console.error("❌ خطأ صريح من Supabase أثناء الحذف النهائي:", error);
+        return { success: false, error };
+      }
+
+      setClientsList((prev) => prev.filter((c) => String(c.id) !== String(clientId)));
+      console.log("🗑️ تم الحذف النهائي بنجاح من السحابة.");
+      return { success: true };
+    } catch (err) {
+      console.error("❌ خطأ غير متوقع أثناء الحذف النهائي:", err);
+      return { success: false, error: err };
+    }
+  };
+
+  // ☁️ تحديث بيانات أو حالة عقد (نقل للمهملات / استعادة / تعديل)
   const handleUpdateContract = async (updatedContract) => {
     try {
-      const { id, ...updateData } = updatedContract;
+      const { id, is_permanently_deleted, ...updateData } = updatedContract;
+
+      // 🔴 إذا كانت العملية طلب حذف نهائي، نفذ الحذف من قاعدة البيانات فوراً
+      if (is_permanently_deleted) {
+        return await handleDeleteContract(id);
+      }
 
       console.log("📤 جاري إرسال التحديث لـ Supabase للـ ID:", id, updateData);
 
@@ -84,11 +112,11 @@ export function useCloudData() {
     }
   };
 
-  return {
+ return {
     clientsList,
     isLoading,
     refreshData,
     handleSaveClient,
-    handleUpdateContract
+    handleUpdateContract,
+    handleDeleteContract
   };
-}
