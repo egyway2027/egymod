@@ -268,13 +268,16 @@ const netProfit = useMemo(() => {
                 </div>
 
                 <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-                  <Wallet size={24} color={themeStyles.accentGold} />
-                  <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
-                    {(clientsList || []).reduce((acc, curr) => acc + (Number(curr.remainingAmount ?? curr.remaining) || 0), 0)}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
-                  <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
-                </div>
+    <Wallet size={24} color={themeStyles.accentGold} />
+    <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
+      {(clientsList || []).reduce((acc, curr) => {
+        if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
+        return acc + (Number(curr.remaining ?? curr.remainingAmount) || 0);
+      }, 0).toLocaleString()} {t.currency}
+    </div>
+    <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
+    <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
+  </div>
               </section>
 
               <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
