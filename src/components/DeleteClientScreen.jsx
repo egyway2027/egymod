@@ -337,7 +337,7 @@ export function DeleteClientScreen({
         )}
       </div>
 
-      {/* 4. نافذة تأكيد الإجراءات */}
+   {/* 4. نافذة تأكيد الإجراءات */}
       {targetClient && (
         <div
           style={{
