@@ -51,7 +51,26 @@ export function useCloudData() {
       return { success: false, error: err };
     }
   };
+// 🗑️ دالة الحذف النهائي الحقيقي من قاعدة بيانات Supabase
+  const handleDeleteContract = async (clientId) => {
+    try {
+      const { error } = await supabase
+        .from("contracts")
+        .delete()
+        .eq("id", clientId);
 
+      if (error) {
+        console.error("❌ خطأ أثناء الحذف النهائي:", error);
+        return { success: false, error };
+      }
+
+      setClientsList((prev) => prev.filter((c) => String(c.id) !== String(clientId)));
+      return { success: true };
+    } catch (err) {
+      console.error("❌ خطأ غير متوقع أثناء الحذف النهائي:", err);
+      return { success: false, error: err };
+    }
+  };
 // ☁️ تحديث بيانات أو حالة عقد مع تنقية الأعمدة لضمان الحفظ السحابي
   const handleUpdateContract = async (updatedContract) => {
     try {
