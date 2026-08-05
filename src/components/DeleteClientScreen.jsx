@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Trash2, RotateCcw, Search, UserX, AlertTriangle, ArrowRight, X, Check } from "lucide-react";
+import { Trash2, RotateCcw, Search, UserX, AlertTriangle, ArrowRight, X } from "lucide-react";
 
 export function DeleteClientScreen({
   clientsList = [],
@@ -12,14 +12,14 @@ export function DeleteClientScreen({
   const [activeTab, setActiveTab] = useState("active"); // "active" | "trash"
   const [targetClient, setTargetClient] = useState(null);
   const [actionType, setActionType] = useState(null); // "soft_delete" | "restore" | "permanent_delete"
- const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [localClients, setLocalClients] = useState(clientsList);
 
   useEffect(() => {
     setLocalClients(clientsList);
   }, [clientsList]);
 
- // 🔍 فصل العقود إلى نشطة ومحذوفة اعتماداً على الـ State المحلي
+  // 🔍 فصل العقود إلى نشطة ومحذوفة اعتماداً على الـ State المحلي
   const { activeClients, trashedClients } = useMemo(() => {
     const active = [];
     const trashed = [];
@@ -30,6 +30,7 @@ export function DeleteClientScreen({
         client.is_deleted === "true" ||
         client.status === "archived" ||
         client.status === "deleted";
+
       if (isArchived) {
         trashed.push(client);
       } else {
@@ -55,8 +56,8 @@ export function DeleteClientScreen({
     });
   }, [activeTab, activeClients, trashedClients, search]);
 
-  // ⚡ تنفيذ الإجراءات
- const handleConfirmAction = async () => {
+  // ⚡ تنفيذ الإجراءات مع التحديث الفوري للواجهة
+  const handleConfirmAction = async () => {
     if (!targetClient || !actionType) return;
     setIsProcessing(true);
 
@@ -73,7 +74,7 @@ export function DeleteClientScreen({
       clientToUpdate.is_permanently_deleted = true;
     }
 
-    // ⚡ 1. تحديث القائمة فوراً على الواجهة دون انتظار رد السحابة
+    // 1. تحديث القائمة فوراً على الشاشة
     setLocalClients((prev) => {
       if (actionType === "permanent_delete") {
         return prev.filter((c) => c.id !== targetClient.id);
@@ -81,7 +82,7 @@ export function DeleteClientScreen({
       return prev.map((c) => (c.id === targetClient.id ? clientToUpdate : c));
     });
 
-    // ⚡ 2. إرسال التعديل للسحابة في الخلفية
+    // 2. إرسال التحديث للسحابة في الخلفية
     try {
       if (onUpdateContract) {
         await onUpdateContract(clientToUpdate);
@@ -94,6 +95,10 @@ export function DeleteClientScreen({
       setActionType(null);
     }
   };
+
+  return (
+    <div style={{ maxWidth: 1050, margin: "0 auto", padding: "16px 20px", fontFamily: "Cairo, sans-serif" }}>
+      
       {/* 1. الشريط العلوي */}
       <header
         style={{
@@ -337,7 +342,7 @@ export function DeleteClientScreen({
         )}
       </div>
 
-   {/* 4. نافذة تأكيد الإجراءات */}
+      {/* 4. نافذة تأكيد الإجراءات */}
       {targetClient && (
         <div
           style={{
