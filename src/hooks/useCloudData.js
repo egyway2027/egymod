@@ -5,7 +5,7 @@ export function useCloudData() {
   const [clientsList, setClientsList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔄 دالة جلب البيانات السحابية مع الحماية التامة والتطبيع
+  // 🔄 دالة جلب البيانات السحابية وتطبيعها
   const refreshData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -29,7 +29,6 @@ export function useCloudData() {
           const total = Number(item.total) || 0;
           const downPayment = Number(item.downPayment || item.down_payment) || 0;
 
-          // حماية التصفية من العناصر الفارغة (null/undefined)
           const paidFromInstallments = inst
             .filter((i) => i && Boolean(i.paid))
             .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
@@ -37,13 +36,14 @@ export function useCloudData() {
           const totalPaidCalculated = downPayment + paidFromInstallments;
           const remainingCalculated = Math.max(0, total - totalPaidCalculated);
 
-      return {
+          return {
             ...item,
             is_deleted: Boolean(item.is_deleted),
             status: item.status || (item.is_deleted ? "archived" : "active"),
             installments: inst,
             remaining: item.remaining ?? item.remainingAmount ?? remainingCalculated,
             totalPaid: item.totalPaid ?? totalPaidCalculated
+          };
         });
 
         setClientsList(normalizedData);
@@ -61,7 +61,7 @@ export function useCloudData() {
     refreshData();
   }, [refreshData]);
 
-  // ☁️ حفظ عقد جديد مع الحفاظ على الأقساط والماليات
+  // ☁️ حفظ عقد جديد
   const handleSaveClient = async (newClientData) => {
     try {
       const { clientName, clientPhone, itemName, remainingAmount, ...cleanData } = newClientData || {};
@@ -112,7 +112,7 @@ export function useCloudData() {
     }
   };
 
-  // 🗑️ دالة الحذف النهائي الحقيقي من قاعدة بيانات Supabase
+  // 🗑️ دالة الحذف النهائي الحقيقي
   const handleDeleteContract = async (clientId) => {
     try {
       const { error } = await supabase
@@ -133,7 +133,7 @@ export function useCloudData() {
     }
   };
 
-  // ☁️ تحديث بيانات أو حالة عقد (سلة المهملات / استعادة / تعديل)
+  // ☁️ تحديث بيانات أو حالة عقد
   const handleUpdateContract = async (updatedContract) => {
     try {
       const { id, is_permanently_deleted, ...updateData } = updatedContract;
