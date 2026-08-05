@@ -117,13 +117,13 @@ const netProfit = useMemo(() => {
 
   const monthlyDues = useMemo(() => {
     return (clientsList || []).reduce((acc, curr) => {
-      // استبعاد العقود المحذوفة والمؤرشفة
       if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
 
       const total = Number(curr.total ?? curr.sale ?? curr.salePrice ?? curr.sale_price ?? 0);
       const down = Number(curr.downPayment ?? curr.down ?? curr.down_payment ?? 0);
       const totalPaid = Number(curr.totalPaid ?? curr.total_paid ?? 0);
-      const remaining = Number(curr.remaining ?? curr.remainingAmount ?? (total - down - totalPaid)) || 0;
+      const remainingCalculated = Math.max(0, total - down - totalPaid);
+      const remaining = Number(curr.remaining) > 0 ? Number(curr.remaining) : remainingCalculated;
       const monthly = Number(curr.monthlyInstallment ?? curr.monthly ?? curr.monthly_installment ?? 0);
 
       if (remaining <= 0 || monthly <= 0) return acc;
@@ -272,7 +272,12 @@ const netProfit = useMemo(() => {
     <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
       {(clientsList || []).reduce((acc, curr) => {
         if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
-        return acc + (Number(curr.remaining ?? curr.remainingAmount) || 0);
+        const total = Number(curr.total ?? curr.sale ?? 0);
+        const down = Number(curr.downPayment ?? curr.down ?? 0);
+        const totalPaid = Number(curr.totalPaid ?? 0);
+        const remCalculated = Math.max(0, total - down - totalPaid);
+        const rem = Number(curr.remaining) > 0 ? Number(curr.remaining) : remCalculated;
+        return acc + rem;
       }, 0).toLocaleString()} {t.currency}
     </div>
     <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
