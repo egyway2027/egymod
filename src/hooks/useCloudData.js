@@ -31,21 +31,44 @@ export function useCloudData() {
     refreshData();
   }, [refreshData]);
 
-  // ☁️ حفظ عقد جديد مع تحديث الواجهة فورياً
+  // ☁️ حفظ عقد جديد مع تنقية البيانات لضمان القبول في Supabase
   const handleSaveClient = async (newClientData) => {
     try {
+      // 🧹 تصفية الحقول الخاصة بالواجهة فقط حتى لا ترفضها قاعدة البيانات
+      const uiOnlyFields = ["clientName", "clientPhone", "itemName", "remainingAmount", "remaining", "totalPaid"];
+      const payload = {};
+
+      Object.keys(newClientData || {}).forEach((key) => {
+        if (!uiOnlyFields.includes(key)) {
+          payload[key] = newClientData[key];
+        }
+      });
+
+      // إسناد القيم الافتراضية
+      payload.is_deleted = false;
+      payload.status = "active";
+
+      console.log("📤 جاري حفظ العقد الجديد في Supabase:", payload);
+
       const { data, error } = await supabase
         .from("contracts")
-        .insert([newClientData])
+        .insert([payload])
         .select()
         .single();
 
-      if (data && !error) {
-        setClientsList((prev) => [data, ...prev]);
-        return { success: true, contract: data };
+      if (error) {
+        console.error("❌ خطأ Supabase أثناء حفظ العقد:", error.message);
+        return { success: false, error };
       }
-      console.error("❌ خطأ أثناء حفظ العقد:", error);
-      return { success: false, error };
+
+      if (data) {
+        const fullContract = { ...newClientData, ...data };
+        setClientsList((prev) => [fullContract, ...prev]);
+        console.log("✅ تم حفظ العقد الجديد بنجاح:", fullContract);
+        return { success: true, contract: fullContract };
+      }
+
+      return { success: false };
     } catch (err) {
       console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
       return { success: false, error: err };
