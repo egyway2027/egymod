@@ -114,6 +114,9 @@ export function useCloudData() {
 return { success: true, contract: fullContract };
     } catch (err) {
       console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
+    return { success: true, contract: fullContract };
+    } catch (err) {
+      console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
       return { success: false, error: err };
     }
   };
