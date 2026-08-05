@@ -162,11 +162,13 @@ const netProfit = useMemo(() => {
     onBack={handleBack}
   />
 )}
- {/* 📌 شاشة إدارة وحذف حسابات العملاء */}
+{/* 📌 شاشة إدارة وحذف حسابات العملاء */}
 {currentScreen === "deleteClient" && (
   <DeleteClientScreen
     clientsList={clientsList}
-    onUpdateContract={onUpdateContractSubmit}
+    onUpdateContract={async (updatedClient) => {
+      await onUpdateContractSubmit(updatedClient);
+    }}
     onBack={handleBack}
     t={t}
     themeStyles={themeStyles}
