@@ -49,7 +49,7 @@ export function useCloudData() {
     }
   }, []);
 
-// ☁️ حفظ عقد جديد مع الحفاظ الكامل على الأقساط والماليات
+// ☁️ حفظ عقد جديد
   const handleSaveClient = async (newClientData) => {
     try {
       const { clientName, clientPhone, itemName, remainingAmount, ...cleanData } = newClientData || {};
@@ -93,30 +93,6 @@ export function useCloudData() {
 
       setClientsList((prev) => [fullContract, ...prev]);
       console.log("✅ تم حفظ العقد الجديد بنجاح مع الأقساط:", fullContract);
-      return { success: true, contract: fullContract };
-    } catch (err) {
-      console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
-      return { success: false, error: err };
-    }
-  };
-      // 🟢 دمج معرف السحابة مع كائن العقد الأصلي لضمان عدم ضياع جدول الأقساط
-      const fullContract = {
-        ...newClientData,
-        ...(data || {}),
-        // الحفاظ الصريح على الأقساط والمبالغ المحسوبة محلياً
-        installments: newClientData.installments || data?.installments || [],
-        remaining: newClientData.remaining ?? newClientData.remainingAmount ?? (Number(newClientData.total) - Number(newClientData.downPayment || 0)),
-        totalPaid: newClientData.totalPaid ?? 0
-      };
-
-      setClientsList((prev) => [fullContract, ...prev]);
-      console.log("✅ تم حفظ العقد الجديد بنجاح مع الأقساط:", fullContract);
-return { success: true, contract: fullContract };
-    } catch (err) {
-      console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
-    return { success: true, contract: fullContract };
-    } catch (err) {
-      console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
       return { success: true, contract: fullContract };
     } catch (err) {
       console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
