@@ -21,7 +21,7 @@ import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
 import { RecycleBinModal } from "./components/modals/RecycleBinModal";
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
 import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
-import { DeleteClientScreen } from "./components/DeleteClientScreen";
+import  DeleteClientScreen from "./components/DeleteClientScreen";
 import { useNavigation } from "./hooks/useNavigation";
 import { useCloudData } from "./hooks/useCloudData";
 import { useThemeAndLang } from "./hooks/useThemeAndLang";
