@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Trash2, RotateCcw, Search, UserX, AlertTriangle, ArrowRight, X, Check } from "lucide-react";
 
 export function DeleteClientScreen({
@@ -12,14 +12,19 @@ export function DeleteClientScreen({
   const [activeTab, setActiveTab] = useState("active"); // "active" | "trash"
   const [targetClient, setTargetClient] = useState(null);
   const [actionType, setActionType] = useState(null); // "soft_delete" | "restore" | "permanent_delete"
-  const [isProcessing, setIsProcessing] = useState(false);
+ const [isProcessing, setIsProcessing] = useState(false);
+  const [localClients, setLocalClients] = useState(clientsList);
 
-  // 🔍 فصل العقود إلى نشطة ومحذوفة
+  useEffect(() => {
+    setLocalClients(clientsList);
+  }, [clientsList]);
+
+  // 🔍 فصل العقود إلى نشطة ومحذوفة اعتماداً على الـ State المحلي
   const { activeClients, trashedClients } = useMemo(() => {
     const active = [];
     const trashed = [];
 
-  (clientsList || []).forEach((client) => {
+    (localClients || []).forEach((client) => {
       const isArchived = client.is_deleted === true || client.is_deleted === "true" || client.status === "archived" || client.status === "deleted";
       if (isArchived) {
         trashed.push(client);
@@ -28,6 +33,8 @@ export function DeleteClientScreen({
       }
     });
 
+    return { activeClients: active, trashedClients: trashed };
+  }, [localClients]);
     return { activeClients: active, trashedClients: trashed };
   }, [clientsList]);
 
@@ -47,29 +54,35 @@ export function DeleteClientScreen({
   }, [activeTab, activeClients, trashedClients, search]);
 
   // ⚡ تنفيذ الإجراءات
-  const handleConfirmAction = async () => {
+ const handleConfirmAction = async () => {
     if (!targetClient || !actionType) return;
     setIsProcessing(true);
 
+    const clientToUpdate = { ...targetClient };
+
+    if (actionType === "soft_delete") {
+      clientToUpdate.is_deleted = true;
+      clientToUpdate.status = "archived";
+    } else if (actionType === "restore") {
+      clientToUpdate.is_deleted = false;
+      clientToUpdate.status = "active";
+    } else if (actionType === "permanent_delete") {
+      clientToUpdate.is_deleted = true;
+      clientToUpdate.is_permanently_deleted = true;
+    }
+
+    // ⚡ 1. تحديث القائمة فوراً على الواجهة دون انتظار رد السحابة
+    setLocalClients((prev) => {
+      if (actionType === "permanent_delete") {
+        return prev.filter((c) => c.id !== targetClient.id);
+      }
+      return prev.map((c) => (c.id === targetClient.id ? clientToUpdate : c));
+    });
+
+    // ⚡ 2. إرسال التعديل للسحابة في الخلفية
     try {
-      if (actionType === "soft_delete") {
-        await onUpdateContract({
-          ...targetClient,
-          is_deleted: true,
-          status: "archived"
-        });
-      } else if (actionType === "restore") {
-        await onUpdateContract({
-          ...targetClient,
-          is_deleted: false,
-          status: "active"
-        });
-      } else if (actionType === "permanent_delete") {
-        await onUpdateContract({
-          ...targetClient,
-          is_deleted: true,
-          is_permanently_deleted: true
-        });
+      if (onUpdateContract) {
+        await onUpdateContract(clientToUpdate);
       }
     } catch (err) {
       console.error("Error executing client status update:", err);
@@ -79,10 +92,6 @@ export function DeleteClientScreen({
       setActionType(null);
     }
   };
-
-  return (
-    <div style={{ maxWidth: 1050, margin: "0 auto", padding: "16px 20px", fontFamily: "Cairo, sans-serif" }}>
-      
       {/* 1. الشريط العلوي */}
       <header
         style={{
