@@ -266,7 +266,7 @@ const netProfit = useMemo(() => {
                 <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
                   <Wallet size={24} color={themeStyles.accentGold} />
                   <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
-                    {clientsList.reduce((acc, curr) => acc + (Number(curr.remainingAmount ?? curr.remaining) || 0), 0)} {t.currency}
+                    {(clientsList || []).reduce((acc, curr) => acc + (Number(curr.remainingAmount ?? curr.remaining) || 0), 0)}
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
                   <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
