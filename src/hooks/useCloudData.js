@@ -119,7 +119,7 @@ return { success: true, contract: fullContract };
       console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
       return { success: false, error: err };
     }
-  };
+
 
   // 🗑️ دالة الحذف النهائي الحقيقي من قاعدة بيانات Supabase
   const handleDeleteContract = async (clientId) => {
