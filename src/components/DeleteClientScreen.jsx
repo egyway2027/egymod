@@ -19,13 +19,17 @@ export function DeleteClientScreen({
     setLocalClients(clientsList);
   }, [clientsList]);
 
-  // 🔍 فصل العقود إلى نشطة ومحذوفة اعتماداً على الـ State المحلي
+ // 🔍 فصل العقود إلى نشطة ومحذوفة اعتماداً على الـ State المحلي
   const { activeClients, trashedClients } = useMemo(() => {
     const active = [];
     const trashed = [];
 
     (localClients || []).forEach((client) => {
-      const isArchived = client.is_deleted === true || client.is_deleted === "true" || client.status === "archived" || client.status === "deleted";
+      const isArchived =
+        client.is_deleted === true ||
+        client.is_deleted === "true" ||
+        client.status === "archived" ||
+        client.status === "deleted";
       if (isArchived) {
         trashed.push(client);
       } else {
@@ -35,8 +39,6 @@ export function DeleteClientScreen({
 
     return { activeClients: active, trashedClients: trashed };
   }, [localClients]);
-    return { activeClients: active, trashedClients: trashed };
-  }, [clientsList]);
 
   // 🎯 القائمة المفلترة حسب التبويب والبحث
   const filteredList = useMemo(() => {
