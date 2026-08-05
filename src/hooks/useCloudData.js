@@ -52,7 +52,7 @@ export function useCloudData() {
     }
   };
 
-// 🗑️ دالة الحذف النهائي الحقيقي من قاعدة بيانات Supabase
+  // 🗑️ دالة الحذف النهائي الحقيقي من قاعدة بيانات Supabase
   const handleDeleteContract = async (clientId) => {
     try {
       console.log("🔥 جاري تنفيذ الحذف النهائي من Supabase للـ ID:", clientId);
@@ -112,7 +112,7 @@ export function useCloudData() {
     }
   };
 
- return {
+  return {
     clientsList,
     isLoading,
     refreshData,
@@ -120,3 +120,4 @@ export function useCloudData() {
     handleUpdateContract,
     handleDeleteContract
   };
+}
