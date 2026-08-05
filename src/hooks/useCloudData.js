@@ -5,7 +5,7 @@ export function useCloudData() {
   const [clientsList, setClientsList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔄 دالة جلب البيانات السحابية مع معالجة وتطبيع البيانات المرجعة
+  // 🔄 دالة جلب البيانات السحابية مع الحماية التامة والتطبيع
   const refreshData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -14,19 +14,26 @@ export function useCloudData() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
-        // 🧹 تطبيع البيانات لتفادي قيم null وتصفير الأقساط عند التحميل
+      if (!error && Array.isArray(data)) {
         const normalizedData = data.map((item) => {
           let inst = item.installments;
           if (typeof inst === "string") {
-            try { inst = JSON.parse(inst); } catch { inst = []; }
+            try {
+              inst = JSON.parse(inst);
+            } catch {
+              inst = [];
+            }
           }
           inst = Array.isArray(inst) ? inst : [];
 
           const total = Number(item.total) || 0;
           const downPayment = Number(item.downPayment || item.down_payment) || 0;
-          
-          const paidFromInstallments = inst.filter(i => i.paid).reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+
+          // حماية التصفية من العناصر الفارغة (null/undefined)
+          const paidFromInstallments = inst
+            .filter((i) => i && Boolean(i.paid))
+            .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+
           const totalPaidCalculated = downPayment + paidFromInstallments;
           const remainingCalculated = Math.max(0, total - totalPaidCalculated);
 
@@ -49,7 +56,11 @@ export function useCloudData() {
     }
   }, []);
 
-// ☁️ حفظ عقد جديد
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  // ☁️ حفظ عقد جديد مع الحفاظ على الأقساط والماليات
   const handleSaveClient = async (newClientData) => {
     try {
       const { clientName, clientPhone, itemName, remainingAmount, ...cleanData } = newClientData || {};
@@ -120,7 +131,8 @@ export function useCloudData() {
       return { success: false, error: err };
     }
   };
-// ☁️ تحديث بيانات أو حالة عقد (سلة المهملات / استعادة / تعديل)
+
+  // ☁️ تحديث بيانات أو حالة عقد (سلة المهملات / استعادة / تعديل)
   const handleUpdateContract = async (updatedContract) => {
     try {
       const { id, is_permanently_deleted, ...updateData } = updatedContract;
@@ -129,13 +141,10 @@ export function useCloudData() {
         return await handleDeleteContract(id);
       }
 
-      // 🧹 تصفية الكائن وإرسال الحقول المقبولة سحابياً فقط
       const payload = {};
-      
       if (updateData.is_deleted !== undefined) payload.is_deleted = Boolean(updateData.is_deleted);
       if (updateData.status !== undefined) payload.status = updateData.status;
 
-      // تجميع بقية حقول العقد واستبعاد حقول الواجهة المحسوبة
       const uiOnlyFields = ["clientName", "clientPhone", "itemName", "remainingAmount", "remaining", "totalPaid"];
       Object.keys(updateData).forEach((key) => {
         if (!uiOnlyFields.includes(key)) {
@@ -162,7 +171,7 @@ export function useCloudData() {
         prev.map((c) => (String(c.id) === String(id) ? { ...c, ...updatedContract, ...updatedItem } : c))
       );
 
-      console.log("✅ تم الحفظ سحابياً بنجاح ولم يختفِ بعد الريفريش:", updatedItem);
+      console.log("✅ تم الحفظ سحابياً بنجاح:", updatedItem);
       return { success: true, contract: updatedItem };
     } catch (err) {
       console.error("❌ خطأ أثناء تحديث العقد:", err);
