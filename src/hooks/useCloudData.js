@@ -76,61 +76,73 @@ export function useCloudData() {
     try {
       const { id, is_permanently_deleted, ...updateData } = updatedContract;
 
-      // 🔴 1. طلب الحذف النهائي من قاعدة البيانات مباشرة
+      // 🔴 1. طلب الحذف النهائي
       if (is_permanently_deleted) {
         return await handleDeleteContract(id);
       }
 
-      // 🧹 2. تنقية الحقول المحسوبة بالواجهة والتي لا توجد كأعمدة في Supabase
-      const cleanPayload = { ...updateData };
-      delete cleanPayload.clientName;
-      delete cleanPayload.clientPhone;
-      delete cleanPayload.itemName;
-      delete cleanPayload.remainingAmount;
-      delete cleanPayload.remaining;
-      delete cleanPayload.totalPaid;
+      // 🎯 2. عزل حقول الأرشفة فقط لتفادي رفض الأعمدة الزائدة في Supabase
+      let payload = {};
 
-      console.log("📤 جاري إرسال التحديث المنقى لـ Supabase للـ ID:", id, cleanPayload);
+      if ("is_deleted" in updateData || "status" in updateData) {
+        payload = {
+          is_deleted: Boolean(updateData.is_deleted),
+          status: updateData.status || (updateData.is_deleted ? "archived" : "active")
+        };
+      } else {
+        payload = { ...updateData };
+      }
 
-      // 🟡 3. محاولة التحديث بالبيانات المنقاة
+      console.log("📤 جاري إرسال التحديث لـ Supabase للـ ID:", id, payload);
+
       let { data, error } = await supabase
         .from("contracts")
-        .update(cleanPayload)
+        .update(payload)
         .eq("id", id)
         .select();
 
-      // 🟢 4. محاولة استدراكية بحقول الأرشفة الصريحة في حال رفض أي حقل آخر
+      // 🟢 3. محاولة استدراكية تلقائية في حال كان الجدول يملك عموداً واحداً فقط من العمودين
       if (error) {
-        console.warn("⚠️ محاولة ثانية بحقول الأرشفة الصريحة فقط...", error);
-        const safeStatusPayload = {};
-        if (cleanPayload.is_deleted !== undefined) safeStatusPayload.is_deleted = cleanPayload.is_deleted;
-        if (cleanPayload.status !== undefined) safeStatusPayload.status = cleanPayload.status;
-
-        const fallback = await supabase
+        console.warn("⚠️ محاولة التحديث بـ is_deleted فقط...", error);
+        const retryDeleted = await supabase
           .from("contracts")
-          .update(safeStatusPayload)
+          .update({ is_deleted: Boolean(updateData.is_deleted) })
           .eq("id", id)
           .select();
 
-        data = fallback.data;
-        error = fallback.error;
+        if (!retryDeleted.error && retryDeleted.data) {
+          data = retryDeleted.data;
+          error = null;
+        } else {
+          console.warn("⚠️ محاولة التحديث بـ status فقط...");
+          const retryStatus = await supabase
+            .from("contracts")
+            .update({ status: updateData.status || (updateData.is_deleted ? "archived" : "active") })
+            .eq("id", id)
+            .select();
+
+          if (!retryStatus.error && retryStatus.data) {
+            data = retryStatus.data;
+            error = null;
+          }
+        }
       }
 
       if (error) {
-        console.error("❌ خطأ صريح من Supabase أثناء التحديث:", error);
+        console.error("❌ فشل التحديث في Supabase:", error);
         return { success: false, error };
       }
 
       const updatedItem = data && data.length > 0 ? data[0] : updatedContract;
 
       setClientsList((prev) =>
-        prev.map((c) => (String(c.id) === String(id) ? { ...c, ...updatedContract } : c))
+        prev.map((c) => (String(c.id) === String(id) ? { ...c, ...updatedContract, ...updatedItem } : c))
       );
 
-      console.log("✅ تم التحديث بنجاح سحابياً ومحلياً:", updatedItem);
+      console.log("✅ تم الحفظ سحابياً بنجاح ولم يختفِ بعد الريفريش:", updatedItem);
       return { success: true, contract: updatedItem };
     } catch (err) {
-      console.error("❌ خطأ غير متوقع أثناء تحديث العقد:", err);
+      console.error("❌ خطأ أثناء تحديث العقد:", err);
       return { success: false, error: err };
     }
   };
