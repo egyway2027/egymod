@@ -31,22 +31,17 @@ export function useCloudData() {
     refreshData();
   }, [refreshData]);
 
-  // ☁️ حفظ عقد جديد مع تنقية البيانات لضمان القبول في Supabase
+ // ☁️ حفظ عقد جديد مع الحفاظ على جدول الأقساط والماليات كاملة
   const handleSaveClient = async (newClientData) => {
     try {
-      // 🧹 تصفية الحقول الخاصة بالواجهة فقط حتى لا ترفضها قاعدة البيانات
-      const uiOnlyFields = ["clientName", "clientPhone", "itemName", "remainingAmount", "remaining", "totalPaid"];
-      const payload = {};
+      // 🧹 استبعاد حقول العرض المرادفة فقط دون المساس ببيانات الأقساط والماليات
+      const { clientName, clientPhone, itemName, remainingAmount, totalPaid, ...cleanData } = newClientData || {};
 
-      Object.keys(newClientData || {}).forEach((key) => {
-        if (!uiOnlyFields.includes(key)) {
-          payload[key] = newClientData[key];
-        }
-      });
-
-      // إسناد القيم الافتراضية
-      payload.is_deleted = false;
-      payload.status = "active";
+      const payload = {
+        ...cleanData,
+        is_deleted: false,
+        status: "active"
+      };
 
       console.log("📤 جاري حفظ العقد الجديد في Supabase:", payload);
 
@@ -61,14 +56,19 @@ export function useCloudData() {
         return { success: false, error };
       }
 
-      if (data) {
-        const fullContract = { ...newClientData, ...data };
-        setClientsList((prev) => [fullContract, ...prev]);
-        console.log("✅ تم حفظ العقد الجديد بنجاح:", fullContract);
-        return { success: true, contract: fullContract };
-      }
+      // 🟢 دمج معرف السحابة مع كائن العقد الأصلي لضمان عدم ضياع جدول الأقساط
+      const fullContract = {
+        ...newClientData,
+        ...(data || {}),
+        // الحفاظ الصريح على الأقساط والمبالغ المحسوبة محلياً
+        installments: newClientData.installments || data?.installments || [],
+        remaining: newClientData.remaining ?? newClientData.remainingAmount ?? (Number(newClientData.total) - Number(newClientData.downPayment || 0)),
+        totalPaid: newClientData.totalPaid ?? 0
+      };
 
-      return { success: false };
+      setClientsList((prev) => [fullContract, ...prev]);
+      console.log("✅ تم حفظ العقد الجديد بنجاح مع الأقساط:", fullContract);
+      return { success: true, contract: fullContract };
     } catch (err) {
       console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
       return { success: false, error: err };
