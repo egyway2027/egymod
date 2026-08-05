@@ -111,13 +111,14 @@ export function useCloudData() {
 
       setClientsList((prev) => [fullContract, ...prev]);
       console.log("✅ تم حفظ العقد الجديد بنجاح مع الأقساط:", fullContract);
-      return { success: true, contract: fullContract };
+return { success: true, contract: fullContract };
     } catch (err) {
       console.error("❌ خطأ غير متوقع أثناء حفظ العقد:", err);
       return { success: false, error: err };
     }
   };
-// 🗑️ دالة الحذف النهائي الحقيقي من قاعدة بيانات Supabase
+
+  // 🗑️ دالة الحذف النهائي الحقيقي من قاعدة بيانات Supabase
   const handleDeleteContract = async (clientId) => {
     try {
       const { error } = await supabase
