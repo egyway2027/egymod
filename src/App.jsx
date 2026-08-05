@@ -28,7 +28,7 @@ import { useThemeAndLang } from "./hooks/useThemeAndLang";
 
 export function App() {
   const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
-  const { clientsList, isLoading, handleSaveClient, handleUpdateContract } = useCloudData();
+  const { clientsList, isLoading, handleSaveClient, handleUpdateContract, handleDeleteContract, fetchContracts } = useCloudData();
   
   // 🌐🎨 محرك اللغات الـ 15 والثيمات الـ 100
   const {
@@ -65,12 +65,25 @@ export function App() {
   };
 
   // ☁️ تحديث بيانات عقد
-  const onUpdateContractSubmit = async (updatedContract) => {
-    const res = await handleUpdateContract(updatedContract);
-    if (res?.success) {
-      alert(t.updateSuccess || "تم تحديث البيانات سحابياً وتحديث الشاشة بنجاح!");
+ const onUpdateContractSubmit = async (updatedContract) => {
+    let res;
+    
+    // إذا كان الطلب حذف نهائي من قواعد البيانات
+    if (updatedContract.is_permanently_deleted && typeof handleDeleteContract === "function") {
+      res = await handleDeleteContract(updatedContract.id);
+    } else {
+      res = await handleUpdateContract(updatedContract);
+    }
+
+    if (res?.success || res?.status === 200 || !res?.error) {
+      // إعادة جلب القائمة المحدثة فوراً من السحابة
+      if (typeof fetchContracts === "function") {
+        await fetchContracts();
+      }
+      return { success: true };
     } else {
       alert("حدث خطأ أثناء تحديث البيانات بالسحابة.");
+      return { success: false };
     }
   };
 
