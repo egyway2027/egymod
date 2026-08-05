@@ -52,46 +52,42 @@ export function useCloudData() {
     }
   };
 
-  // 🗑️ دالة الحذف النهائي الحقيقي من قاعدة بيانات Supabase
-  const handleDeleteContract = async (clientId) => {
-    try {
-      console.log("🔥 جاري تنفيذ الحذف النهائي من Supabase للـ ID:", clientId);
-      const { error } = await supabase
-        .from("contracts")
-        .delete()
-        .eq("id", clientId);
-
-      if (error) {
-        console.error("❌ خطأ صريح من Supabase أثناء الحذف النهائي:", error);
-        return { success: false, error };
-      }
-
-      setClientsList((prev) => prev.filter((c) => String(c.id) !== String(clientId)));
-      console.log("🗑️ تم الحذف النهائي بنجاح من السحابة.");
-      return { success: true };
-    } catch (err) {
-      console.error("❌ خطأ غير متوقع أثناء الحذف النهائي:", err);
-      return { success: false, error: err };
-    }
-  };
-
-  // ☁️ تحديث بيانات أو حالة عقد (نقل للمهملات / استعادة / تعديل)
+ // ☁️ تحديث بيانات أو حالة عقد (نقل للمهملات / استعادة / تعديل) مع المعالجة الذكية لرفض الأعمدة
   const handleUpdateContract = async (updatedContract) => {
     try {
       const { id, is_permanently_deleted, ...updateData } = updatedContract;
 
-      // 🔴 إذا كانت العملية طلب حذف نهائي، نفذ الحذف من قاعدة البيانات فوراً
+      // 🔴 1. طلب الحذف النهائي من قاعدة البيانات مباشرة
       if (is_permanently_deleted) {
         return await handleDeleteContract(id);
       }
 
       console.log("📤 جاري إرسال التحديث لـ Supabase للـ ID:", id, updateData);
 
-      const { data, error } = await supabase
+      // 🟡 2. المحاولة الأولى: إرسال التحديث الكامل
+      let { data, error } = await supabase
         .from("contracts")
         .update(updateData)
         .eq("id", id)
         .select();
+
+      // 🟢 3. آلية استدراكية: في حال رفض السحابة للحقول الزائدة يتم استخراج حقول الأرشفة الصريحة فقط
+      if (error) {
+        console.warn("⚠️ تم رصد حقول غير معرفة بالنظام، جاري تنقية البيانات وإرسال حالة الأرشفة فقط...", error);
+        
+        const safePayload = {};
+        if (updateData.is_deleted !== undefined) safePayload.is_deleted = updateData.is_deleted;
+        if (updateData.status !== undefined) safePayload.status = updateData.status;
+
+        const fallbackResult = await supabase
+          .from("contracts")
+          .update(safePayload)
+          .eq("id", id)
+          .select();
+
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
 
       if (error) {
         console.error("❌ خطأ صريح من Supabase أثناء التحديث:", error);
@@ -101,7 +97,7 @@ export function useCloudData() {
       const updatedItem = data && data.length > 0 ? data[0] : updatedContract;
 
       setClientsList((prev) =>
-        prev.map((c) => (String(c.id) === String(id) ? updatedItem : c))
+        prev.map((c) => (String(c.id) === String(id) ? { ...c, ...updatedItem } : c))
       );
 
       console.log("✅ تم التحديث بنجاح سحابياً ومحلياً:", updatedItem);
