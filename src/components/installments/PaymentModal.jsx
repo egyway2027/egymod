@@ -9,7 +9,7 @@ const fmtCleanInt = (val) => {
 export default function PaymentModal({ receipt = {}, storeInfo = {}, onClose, themeStyles = {}, t = {} }) {
   const { client = {}, payment = {} } = receipt;
   const totalPaidSoFar = Number(client.totalPaid || 0);
-  const remainingDebt = Math.max(0, Number(client.sale || 0) - Number(client.down || 0) - totalPaidSoFar);
+  const remainingDebt = client.remaining !== undefined ? Number(client.remaining) : Math.max(0, Number(client.sale || 0) - totalPaidSoFar);
   const remainingInstallments = Number(client.monthly || 0) > 0 ? Math.ceil(remainingDebt / Number(client.monthly)) : 0;
   const isPaidInFull = remainingDebt <= 0;
 
