@@ -11,6 +11,18 @@ import DeleteClientScreen from "./components/DeleteClientScreen";
 // النوافذ الشاملة
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
 
+// أيقونات الواجهة
+import { 
+  UserPlus, 
+  CreditCard, 
+  Search, 
+  CalendarClock, 
+  UserX, 
+  SearchCode,
+  Wallet,
+  TrendingUp
+} from "lucide-react";
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState("main");
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
@@ -18,9 +30,6 @@ export default function App() {
   // جلب كافة البيانات والدوال المحدثة من الهوك السحابي
   const {
     clientsList,
-    contracts,
-    employees,
-    partners,
     isLoading,
     handleSaveClient,
     handleUpdateContract,
@@ -28,47 +37,130 @@ export default function App() {
   } = useCloudData();
 
   const themeStyles = {
-    card: "#1e1e1e",
+    card: "#141414",
+    cardBorder: "#262626",
     border: "#333333",
-    inputBg: "#1b1b1d",
+    inputBg: "#1a1a1a",
     text: "#ffffff",
     subText: "#aaaaaa",
     accentGold: "#d69a5f",
     accent: "#b06a35",
-    borderRadius: "14px"
+    borderRadius: 16
   };
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#111111", color: "#d69a5f", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Cairo, sans-serif" }}>
-        <h2>جاري تحضير البيانات الاتصال بالسحابة...</h2>
+      <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#d69a5f", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Cairo, sans-serif", direction: "rtl" }}>
+        <h2 style={{ fontSize: "18px", fontWeight: 800 }}>جاري جلب البيانات والاتصال بالسحابة...</h2>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0d0d0d", color: "#ffffff", fontFamily: "Cairo, sans-serif", padding: "16px" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#ffffff", fontFamily: "Cairo, sans-serif", padding: "20px 16px", direction: "rtl", boxSizing: "border-box" }}>
       
-      {/* 1. الشاشة الرئيسية */}
+      {/* 1. الشاشة الرئيسية (Dashboard) */}
       {currentScreen === "main" && (
-        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-          <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-            <h1 style={{ color: "#d69a5f", fontSize: "22px", margin: 0 }}>نظام إيجيمود لإدارة الأقساط والمبيعات</h1>
+        <div style={{ maxWidth: 1050, margin: "0 auto" }}>
+          
+          {/* الشريط العلوي */}
+          <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid #1f1f1f" }}>
+            <div>
+              <h1 style={{ color: "#ffffff", fontSize: 22, fontWeight: 900, margin: 0 }}>نظام إيجيمود لإدارة الأقساط والمبيعات</h1>
+              <p style={{ color: "#777777", fontSize: 13, margin: "4px 0 0 0" }}>مرحباً بك، لوحة التحكم السحابية الموحدة</p>
+            </div>
+            
             <button
               onClick={() => setIsGlobalSearchOpen(true)}
-              style={{ background: "#1a1a1a", border: "1px solid #333", color: "#d69a5f", padding: "10px 18px", borderRadius: "10px", cursor: "pointer", fontWeight: "bold" }}
+              style={{
+                background: "#161616",
+                border: "1px solid #333333",
+                color: "#d69a5f",
+                padding: "10px 18px",
+                borderRadius: 12,
+                cursor: "pointer",
+                fontWeight: 800,
+                fontSize: 13,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                transition: "all 0.2s"
+              }}
             >
-              🔍 البحث السريع
+              <SearchCode size={18} />
+              <span>البحث السريع</span>
             </button>
           </header>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-            <button onClick={() => setCurrentScreen("add_client")} style={navButtonStyle}>➕ إضافة عميل جديد</button>
-            <button onClick={() => setCurrentScreen("installments")} style={navButtonStyle}>💳 سداد الأقساط</button>
-            <button onClick={() => setCurrentScreen("client_query")} style={navButtonStyle}>🔎 استعلام عن عميل</button>
-            <button onClick={() => setCurrentScreen("monthly_dues")} style={navButtonStyle}>📅 مستحقات هذا الشهر</button>
-            <button onClick={() => setCurrentScreen("delete_client")} style={navButtonStyle}>🗑️ إدارة وحذف العملاء</button>
-          </div>
+          {/* شبكة الخيارات الرئيسية */}
+          <main style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+            
+            <div 
+              onClick={() => setCurrentScreen("add_client")}
+              style={{ ...cardStyle, background: "linear-gradient(145deg, #181818, #121212)", border: "1px solid #2a2a2a" }}
+            >
+              <div style={iconBoxStyle("#14291f", "#4ade80")}>
+                <UserPlus size={22} />
+              </div>
+              <div>
+                <div style={cardTitleStyle}>إضافة عميل جديد</div>
+                <div style={cardSubTitleStyle}>تسجيل عقد جديد وتفاصيل الأقساط</div>
+              </div>
+            </div>
+
+            <div 
+              onClick={() => setCurrentScreen("installments")}
+              style={{ ...cardStyle, background: "linear-gradient(145deg, #181818, #121212)", border: "1px solid #2a2a2a" }}
+            >
+              <div style={iconBoxStyle("#3a2a16", "#d69a5f")}>
+                <CreditCard size={22} />
+              </div>
+              <div>
+                <div style={cardTitleStyle}>سداد الأقساط</div>
+                <div style={cardSubTitleStyle}>تحصيل الدفعات وطباعة الإيصالات</div>
+              </div>
+            </div>
+
+            <div 
+              onClick={() => setCurrentScreen("client_query")}
+              style={{ ...cardStyle, background: "linear-gradient(145deg, #181818, #121212)", border: "1px solid #2a2a2a" }}
+            >
+              <div style={iconBoxStyle("#182838", "#60a5fa")}>
+                <Search size={22} />
+              </div>
+              <div>
+                <div style={cardTitleStyle}>استعلام عن عميل</div>
+                <div style={cardSubTitleStyle}>عرض تفاصيل العقد والسجل الكامل</div>
+              </div>
+            </div>
+
+            <div 
+              onClick={() => setCurrentScreen("monthly_dues")}
+              style={{ ...cardStyle, background: "linear-gradient(145deg, #181818, #121212)", border: "1px solid #2a2a2a" }}
+            >
+              <div style={iconBoxStyle("#2a1838", "#c084fc")}>
+                <CalendarClock size={22} />
+              </div>
+              <div>
+                <div style={cardTitleStyle}>مستحقات هذا الشهر</div>
+                <div style={cardSubTitleStyle}>متابعة المحصل والمتبقي للشهر الحالي</div>
+              </div>
+            </div>
+
+            <div 
+              onClick={() => setCurrentScreen("delete_client")}
+              style={{ ...cardStyle, background: "linear-gradient(145deg, #181818, #121212)", border: "1px solid #2a2a2a" }}
+            >
+              <div style={iconBoxStyle("#3e1c24", "#f87171")}>
+                <UserX size={22} />
+              </div>
+              <div>
+                <div style={cardTitleStyle}>إدارة وحذف العملاء</div>
+                <div style={cardSubTitleStyle}>الأرشفة وسلة المهملات والحذف النهائي</div>
+              </div>
+            </div>
+
+          </main>
         </div>
       )}
 
@@ -137,14 +229,38 @@ export default function App() {
   );
 }
 
-const navButtonStyle = {
-  background: "#1e1e1e",
-  border: "1px solid #333333",
-  color: "#d69a5f",
-  padding: "20px",
-  borderRadius: "14px",
-  fontSize: "16px",
-  fontWeight: "800",
+// أنماط التنسيق لكروت الشاشة الرئيسية
+const cardStyle = {
+  padding: "20px 18px",
+  borderRadius: 16,
   cursor: "pointer",
-  textAlign: "center"
+  display: "flex",
+  alignItems: "center",
+  gap: 16,
+  userSelect: "none",
+  transition: "transform 0.15s ease, border-color 0.15s ease"
+};
+
+const iconBoxStyle = (bg, color) => ({
+  width: 46,
+  height: 46,
+  borderRadius: 12,
+  background: bg,
+  color: color,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0
+});
+
+const cardTitleStyle = {
+  fontSize: 16,
+  fontWeight: 800,
+  color: "#ffffff"
+};
+
+const cardSubTitleStyle = {
+  fontSize: 12,
+  color: "#888888",
+  marginTop: 4
 };
