@@ -1,183 +1,311 @@
-import React from "react";
-import { Banknote, CheckCheck } from "lucide-react";
-import { Field, DateInput, NameComboBox, LiveStat } from "../CommonUI";
+/**
+ * =========================================================
+ * 📌 الملف: أداة التعديل الجراحي للأكواد (Code Patcher Tool)
+ * 📁 المسار: src/components/tools/CodePatcher.jsx
+ * 📝 الوظيفة: استبدال كتل الكود بدقة متناهية (SEARCH/REPLACE)
+ *            دون تغيير أو المساس بباقي أسطر الملف.
+ * =========================================================
+ */
 
-// دالة تنظيف الأرقام من الفواصل
-const fmtCleanInt = (val) => {
-  const num = Math.round(Number(val) || 0);
-  return String(num);
-};
+import React, { useState } from "react";
+import { Code, CheckCircle, AlertTriangle, Copy, RefreshCw, Sparkles } from "lucide-react";
 
-export default function CustomerSearchHeader({
-  rows = [],
-  selected,
-  setSelected,
-  amount,
-  setAmount,
-  payDate,
-  setPayDate,
-  method,
-  setMethod,
-  collector,
-  setCollector,
-  employees = [],
-  onSubmitPayment,
-  t = {},
-  styles = {},
-  themeStyles = {}
-}) {
-  const isEN = t?.lang === "en" || document.documentElement?.lang === "en";
+export function CodePatcher({ themeStyles = {} }) {
+  const [originalCode, setOriginalCode] = useState("");
+  const [patchBlocks, setPatchBlocks] = useState("");
+  const [resultCode, setResultCode] = useState("");
+  const [stats, setStats] = useState(null);
+  const [copied, setCopied] = useState(false);
 
-  const numAmount = parseFloat(amount) || 0;
-  const currentRemaining = selected ? Number(selected.remaining || 0) : 0;
-  const remainingAfterPay = Math.max(0, currentRemaining - numAmount);
-  const isPaidOffNow = selected && currentRemaining > 0 && remainingAfterPay === 0;
+  const applyFuzzyReplace = (sourceText, searchStr, replaceStr) => {
+    if (sourceText.includes(searchStr)) {
+      return { success: true, text: sourceText.replace(searchStr, replaceStr) };
+    }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* اختيار العميل أو العقد */}
-      <div>
-        <span style={styles.fieldLabel || { fontSize: 13.5, color: themeStyles.subText, fontWeight: 700, display: "block", marginBottom: 6 }}>
-          {t.selectClientOrContract || (isEN ? "Select Client or Contract" : "اختر العميل أو العقد")}
-        </span>
-        <NameComboBox
-          items={rows}
-          getLabel={(r) => `${r.name} — ${r.item}`}
-          getSecondary={(r) => `${t.remaining || (isEN ? "Remaining" : "متبقي")} ${fmtCleanInt(r.remaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
-          placeholder={t.searchClientPlaceholder || (isEN ? "Type client name..." : "اكتب اسم العميل...")}
-          onSelect={(item) => { setSelected(item); setAmount(""); }}
-          selectedLabel={selected ? `${selected.name} — ${selected.item}` : null}
-          onClear={() => { setSelected(null); setAmount(""); }}
-          styles={styles}
-          t={t}
-        />
-      </div>
+    const normSource = sourceText.replace(/\r\n/g, "\n");
+    const normSearch = searchStr.replace(/\r\n/g, "\n");
+    const normReplace = replaceStr.replace(/\r\n/g, "\n");
 
-      {selected && (
-        <form onSubmit={onSubmitPayment} style={{ marginTop: 10 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 16 }}>
-            <Field label={t.paymentDate || (isEN ? "Payment Date" : "تاريخ السداد")} styles={styles}>
-              <DateInput 
-                value={payDate} 
-                onChange={(e) => setPayDate(e.target.value)} 
-                required 
-                themeStyles={themeStyles} 
-                t={t} 
-                lang={isEN ? "en" : "ar"} 
-              />
-            </Field>
+    if (normSource.includes(normSearch)) {
+      return { success: true, text: normSource.replace(normSearch, normReplace) };
+    }
 
-            <Field label={t.paidAmount || (isEN ? "Amount Paid (EGP) *" : "المبلغ المدفوع (ج.م) *")} styles={styles}>
-              <div style={{ position: "relative" }}>
-                <input
-                  type="number"
-                  step="1"
-                  style={{ 
-                    width: "100%", background: themeStyles.inputBg, border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`, 
-                    borderRadius: themeStyles.borderRadius || 10, padding: "12px 14px", fontFamily: "inherit", outline: "none",
-                    fontSize: 18, fontWeight: 800, color: themeStyles.accentGold || "#d4af37" 
-                  }}
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0"
-                  required
-                />
+    const cleanSource = normSource.replace(/\n{3,}/g, "\n\n");
+    const cleanSearch = normSearch.replace(/\n{3,}/g, "\n\n");
+    if (cleanSource.includes(cleanSearch)) {
+      return { success: true, text: cleanSource.replace(cleanSearch, normReplace) };
+    }
 
-                {/* أزرار الإدخال السريع للمبلغ */}
-                <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap", justifyContent: "flex-start" }}>
-                  <button
-                    type="button"
-                    onClick={() => setAmount(String(Math.round(selected.monthly || 0)))}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 7,
-                      background: "rgba(212, 175, 55, 0.08)",
-                      border: `1px solid ${themeStyles.accentGold || "rgba(212, 175, 55, 0.35)"}`,
-                      color: themeStyles.accentGold || "#d4af37",
-                      padding: "7px 16px", borderRadius: themeStyles.borderRadius || 20,
-                      fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
-                    }}
-                  >
-                    <Banknote size={16} />
-                    <span>{t.fullInstallmentBtn || (isEN ? "Full Installment" : "قسط كامل")}:</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800 }}>
-                      {fmtCleanInt(selected.monthly)} {t.currency || (isEN ? "EGP" : "ج.م")}
-                    </span>
-                  </button>
+    const sourceLines = normSource.split("\n");
+    const searchLines = normSearch
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l, i, arr) => !(l === "" && (i === 0 || i === arr.length - 1)));
 
-                  <button
-                    type="button"
-                    onClick={() => setAmount(String(Math.round(selected.remaining || 0)))}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 7,
-                      background: "rgba(16, 185, 129, 0.08)",
-                      border: "1px solid rgba(16, 185, 129, 0.35)",
-                      color: "#10b981",
-                      padding: "7px 16px", borderRadius: themeStyles.borderRadius || 20,
-                      fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
-                    }}
-                  >
-                    <CheckCheck size={16} />
-                    <span>{t.settleContractBtn || (isEN ? "Settle Contract" : "تصفية العقد")}:</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800 }}>
-                      {fmtCleanInt(selected.remaining)} {t.currency || (isEN ? "EGP" : "ج.م")}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </Field>
-          </div>
+    if (searchLines.length === 0) return { success: false, text: sourceText };
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 16 }}>
-            <Field label={t.paymentMethod || (isEN ? "Payment Method" : "طريقة الدفع")} styles={styles}>
-              <select 
-                style={{ width: "100%", background: themeStyles.inputBg, border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`, borderRadius: themeStyles.borderRadius || 10, padding: "12px 14px", color: themeStyles.text, fontFamily: "inherit", fontSize: 15, outline: "none" }} 
-                value={method} 
-                onChange={(e) => setMethod(e.target.value)}
-              >
-                <option value="نقداً / كاش">{t.cashMethod || (isEN ? "Cash" : "نقداً / كاش")}</option>
-                <option value="فودافون كاش / إنستا باي">{t.walletMethod || (isEN ? "Vodafone Cash / InstaPay" : "فودافون كاش / إنستا باي")}</option>
-                <option value="تحويل بنكي">{t.bankTransferMethod || (isEN ? "Bank Transfer" : "تحويل بنكي")}</option>
-              </select>
-            </Field>
+    for (let i = 0; i <= sourceLines.length - searchLines.length; i++) {
+      let isMatch = true;
+      for (let j = 0; j < searchLines.length; j++) {
+        if (sourceLines[i + j].trim() !== searchLines[j]) {
+          isMatch = false;
+          break;
+        }
+      }
+      if (isMatch) {
+        const newLines = [...sourceLines];
+        const replaceLines = normReplace.split("\n");
+        newLines.splice(i, searchLines.length, ...replaceLines);
+        return { success: true, text: newLines.join("\n") };
+      }
+    }
 
-            <Field label={t.collectorEmployee || (isEN ? "Collector / Employee" : "المحصل / الموظف")} styles={styles}>
-              <select 
-                style={{ width: "100%", background: themeStyles.inputBg, border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`, borderRadius: themeStyles.borderRadius || 10, padding: "12px 14px", color: themeStyles.text, fontFamily: "inherit", fontSize: 15, outline: "none" }} 
-                value={collector} 
-                onChange={(e) => setCollector(e.target.value)}
-              >
-                <option value="المشرف">{t.generalSupervisor || (isEN ? "General Supervisor" : "المشرف العام")}</option>
-                {employees && employees.map((emp) => (
-                  <option key={emp.id} value={emp.name}>{emp.name} ({emp.job || (isEN ? "Employee" : "موظف")})</option>
-                ))}
-              </select>
-            </Field>
-          </div>
+    return { success: false, text: sourceText };
+  };
 
-          {/* شريط الإحصائيات الحية */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: themeStyles.highlightBg, border: `1px dashed ${themeStyles.accent}`, borderRadius: themeStyles.borderRadius || 12, padding: 14, margin: "6px 0" }}>
-            <LiveStat label={t.itemLabel || (isEN ? "Item" : "السلعة")} value={selected.item} themeStyles={themeStyles} />
-            <LiveStat label={t.currentRemaining || (isEN ? "Current Remaining" : "المتبقي الحالي")} value={`${fmtCleanInt(currentRemaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`} themeStyles={themeStyles} />
-            <LiveStat label={t.remainingAfterPay || (isEN ? "Remaining After Payment" : "المتبقي بعد هذا السداد")} value={`${fmtCleanInt(remainingAfterPay)} ${t.currency || (isEN ? "EGP" : "ج.م")}`} themeStyles={themeStyles} />
-          </div>
+  const handleApplyPatch = () => {
+    if (!originalCode.trim() || !patchBlocks.trim()) {
+      alert("يرجى إدخال الكود الأصلي وكتل التعديل أولاً.");
+      return;
+    }
 
-          {isPaidOffNow && (
-            <div style={{ background: "rgba(232,205,156,0.15)", border: `1px solid ${themeStyles.accentGold || "#d4af37"}`, color: themeStyles.accentGold || "#d4af37", padding: "10px", borderRadius: themeStyles.borderRadius || 10, textAlign: "center", fontWeight: 800, fontSize: 14, margin: "12px 0" }}>
-              🏆 {t.contractSettledNotice || (isEN ? "This contract has been fully settled upon saving changes!" : "تم مخالصة وسداد هذا العقد بالكامل عند حفظ التغييرات!")}
-            </div>
-          )}
+    // دعم صيغ الكتل المتنوعة (SEARCH/REPLACE العادية والمعكوسة) مع معالجة مرنة للأسطر
+    const blockRegex = /(?:<<<<<<< SEARCH|SEARCH >>>>>>>)[\r\n]+([\s\S]*?)[\r\n]+(?:=======|======)[\r\n]+([\s\S]*?)[\r\n]+(?:>>>>>>> REPLACE|REPLACE <<<<<<<)/g;
 
-          <button 
-            type="submit" 
-            style={{ 
-              width: "100%", background: `linear-gradient(145deg, ${themeStyles.accentGold}, ${themeStyles.accent})`, color: "#111111", border: "none", 
-              borderRadius: themeStyles.borderRadius || 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 14, fontFamily: "inherit" 
-            }}
-          >
-            {t.recordAndPrintBtn || (isEN ? "Record Payment & Print Receipt" : "تسجيل السداد وطباعة الإيصال")}
-          </button>
-        </form>
-      )}
-    </div>
-  );
+    let currentCode = originalCode;
+    let appliedCount = 0;
+    let failedBlocks = [];
+    let match;
+    let index = 0;
+
+    while ((match = blockRegex.exec(patchBlocks)) !== null) {
+      index++;
+      const searchStr = match[1];
+      const replaceStr = match[2];
+
+      const res = applyFuzzyReplace(currentCode, searchStr, replaceStr);
+
+      if (res.success) {
+        currentCode = res.text;
+        appliedCount++;
+      } else {
+        failedBlocks.push({
+          blockNum: index,
+          snippet: searchStr.trim().slice(0, 40) + "..."
+        });
+      }
+    }
+
+    setResultCode(currentCode);
+    setStats({
+      total: index,
+      applied: appliedCount,
+      failed: failedBlocks
+    });
+    setCopied(false);
+  };
+
+  const handleCopy = () => {
+    if (!resultCode) return;
+    navigator.clipboard.writeText(resultCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleReset = () => {
+    setOriginalCode("");
+    setPatchBlocks("");
+    setResultCode("");
+    setStats(null);
+    setCopied(false);
+  };
+
+  return (
+    <div style={{
+      maxWidth: 1100,
+      margin: "0 auto",
+      padding: 20,
+      fontFamily: "'Cairo', 'Tajawal', sans-serif",
+      color: themeStyles.text || "#ffffff"
+    }}>
+      {/* 1. الشريط العلوي للأداة */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        background: themeStyles.card || "#1e1e1e",
+        border: `1px solid ${themeStyles.border || "#333333"}`,
+        borderRadius: 16,
+        padding: "16px 24px",
+        marginBottom: 20
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Sparkles size={24} style={{ color: themeStyles.accentGold || "#d4af37" }} />
+          <div>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: themeStyles.accentGold || "#d4af37" }}>
+              أداة التعديل الجراحي للأكواد (Code Patcher)
+            </h2>
+            <span style={{ fontSize: 12, color: themeStyles.subText || "#aaaaaa" }}>
+              تعديل أسطر محددة فقط مع تجميد وحماية باقي الملف 100%
+            </span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleReset}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: "transparent", border: `1px solid ${themeStyles.border || "#333"}`,
+            color: themeStyles.subText || "#aaa", padding: "8px 14px",
+            borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700
+          }}
+        >
+          <RefreshCw size={14} /> تفريغ الخانات
+        </button>
+      </div>
+
+      {/* 2. مربعات الإدخال */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+        {/* المربع 1: الكود الأصلي */}
+        <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 14, padding: 16 }}>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 800, marginBottom: 8, color: themeStyles.accentGold || "#d4af37" }}>
+            1. الكود الأصلي للملف بالكامل:
+          </label>
+          <textarea
+            value={originalCode}
+            onChange={(e) => setOriginalCode(e.target.value)}
+            placeholder="الصق كود الملف الأصلي هنا..."
+            rows={12}
+            style={{
+              width: "100%",
+              background: themeStyles.inputBg || "#141414",
+              border: `1px solid ${themeStyles.border || "#333"}`,
+              borderRadius: 10,
+              padding: 12,
+              color: "#e0e0e0",
+              fontFamily: "monospace",
+              fontSize: 12,
+              resize: "vertical",
+              boxSizing: "border-box",
+              outline: "none"
+            }}
+          />
+        </div>
+
+        {/* المربع 2: كتل التعديل */}
+        <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 14, padding: 16 }}>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 800, marginBottom: 8, color: "#e07a5f" }}>
+            2. كتل التعديل (SEARCH / REPLACE):
+          </label>
+          <textarea
+            value={patchBlocks}
+            onChange={(e) => setPatchBlocks(e.target.value)}
+            placeholder={`<<<<<<< SEARCH\nالسطر المراد تغييره بالظبط\n=======\nالسطر الجديد البديل\n>>>>>>> REPLACE`}
+            rows={12}
+            style={{
+              width: "100%",
+              background: themeStyles.inputBg || "#141414",
+              border: `1px solid ${themeStyles.border || "#333"}`,
+              borderRadius: 10,
+              padding: 12,
+              color: "#e0e0e0",
+              fontFamily: "monospace",
+              fontSize: 12,
+              resize: "vertical",
+              boxSizing: "border-box",
+              outline: "none"
+            }}
+          />
+        </div>
+      </div>
+
+      {/* 3. زر التشغيل */}
+      <button
+        onClick={handleApplyPatch}
+        style={{
+          width: "100%",
+          padding: 16,
+          background: "linear-gradient(135deg, #d4af37 0%, #b06a35 100%)",
+          border: "none",
+          borderRadius: 12,
+          color: "#111",
+          fontSize: 15,
+          fontWeight: 800,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          boxShadow: "0 4px 15px rgba(212, 175, 55, 0.2)",
+          marginBottom: 20
+        }}
+      >
+        <Code size={18} /> تطبيق التعديل الجراحي على الكود
+      </button>
+
+      {/* 4. النتيجة والإحصائيات */}
+      {stats && (
+        <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 16, padding: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#22c55e", fontWeight: 700, fontSize: 13 }}>
+                <CheckCircle size={16} /> تم تطبيق {stats.applied} من أصل {stats.total} كتل بنجاح
+              </div>
+
+              {stats.failed.length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#ef4444", fontWeight: 700, fontSize: 13 }}>
+                  <AlertTriangle size={16} /> فشل مطابقة {stats.failed.length} كتل
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handleCopy}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: copied ? "#22c55e" : themeStyles.accentGold || "#d4af37",
+                border: "none", color: "#111", padding: "8px 16px",
+                borderRadius: 8, cursor: "pointer", fontWeight: 800, fontSize: 13
+              }}
+            >
+              {copied ? <CheckCircle size={16} /> : <Copy size={16} />}
+              {copied ? "تم النسخ!" : "نسخ الكود النهائي"}
+            </button>
+          </div>
+
+          {stats.failed.length > 0 && (
+            <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid #ef4444", borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 12, color: "#f87171" }}>
+              <strong>تنبيه: الكتل التالية لم يتم العثور على نصها الأصلي بالكود:</strong>
+              <ul style={{ margin: "6px 0 0 0", paddingRight: 20 }}>
+                {stats.failed.map((f, i) => (
+                  <li key={i}>كتلة رقم {f.blockNum}: "{f.snippet}"</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <textarea
+            readOnly
+            value={resultCode}
+            rows={14}
+            style={{
+              width: "100%",
+              background: themeStyles.inputBg || "#141414",
+              border: `1px solid ${themeStyles.border || "#333"}`,
+              borderRadius: 10,
+              padding: 12,
+              color: "#22c55e",
+              fontFamily: "monospace",
+              fontSize: 12,
+              resize: "vertical",
+              boxSizing: "border-box",
+              outline: "none"
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
+
+export default CodePatcher;
