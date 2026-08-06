@@ -35,13 +35,23 @@ export default function CustomerSearchHeader({
 
   return (
     <div className="cs-header-container" style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", boxSizing: "border-box" }}>
-      {/* 🛡️ إجبار جميع العناصر الداخلية والمدخلات على الالتزام بالإطار ومنع أي بروز */}
+      {/* 🛡️ إجبار العناصر على الالتزام بالإطار وإخفاء أسهم زيادة ونقصان الأرقام */}
       <style>{`
         .cs-header-container, .cs-header-container *, .cs-header-container *::before, .cs-header-container *::after {
           box-sizing: border-box !important;
         }
         .cs-header-container input, .cs-header-container select, .cs-header-container button {
           max-width: 100% !important;
+        }
+        /* إخفاء أسهم الأرقام من متصفحات Chrome, Safari, Edge */
+        .cs-header-container input[type=number]::-webkit-outer-spin-button,
+        .cs-header-container input[type=number]::-webkit-inner-spin-button {
+          -webkit-appearance: none !important;
+          margin: 0 !important;
+        }
+        /* إخفاء أسهم الأرقام من متصفح Firefox */
+        .cs-header-container input[type=number] {
+          -moz-appearance: textfield !important;
         }
       `}</style>
 
@@ -91,6 +101,7 @@ export default function CustomerSearchHeader({
               <input
                 type="number"
                 step="1"
+                onWheel={(e) => e.target.blur()}
                 style={{ 
                   width: "100%", 
                   height: 48,
