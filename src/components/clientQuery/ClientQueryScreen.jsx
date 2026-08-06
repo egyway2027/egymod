@@ -3,7 +3,7 @@
  * 📌 الشاشة: الشاشة الرئيسية للاستعلام (Client Query Main Screen)
  * 📁 المسار: src/components/clientQuery/ClientQueryScreen.jsx
  * 📝 الوظيفة: إدارة شريط البحث، التبديل بين التبويبات (النشطة / الأرشيف)،
- *            ومعالجة تنبيه العقود المتعددة لنفس رقم الهاتف.
+ *              ومعالجة تنبيه العقود المتعددة لنفس رقم الهاتف بالهيكلة الجديدة.
  * =========================================================
  */
 
@@ -16,31 +16,43 @@ import { ClientDetailCard } from "./ClientDetailCard";
 
 export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t = {}, themeStyles = {} }) {
   const isEN = t?.currency === "EGP" || document.documentElement.lang === "en" || document.documentElement.dir === "ltr";
-  
+
   const [activeTab, setActiveTab] = useState("active"); // "active" | "archive"
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedContract, setSelectedContract] = useState(null);
-  
+
   // التحكم في نافذة العقود المتعددة
   const [multiContractList, setMultiContractList] = useState([]);
   const [isMultiModalOpen, setIsMultiModalOpen] = useState(false);
 
+  // تطبيع وتوحيد شكل البيانات للعمل مع الجداول المفصولة والقديمة
+  const normalizedContracts = useMemo(() => {
+    return (contracts || []).map((c) => ({
+      ...c,
+      id: c.id,
+      name: c.clientName || c.client_name || c.name || "عميل بدون اسم",
+      phone: c.clientPhone || c.client_phone || c.phone || "",
+      item: c.itemName || c.item_name || c.item || "",
+      contractDate: c.contractDate || c.contract_date || c.created_at || "",
+      status: c.status || (c.is_deleted ? "archived" : "active")
+    }));
+  }, [contracts]);
+
   // إحصاءات الأعداد للتبويبات
-  const activeCount = useMemo(() => filterContracts(contracts, "", false).length, [contracts]);
-  const archiveCount = useMemo(() => filterContracts(contracts, "", true).length, [contracts]);
+  const activeCount = useMemo(() => filterContracts(normalizedContracts, "", false).length, [normalizedContracts]);
+  const archiveCount = useMemo(() => filterContracts(normalizedContracts, "", true).length, [normalizedContracts]);
 
   // قائمة اقتراحات البحث النشطة
   const suggestions = useMemo(() => {
-    return filterContracts(contracts, searchQuery, activeTab === "archive");
-  }, [contracts, searchQuery, activeTab]);
+    return filterContracts(normalizedContracts, searchQuery, activeTab === "archive");
+  }, [normalizedContracts, searchQuery, activeTab]);
 
   // معالجة اختيار العميل من البحث
   const handleSelectSearchItem = (contract) => {
-    const matched = findContractsByPhone(contracts, contract.phone);
-    
+    const matched = findContractsByPhone(normalizedContracts, contract.phone);
+
     if (matched.length > 1) {
-      // إذا كان للعميل أكثر من عقد لنفس التليفون
       setMultiContractList(matched);
       setIsMultiModalOpen(true);
     } else {
@@ -205,7 +217,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
       {/* TAB CONTENT 2: ARCHIVED CONTRACTS */}
       {activeTab === "archive" && (
         <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "18px", padding: "20px" }}>
-          <ArchivedContractsView contracts={contracts} t={t} themeStyles={themeStyles} />
+          <ArchivedContractsView contracts={normalizedContracts} t={t} themeStyles={themeStyles} />
         </div>
       )}
 
@@ -213,7 +225,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
       <AllClientsRegisterModal
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
-        contracts={contracts}
+        contracts={normalizedContracts}
         t={t}
         themeStyles={themeStyles}
       />
