@@ -3,7 +3,7 @@
  * 📌 الملف: الشاشة الرئيسية للنظام (Main App Container)
  * 📁 المسار: src/App.jsx
  * 📝 الوظيفة: الموزع الرئيسي للشاشات المربوط بـ 15 لغة و 100 ثيم
- *             مع المزامنة السحابية والحفظ التلقائي للواجهة.
+ *              مع المزامنة السحابية والحفظ التلقائي للواجهة.
  * =========================================================
  */
 
@@ -16,7 +16,7 @@ import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import InstallmentsScreen from "./components/installments/InstallmentsScreen";
-import MonthlyDues from "./components/MonthlyDues"; // 👈 التعديل هنا
+import MonthlyDues from "./components/MonthlyDues";
 import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
 import { RecycleBinModal } from "./components/modals/RecycleBinModal";
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
@@ -28,8 +28,22 @@ import { useThemeAndLang } from "./hooks/useThemeAndLang";
 
 export function App() {
   const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
-  const { clientsList, isLoading, handleSaveClient, handleUpdateContract, handleDeleteContract, fetchContracts } = useCloudData();
-  
+  const {
+    clients,
+    contracts,
+    employees,
+    partners,
+    clientsList,
+    isLoading,
+    addClient,
+    addContract,
+    updateItemStatus,
+    handleSaveClient,
+    handleUpdateContract,
+    handleDeleteContract,
+    refreshAllData
+  } = useCloudData();
+
   // 🌐🎨 محرك اللغات الـ 15 والثيمات الـ 100
   const {
     currentLang,
@@ -53,9 +67,29 @@ export function App() {
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
   const [showCentralRecordsModal, setShowCentralRecordsModal] = useState(false);
 
-  // ☁️ حفظ عميل جديد
+  // ☁️ حفظ عميل وعقد جديد (الربط المزدوج لجدولي clients و contracts)
   const onSaveClientSubmit = async (newClientData) => {
-    const res = await handleSaveClient(newClientData);
+    let res;
+    if (typeof handleSaveClient === "function") {
+      res = await handleSaveClient(newClientData);
+    } else {
+      const clientRes = await addClient({
+        name: newClientData.clientName || newClientData.name,
+        phone: newClientData.clientPhone || newClientData.phone,
+        national_id: newClientData.nationalId || newClientData.national_id,
+        address: newClientData.address
+      });
+      if (clientRes.success && clientRes.data) {
+        res = await addContract({
+          client_id: clientRes.data.id,
+          item_name: newClientData.itemName || newClientData.item_name,
+          total: Number(newClientData.total) || 0,
+          down_payment: Number(newClientData.downPayment || newClientData.down_payment) || 0,
+          monthly_installment: Number(newClientData.monthlyInstallment || newClientData.monthly_installment) || 0
+        });
+      }
+    }
+
     if (res?.success) {
       alert(t.saveSuccess || "تم حفظ العقد بنجاح!");
       handleBack();
@@ -64,21 +98,20 @@ export function App() {
     }
   };
 
-  // ☁️ تحديث بيانات عقد
- const onUpdateContractSubmit = async (updatedContract) => {
+  // ☁️ تحديث بيانات عقد / نقل للسلة / أرشيف
+  const onUpdateContractSubmit = async (updatedContract) => {
     let res;
-    
-    // إذا كان الطلب حذف نهائي من قواعد البيانات
     if (updatedContract.is_permanently_deleted && typeof handleDeleteContract === "function") {
       res = await handleDeleteContract(updatedContract.id);
-    } else {
+    } else if (typeof handleUpdateContract === "function") {
       res = await handleUpdateContract(updatedContract);
+    } else if (typeof updateItemStatus === "function" && updatedContract.status) {
+      res = await updateItemStatus("contracts", updatedContract.id, updatedContract.status);
     }
 
     if (res?.success || res?.status === 200 || !res?.error) {
-      // إعادة جلب القائمة المحدثة فوراً من السحابة
-      if (typeof fetchContracts === "function") {
-        await fetchContracts();
+      if (typeof refreshAllData === "function") {
+        await refreshAllData();
       }
       return { success: true };
     } else {
@@ -103,21 +136,27 @@ export function App() {
     { key: "exit", label: t.exit, icon: Power, tone: "dark" },
   ];
 
-  const currentLangObj = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
-const netProfit = useMemo(() => {
-    return (clientsList || []).reduce((acc, curr) => {
-      const sale = Number(curr.sale ?? curr.salePrice ?? curr.sale_price ?? 0);
+  const currentLangObj = LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
+
+  // 📊 حساب صافي الأرباح النشطة
+  const netProfit = useMemo(() => {
+    const list = clientsList || contracts || [];
+    return list.reduce((acc, curr) => {
+      if (curr.status === "archived" || Boolean(curr.is_deleted)) return acc;
+      const sale = Number(curr.total ?? curr.sale ?? curr.salePrice ?? curr.sale_price ?? 0);
       const cost = Number(curr.cost ?? curr.costPrice ?? curr.cost_price ?? 0);
-      const down = Number(curr.down ?? curr.downPayment ?? curr.down_payment ?? 0);
+      const down = Number(curr.downPayment ?? curr.down ?? curr.down_payment ?? 0);
       const totalPaid = Number(curr.totalPaid ?? curr.total_paid ?? 0);
       if (sale <= 0) return acc;
       return acc + Math.round((down + totalPaid) * ((sale - cost) / sale));
     }, 0);
-  }, [clientsList]);
+  }, [clientsList, contracts]);
 
+  // 📅 حساب مستحقات هذا الشهر النشطة
   const monthlyDues = useMemo(() => {
-    return (clientsList || []).reduce((acc, curr) => {
-      if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
+    const list = clientsList || contracts || [];
+    return list.reduce((acc, curr) => {
+      if (curr.status === "archived" || Boolean(curr.is_deleted)) return acc;
 
       const total = Number(curr.total ?? curr.sale ?? curr.salePrice ?? curr.sale_price ?? 0);
       const down = Number(curr.downPayment ?? curr.down ?? curr.down_payment ?? 0);
@@ -129,10 +168,34 @@ const netProfit = useMemo(() => {
       if (remaining <= 0 || monthly <= 0) return acc;
       return acc + Math.min(monthly, remaining);
     }, 0);
-  }, [clientsList]);
+  }, [clientsList, contracts]);
+
+  // 💼 حساب إجمالي محفظة الأقساط المتبقية
+  const totalPortfolio = useMemo(() => {
+    const list = clientsList || contracts || [];
+    return list.reduce((acc, curr) => {
+      if (curr.status === "archived" || Boolean(curr.is_deleted)) return acc;
+      const total = Number(curr.total ?? curr.sale ?? 0);
+      const down = Number(curr.downPayment ?? curr.down ?? 0);
+      const totalPaid = Number(curr.totalPaid ?? 0);
+      const remCalculated = Math.max(0, total - down - totalPaid);
+      const rem = Number(curr.remaining) > 0 ? Number(curr.remaining) : remCalculated;
+      return acc + rem;
+    }, 0);
+  }, [clientsList, contracts]);
+
+  const activeContractsList = useMemo(() => {
+    const list = clientsList || contracts || [];
+    return list.filter((c) => c.status !== "archived" && !Boolean(c.is_deleted));
+  }, [clientsList, contracts]);
+
+  const deletedContractsList = useMemo(() => {
+    const list = clientsList || contracts || [];
+    return list.filter((c) => c.status === "deleted" || Boolean(c.is_deleted));
+  }, [clientsList, contracts]);
+
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
-      
       {isLoading ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80vh", gap: "12px" }}>
           <Loader2 size={36} className="animate-spin" style={{ color: themeStyles.accentGold || "#d4af37" }} />
@@ -150,10 +213,10 @@ const netProfit = useMemo(() => {
             />
           )}
 
-          {/* 2. شاشة الاستعلام عن عميل الأصيلة بدون أي تعديل */}
+          {/* 2. شاشة الاستعلام عن عميل */}
           {currentScreen === "clientQuery" && (
             <ClientQueryScreen
-              contracts={clientsList}
+              contracts={activeContractsList}
               onUpdateContract={onUpdateContractSubmit}
               onBack={handleBack}
               t={t}
@@ -161,37 +224,40 @@ const netProfit = useMemo(() => {
             />
           )}
 
-          {/* 3. شاشة سداد الأقساط المربوطة بـ clientsList و handleUpdateContract */}
+          {/* 3. شاشة سداد الأقساط */}
           {currentScreen === "pay" && (
             <InstallmentsScreen
-              contracts={clientsList}
+              contracts={activeContractsList}
               onUpdateContract={onUpdateContractSubmit}
               onBack={handleBack}
               t={t}
               themeStyles={themeStyles}
             />
           )}
-{/* 📌 شاشة مستحقات هذا الشهر */}
-{currentScreen === "monthlyDues" && (
-  <MonthlyDues
-    clientsList={clientsList}
-    onOpenPaymentModal={() => navigateTo("pay")}
-    onBack={handleBack}
-  />
-)}
-{/* 📌 شاشة إدارة وحذف حسابات العملاء */}
-{currentScreen === "deleteClient" && (
-  <DeleteClientScreen
-    clientsList={clientsList}
-    onUpdateContract={async (updatedClient) => {
-      await onUpdateContractSubmit(updatedClient);
-    }}
-    onBack={handleBack}
-    t={t}
-    themeStyles={themeStyles}
-  />
-)}
-          {/* 4. شاشة الإعدادات الشاملة (15 لغة و 100 ثيم) */}
+
+          {/* 📌 شاشة مستحقات هذا الشهر */}
+          {currentScreen === "monthlyDues" && (
+            <MonthlyDues
+              clientsList={activeContractsList}
+              onOpenPaymentModal={() => navigateTo("pay")}
+              onBack={handleBack}
+            />
+          )}
+
+          {/* 📌 شاشة إدارة وحذف حسابات العملاء */}
+          {currentScreen === "deleteClient" && (
+            <DeleteClientScreen
+              clientsList={activeContractsList}
+              onUpdateContract={async (updatedClient) => {
+                await onUpdateContractSubmit(updatedClient);
+              }}
+              onBack={handleBack}
+              t={t}
+              themeStyles={themeStyles}
+            />
+          )}
+
+          {/* 4. شاشة الإعدادات الشاملة */}
           {currentScreen === "settings" && (
             <SettingsScreen
               currentLang={currentLang}
@@ -253,13 +319,15 @@ const netProfit = useMemo(() => {
               </header>
 
               <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
+                {/* كارت صافي الأرباح */}
                 <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
                   <TrendingUp size={24} color={themeStyles.accentGold} />
-                 <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{netProfit.toLocaleString()} {t.currency}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{netProfit.toLocaleString()} {t.currency}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.netProfit}</div>
                   <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.netProfitSub}</div>
                 </div>
 
+                {/* كارت مستحقات هذا الشهر */}
                 <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
                   <CalendarClock size={24} color={themeStyles.accentGold} />
                   <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{monthlyDues.toLocaleString()} {t.currency}</div>
@@ -267,22 +335,15 @@ const netProfit = useMemo(() => {
                   <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.monthlyDuesSub}</div>
                 </div>
 
+                {/* كارت إجمالي الأقساط المتبقية */}
                 <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-    <Wallet size={24} color={themeStyles.accentGold} />
-    <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
-      {(clientsList || []).reduce((acc, curr) => {
-        if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
-        const total = Number(curr.total ?? curr.sale ?? 0);
-        const down = Number(curr.downPayment ?? curr.down ?? 0);
-        const totalPaid = Number(curr.totalPaid ?? 0);
-        const remCalculated = Math.max(0, total - down - totalPaid);
-        const rem = Number(curr.remaining) > 0 ? Number(curr.remaining) : remCalculated;
-        return acc + rem;
-      }, 0).toLocaleString()} {t.currency}
-    </div>
-    <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
-    <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
-  </div>
+                  <Wallet size={24} color={themeStyles.accentGold} />
+                  <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
+                    {totalPortfolio.toLocaleString()} {t.currency}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
+                  <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
+                </div>
               </section>
 
               <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
@@ -296,15 +357,15 @@ const netProfit = useMemo(() => {
                           navigateTo("addClient");
                         } else if (b.key === "pay") {
                           navigateTo("pay");
-                          } else if (b.key === "monthlyDues") {
-  navigateTo("monthlyDues"); // 👈 التعديل هنا لتوجيه الشاشة
+                        } else if (b.key === "monthlyDues") {
+                          navigateTo("monthlyDues");
                         } else if (b.key === "search") {
                           navigateTo("clientQuery");
                         } else if (b.key === "settings") {
                           navigateTo("settings");
                         } else if (b.key === "whatsapp") {
                           setShowWhatsAppModal(true);
-                       } else if (b.key === "deleteClient") {
+                        } else if (b.key === "deleteClient") {
                           navigateTo("deleteClient");
                         }
                       }}
@@ -332,7 +393,7 @@ const netProfit = useMemo(() => {
       <WhatsAppHubModal
         isOpen={showWhatsAppModal}
         onClose={() => setShowWhatsAppModal(false)}
-        overdueContracts={clientsList.filter(c => Number(c.remainingAmount ?? c.remaining) > 0)}
+        overdueContracts={activeContractsList.filter((c) => Number(c.remainingAmount ?? c.remaining) > 0)}
         t={t}
         themeStyles={themeStyles}
       />
@@ -341,7 +402,7 @@ const netProfit = useMemo(() => {
       <RecycleBinModal
         isOpen={showRecycleBinModal}
         onClose={() => setShowRecycleBinModal(false)}
-        deletedItems={[]}
+        deletedItems={deletedContractsList}
         t={t}
         themeStyles={themeStyles}
       />
@@ -350,7 +411,7 @@ const netProfit = useMemo(() => {
       <GlobalSearchModal
         isOpen={showGlobalSearchModal}
         onClose={() => setShowGlobalSearchModal(false)}
-        contracts={clientsList}
+        contracts={activeContractsList}
         onSelectResult={() => navigateTo("clientQuery")}
         t={t}
         themeStyles={themeStyles}
@@ -378,7 +439,7 @@ const netProfit = useMemo(() => {
               <X style={{ cursor: "pointer" }} onClick={() => setShowLangModal(false)} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(1, 1fr)", gap: 8 }}>
-              {LANGUAGES.map(l => (
+              {LANGUAGES.map((l) => (
                 <button
                   key={l.code}
                   onClick={() => {
