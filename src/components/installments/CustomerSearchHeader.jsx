@@ -55,12 +55,24 @@ export default function CustomerSearchHeader({
 
       {selected && (
         <form onSubmit={onSubmitPayment} style={{ marginTop: 10 }}>
-          {/* فصل الحقول بداخل مربعات مستقلة ومنع التداخل */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
-                {t.paymentDate || (isEN ? "Payment Date" : "تاريخ السداد")}
-              </label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+            <Field label={t.paidAmount || (isEN ? "Amount Paid (EGP) *" : "المبلغ المدفوع (ج.م) *")} styles={styles}>
+              <input
+                type="number"
+                step="1"
+                style={{ 
+                  width: "100%", background: themeStyles.inputBg || "#1b1b1d", border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}`, 
+                  borderRadius: themeStyles.borderRadius || 10, padding: "12px 14px", fontFamily: "inherit", outline: "none",
+                  fontSize: 16, fontWeight: 800, color: themeStyles.accentGold || "#d4af37", boxSizing: "border-box" 
+                }}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                required
+              />
+            </Field>
+
+            <Field label={t.paymentDate || (isEN ? "Payment Date" : "تاريخ السداد")} styles={styles}>
               <DateInput 
                 value={payDate} 
                 onChange={(e) => setPayDate(e.target.value)} 
@@ -69,35 +81,7 @@ export default function CustomerSearchHeader({
                 t={t} 
                 lang={isEN ? "en" : "ar"} 
               />
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
-                {t.paidAmount || (isEN ? "Amount Paid (EGP) *" : "المبلغ المدفوع (ج.م) *")}
-              </label>
-              <input
-                type="number"
-                step="1"
-                style={{ 
-                  width: "100%", 
-                  height: 48,
-                  background: themeStyles.inputBg || "#141414", 
-                  border: `1px solid ${themeStyles.border || "#333333"}`, 
-                  borderRadius: themeStyles.borderRadius || 10, 
-                  padding: "0 14px", 
-                  fontFamily: "inherit", 
-                  outline: "none",
-                  fontSize: 16, 
-                  fontWeight: 800, 
-                  color: themeStyles.accentGold || "#d4af37", 
-                  boxSizing: "border-box" 
-                }}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0"
-                required
-              />
-            </div>
+            </Field>
           </div>
 
           {/* أزرار الإدخال السريع للمبلغ */}
@@ -141,32 +125,38 @@ export default function CustomerSearchHeader({
             </button>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 16 }}>
-            <Field label={t.paymentMethod || (isEN ? "Payment Method" : "طريقة الدفع")} styles={styles}>
-              <select 
-                style={{ width: "100%", background: themeStyles.inputBg, border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`, borderRadius: themeStyles.borderRadius || 10, padding: "12px 14px", color: themeStyles.text, fontFamily: "inherit", fontSize: 15, outline: "none" }} 
-                value={method} 
-                onChange={(e) => setMethod(e.target.value)}
-              >
-                <option value="نقداً / كاش">{t.cashMethod || (isEN ? "Cash" : "نقداً / كاش")}</option>
-                <option value="فودافون كاش / إنستا باي">{t.walletMethod || (isEN ? "Vodafone Cash / InstaPay" : "فودافون كاش / إنستا باي")}</option>
-                <option value="تحويل بنكي">{t.bankTransferMethod || (isEN ? "Bank Transfer" : "تحويل بنكي")}</option>
-              </select>
-            </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
+                {t.paymentMethod || (isEN ? "Payment Method" : "طريقة الدفع")}
+              </label>
+              <select 
+                style={{ width: "100%", height: 48, background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.borderRadius || 10, padding: "0 14px", color: themeStyles.text || "#ffffff", fontFamily: "inherit", fontSize: 15, outline: "none", boxSizing: "border-box" }} 
+                value={method} 
+                onChange={(e) => setMethod(e.target.value)}
+              >
+                <option value="نقداً / كاش">{t.cashMethod || (isEN ? "Cash" : "نقداً / كاش")}</option>
+                <option value="فودافون كاش / إنستا باي">{t.walletMethod || (isEN ? "Vodafone Cash / InstaPay" : "فودافون كاش / إنستا باي")}</option>
+                <option value="تحويل بنكي">{t.bankTransferMethod || (isEN ? "Bank Transfer" : "تحويل بنكي")}</option>
+              </select>
+            </div>
 
-            <Field label={t.collectorEmployee || (isEN ? "Collector / Employee" : "المحصل / الموظف")} styles={styles}>
-              <select 
-                style={{ width: "100%", background: themeStyles.inputBg, border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`, borderRadius: themeStyles.borderRadius || 10, padding: "12px 14px", color: themeStyles.text, fontFamily: "inherit", fontSize: 15, outline: "none" }} 
-                value={collector} 
-                onChange={(e) => setCollector(e.target.value)}
-              >
-                <option value="المشرف">{t.generalSupervisor || (isEN ? "General Supervisor" : "المشرف العام")}</option>
-                {employees && employees.map((emp) => (
-                  <option key={emp.id} value={emp.name}>{emp.name} ({emp.job || (isEN ? "Employee" : "موظف")})</option>
-                ))}
-              </select>
-            </Field>
-          </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
+                {t.collectorEmployee || (isEN ? "Collector / Employee" : "المحصل / الموظف")}
+              </label>
+              <select 
+                style={{ width: "100%", height: 48, background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.borderRadius || 10, padding: "0 14px", color: themeStyles.text || "#ffffff", fontFamily: "inherit", fontSize: 15, outline: "none", boxSizing: "border-box" }} 
+                value={collector} 
+                onChange={(e) => setCollector(e.target.value)}
+              >
+                <option value="المشرف">{t.generalSupervisor || (isEN ? "General Supervisor" : "المشرف العام")}</option>
+                {employees && employees.map((emp) => (
+                  <option key={emp.id} value={emp.name}>{emp.name} ({emp.job || (isEN ? "Employee" : "موظف")})</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {/* شريط الإحصائيات الحية */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: themeStyles.highlightBg, border: `1px dashed ${themeStyles.accent}`, borderRadius: themeStyles.borderRadius || 12, padding: 14, margin: "6px 0" }}>
@@ -181,15 +171,17 @@ export default function CustomerSearchHeader({
             </div>
           )}
 
-          <button 
-            type="submit" 
-            style={{ 
-              width: "100%", background: `linear-gradient(145deg, ${themeStyles.accentGold}, ${themeStyles.accent})`, color: "#111111", border: "none", 
-              borderRadius: themeStyles.borderRadius || 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 14, fontFamily: "inherit" 
-            }}
-          >
-            {t.recordAndPrintBtn || (isEN ? "Record Payment & Print Receipt" : "تسجيل السداد وطباعة الإيصال")}
-          </button>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+            <button 
+              type="submit" 
+              style={{ 
+                background: `linear-gradient(135deg, ${themeStyles.accentGold || "#d4af37"}, ${themeStyles.accent || "#b06a35"})`, color: "#111111", border: "none", 
+                borderRadius: 12, padding: "12px 28px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" 
+              }}
+            >
+              {t.recordAndPrintBtn || (isEN ? "Record Payment & Print Receipt" : "تسجيل السداد وطباعة الإيصال")}
+            </button>
+          </div>
         </form>
       )}
     </div>
