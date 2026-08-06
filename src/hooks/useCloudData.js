@@ -14,67 +14,71 @@ export function useCloudData() {
   const refreshAllData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [clientsRes, contractsRes, installmentsRes, employeesRes, partnersRes] = await Promise.all([
-        supabase.from("clients").select("*").order("created_at", { ascending: false }),
-        supabase.from("contracts").select("*, clients(*), installments(*)").order("created_at", { ascending: false }),
-        supabase.from("installments").select("*").order("created_at", { ascending: false }),
-        supabase.from("employees").select("*").order("created_at", { ascending: false }),
-        supabase.from("partners").select("*").order("created_at", { ascending: false })
-      ]);
+      const normalized = contractsRes.data.map((c) => {
+  const clientObj = c.clients || {};
+  const instArr = Array.isArray(c.installments) ? c.installments : [];
 
-      if (clientsRes.data) setClients(clientsRes.data);
-      if (employeesRes.data) setEmployees(employeesRes.data);
-      if (partnersRes.data) setPartners(partnersRes.data);
-      if (installmentsRes.data) setInstallments(installmentsRes.data);
+  const sale = Number(c.sale || c.total || 0);
+  const cost = Number(c.cost || 0);
+  const down = Number(c.down_payment || 0);
+  const monthly = Number(c.monthly_installment || 0);
 
-      if (contractsRes.data) {
-        setContracts(contractsRes.data);
+  // حساب الأقساط المسددة المكتملة وإثراء بيانات كل قسط
+  let runningPaid = down;
+  const enrichedPayments = instArr
+    .filter((i) => i.is_paid || i.status === "paid")
+    .map((i) => {
+      const amt = Number(i.amount || 0);
+      runningPaid += amt;
+      const remAfter = Math.max(0, sale - runningPaid);
 
-        const normalized = contractsRes.data.map((c) => {
-          const clientObj = c.clients || {};
-          const instArr = Array.isArray(c.installments) ? c.installments : [];
+      return {
+        ...i,
+        id: i.id,
+        contractId: c.id,
+        clientName: clientObj.name || "عميل بدون اسم",
+        itemName: c.item_name || "",
+        amount: amt,
+        payDate: i.due_date || i.paid_at || i.created_at || new Date().toISOString().split("T")[0],
+        date: i.due_date || i.paid_at || i.created_at || new Date().toISOString().split("T")[0],
+        method: i.payment_method || i.method || "نقداً / كاش",
+        collector: i.collector || i.employee || "المشرف العام",
+        remainingAfter: remAfter
+      };
+    });
 
-          const sale = Number(c.sale || c.total || 0);
-          const cost = Number(c.cost || 0);
-          const down = Number(c.down_payment || 0);
-          const monthly = Number(c.monthly_installment || 0);
+  const totalPaid = runningPaid;
+  const remaining = Math.max(0, sale - totalPaid);
 
-          const paidFromInst = instArr
-            .filter((i) => i.is_paid)
-            .reduce((sum, i) => sum + Number(i.amount || 0), 0);
-
-          const totalPaid = down + paidFromInst;
-          const remaining = Math.max(0, sale - totalPaid);
-
-          return {
-            ...c,
-            id: c.id,
-            client_id: c.client_id,
-            name: clientObj.name || "عميل بدون اسم",
-            clientName: clientObj.name || "عميل بدون اسم",
-            phone: clientObj.phone || "",
-            clientPhone: clientObj.phone || "",
-            guarantor: c.guarantor || "",
-            guarantorPhone: c.guarantor_phone || "",
-            item: c.item_name || "",
-            itemName: c.item_name || "",
-            cost,
-            sale,
-            total: sale,
-            down,
-            downPayment: down,
-            monthly,
-            monthlyInstallment: monthly,
-            paidAmount: totalPaid,
-            totalPaid,
-            remainingAmount: remaining,
-            remaining,
-            contractDate: c.contract_date || c.created_at,
-            notes: c.notes || "",
-            status: c.status || "active",
-            payments: instArr
-          };
-        });
+  return {
+    ...c,
+    id: c.id,
+    client_id: c.client_id,
+    name: clientObj.name || "عميل بدون اسم",
+    clientName: clientObj.name || "عميل بدون اسم",
+    phone: clientObj.phone || "",
+    clientPhone: clientObj.phone || "",
+    guarantor: c.guarantor || "",
+    guarantorPhone: c.guarantor_phone || "",
+    item: c.item_name || "",
+    itemName: c.item_name || "",
+    cost,
+    sale,
+    total: sale,
+    down,
+    downPayment: down,
+    monthly,
+    monthlyInstallment: monthly,
+    paidAmount: totalPaid,
+    totalPaid,
+    remainingAmount: remaining,
+    remaining,
+    contractDate: c.contract_date || c.created_at,
+    notes: c.notes || "",
+    status: c.status || "active",
+    payments: enrichedPayments
+  };
+});
 
         setClientsList(normalized);
       }
@@ -158,33 +162,35 @@ export function useCloudData() {
     }
   };
 
-  // 💳 [مكان الكود الخاص بك هنا] إضافة قسط مسدد مباشرة بجدول installments
-  const addPayment = async ({ contractId, amount, payDate }) => {
-    try {
-      const { data, error } = await supabase
-        .from("installments")
-        .insert([
-          {
-            contract_id: contractId,
-            amount: Number(amount || 0),
-            due_date: payDate || new Date().toISOString().split("T")[0],
-            is_paid: true,
-            paid_at: new Date().toISOString(),
-            status: "paid"
-          }
-        ])
-        .select()
-        .single();
+  // 💳 إضافة قسط مسدد مباشرة بجدول installments مع حفظ المحصل وطريقة الدفع
+const addPayment = async ({ contractId, amount, payDate, method, collector }) => {
+  try {
+    const { data, error } = await supabase
+      .from("installments")
+      .insert([
+        {
+          contract_id: contractId,
+          amount: Number(amount || 0),
+          due_date: payDate || new Date().toISOString().split("T")[0],
+          payment_method: method || "نقداً / كاش",
+          collector: collector || "المشرف العام",
+          is_paid: true,
+          paid_at: new Date().toISOString(),
+          status: "paid"
+        }
+      ])
+      .select()
+      .single();
 
-      if (!error) {
-        await refreshAllData();
-        return { success: true, data };
-      }
-      return { success: false, error };
-    } catch (err) {
-      return { success: false, error: err };
+    if (!error) {
+      await refreshAllData();
+      return { success: true, data };
     }
-  };
+    return { success: false, error };
+  } catch (err) {
+    return { success: false, error: err };
+  }
+};
 
   // 🎯 تصدير كافة الدوال للاستخدام في الشاشات
   return {
