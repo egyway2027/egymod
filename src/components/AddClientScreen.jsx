@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { CustomDatePicker } from "./CustomDatePicker";
+
 const emptyForm = {
   name: "",
   phone: "",
@@ -25,15 +26,15 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
 
-  // تحديد هل اللغة هي الإنجليزية بحسب القاموس
   const isEN = t?.currency === "EGP";
-// تغيير لغة المستند الجذرية تلقائياً ليقرأ المتصفح التقويم باللغة المختارة
+
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.documentElement.lang = isEN ? "en" : "ar";
       document.documentElement.dir = isEN ? "ltr" : "rtl";
     }
   }, [isEN]);
+
   const live = useMemo(() => {
     const costNum = Math.round(parseFloat(form.cost) || 0);
     const saleNum = Math.round(parseFloat(form.sale) || 0);
@@ -66,13 +67,25 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
       return;
     }
     setError("");
+
     if (onSave) {
+      const costNum = Math.round(parseFloat(form.cost) || 0);
+      const saleNum = Math.round(parseFloat(form.sale) || 0);
+      const downNum = Math.round(parseFloat(form.down) || 0);
+      const monthlyNum = Math.round(parseFloat(form.monthly) || 0);
+
       onSave({
         ...form,
-        cost: Math.round(parseFloat(form.cost) || 0),
-        sale: Math.round(parseFloat(form.sale) || 0),
-        down: Math.round(parseFloat(form.down) || 0),
-        monthly: Math.round(parseFloat(form.monthly) || 0)
+        clientName: form.name,
+        clientPhone: form.phone,
+        itemName: form.item,
+        cost: costNum,
+        sale: saleNum,
+        total: saleNum,
+        down: downNum,
+        downPayment: downNum,
+        monthly: monthlyNum,
+        monthlyInstallment: monthlyNum
       });
     }
   }
@@ -191,7 +204,7 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
             </label>
           </div>
 
-         {/* SECTION 3: Dates & Notes */}
+          {/* SECTION 3: Dates & Notes */}
           <div style={sectionLabelStyle}>
             {t.datesAndNotes || (isEN ? "Dates & Notes" : "التواريخ والملاحظات")}
           </div>
