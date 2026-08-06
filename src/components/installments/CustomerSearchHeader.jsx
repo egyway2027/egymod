@@ -53,12 +53,12 @@ export default function CustomerSearchHeader({
         />
       </div>
 
-      {selected && (
-        <form onSubmit={onSubmitPayment} style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* الصف الأول: تاريخ السداد على اليمين والمبلغ المدفوع على اليسار */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      {selected && (
+        <form onSubmit={onSubmitPayment} style={{ marginTop: 10 }}>
+          {/* فصل الحقول بداخل مربعات مستقلة ومنع التداخل */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: 13, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
+              <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
                 {t.paymentDate || (isEN ? "Payment Date" : "تاريخ السداد")}
               </label>
               <DateInput 
@@ -72,17 +72,25 @@ export default function CustomerSearchHeader({
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: 13, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
+              <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
                 {t.paidAmount || (isEN ? "Amount Paid (EGP) *" : "المبلغ المدفوع (ج.م) *")}
               </label>
               <input
                 type="number"
                 step="1"
                 style={{ 
-                  width: "100%", height: 46, background: themeStyles.inputBg || "#141414", 
+                  width: "100%", 
+                  height: 48,
+                  background: themeStyles.inputBg || "#141414", 
                   border: `1px solid ${themeStyles.border || "#333333"}`, 
-                  borderRadius: 10, padding: "0 14px", fontFamily: "inherit", outline: "none",
-                  fontSize: 16, fontWeight: 800, color: themeStyles.accentGold || "#d4af37", boxSizing: "border-box" 
+                  borderRadius: themeStyles.borderRadius || 10, 
+                  padding: "0 14px", 
+                  fontFamily: "inherit", 
+                  outline: "none",
+                  fontSize: 16, 
+                  fontWeight: 800, 
+                  color: themeStyles.accentGold || "#d4af37", 
+                  boxSizing: "border-box" 
                 }}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
@@ -173,19 +181,15 @@ export default function CustomerSearchHeader({
             </div>
           )}
 
-          {/* محاذاة زر السداد للجهة اليسرى كالمشروع الأصلي */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-            <button 
-              type="submit" 
-              style={{ 
-                background: `linear-gradient(135deg, ${themeStyles.accentGold || "#d4af37"}, ${themeStyles.accent || "#b06a35"})`, 
-                color: "#111111", border: "none", 
-                borderRadius: 12, padding: "12px 28px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" 
-              }}
-            >
-              {t.recordAndPrintBtn || (isEN ? "Record Payment & Print Receipt" : "تسجيل السداد وطباعة الإيصال")}
-            </button>
-          </div>
+          <button 
+            type="submit" 
+            style={{ 
+              width: "100%", background: `linear-gradient(145deg, ${themeStyles.accentGold}, ${themeStyles.accent})`, color: "#111111", border: "none", 
+              borderRadius: themeStyles.borderRadius || 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 14, fontFamily: "inherit" 
+            }}
+          >
+            {t.recordAndPrintBtn || (isEN ? "Record Payment & Print Receipt" : "تسجيل السداد وطباعة الإيصال")}
+          </button>
         </form>
       )}
     </div>
