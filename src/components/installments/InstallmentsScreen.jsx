@@ -164,7 +164,7 @@ export default function InstallmentsScreen({
       if (!error) {
         const currentPaid = Number(activeSelectedRow.paidAmount || 0);
         const newPaid = currentPaid + numAmount;
-        const newRem = Math.max(0, activeSelectedRow.sale - activeSelectedRow.down - newPaid);
+        const newRem = Math.max(0, activeSelectedRow.sale - newPaid);
 
         // 🎯 فتح إيصال الطباعة فوراً ببيانات مكتملة 100%
         setActiveReceipt({
