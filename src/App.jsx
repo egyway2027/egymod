@@ -23,7 +23,7 @@ import {
   Users,
   Wallet,
   Settings,
-  CloudUpload,
+  UploadCloud,
   LogOut,
   TrendingUp,
   AlertCircle,
@@ -194,7 +194,7 @@ export default function App() {
 
               <button style={actionBtnStyle("#c27258", "#ffffff")}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><CloudUpload size={18} /></div>
+                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><UploadCloud size={18} /></div>
                   <span style={btnTextStyle}>النسخ الاحتياطي السحابي</span>
                 </div>
               </button>
