@@ -10,7 +10,7 @@ export function useCloudData() {
   const [partners, setPartners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔄 جلب البيانات المترابطة من السحابة بجملة JOIN واحدة
+  // 🔄 جلب وتجميع البيانات المترابطة من السحابة
   const refreshAllData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -30,7 +30,6 @@ export function useCloudData() {
       if (contractsRes.data) {
         setContracts(contractsRes.data);
 
-        // 🎯 دمج بيانات العميل والعقد في كائن واحد موحد لكل الشاشات
         const normalized = contractsRes.data.map((c) => {
           const clientObj = c.clients || {};
           const instArr = Array.isArray(c.installments) ? c.installments : [];
@@ -90,7 +89,7 @@ export function useCloudData() {
     refreshAllData();
   }, [refreshAllData]);
 
-  // ➕ حفظ العميل والعقد في جدولين مستقلين مع الربط
+  // ➕ حفظ العميل والعقد
   const handleSaveClient = async (newClientData) => {
     try {
       const { data: clientData, error: clientErr } = await supabase
@@ -138,7 +137,7 @@ export function useCloudData() {
     }
   };
 
-  // 🏷️ تحديث بيانات أو حالة العقد
+  // 🏷️ تحديث العقد
   const handleUpdateContract = async (updatedContract) => {
     try {
       if (updatedContract.is_permanently_deleted) {
@@ -159,6 +158,35 @@ export function useCloudData() {
     }
   };
 
+  // 💳 [مكان الكود الخاص بك هنا] إضافة قسط مسدد مباشرة بجدول installments
+  const addPayment = async ({ contractId, amount, payDate }) => {
+    try {
+      const { data, error } = await supabase
+        .from("installments")
+        .insert([
+          {
+            contract_id: contractId,
+            amount: Number(amount || 0),
+            due_date: payDate || new Date().toISOString().split("T")[0],
+            is_paid: true,
+            paid_at: new Date().toISOString(),
+            status: "paid"
+          }
+        ])
+        .select()
+        .single();
+
+      if (!error) {
+        await refreshAllData();
+        return { success: true, data };
+      }
+      return { success: false, error };
+    } catch (err) {
+      return { success: false, error: err };
+    }
+  };
+
+  // 🎯 تصدير كافة الدوال للاستخدام في الشاشات
   return {
     clients,
     contracts,
@@ -169,6 +197,7 @@ export function useCloudData() {
     isLoading,
     refreshAllData,
     handleSaveClient,
-    handleUpdateContract
+    handleUpdateContract,
+    addPayment
   };
 }
