@@ -112,6 +112,31 @@ export default function InstallmentsScreen({
     return rows.find((r) => String(r.id) === String(selectedId)) || null;
   }, [rows, selectedId]);
 
+  // 🗑️ معالجة حذف القسط من السحابة
+  const handleDeletePayment = async (paymentId) => {
+    if (!paymentId) return;
+
+    if (!window.confirm("هل أنت تأكد من رغبتك في حذف هذا القسط المسدد؟")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("installments")
+        .delete()
+        .eq("id", paymentId);
+
+      if (!error) {
+        await fetchLocalContracts();
+      } else {
+        alert("حدث خطأ أثناء حذف القسط من السحابة: " + (error.message || ""));
+      }
+    } catch (err) {
+      console.error("❌ خطأ في عملية حذف القسط:", err);
+      alert("حدث خطأ أثناء الاتصال بالسحابة");
+    }
+  };
+
   // 💳 معالجة السداد المباشر المستقل بالسحابة
   const handlePaySubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -262,6 +287,7 @@ export default function InstallmentsScreen({
               selected={activeSelectedRow}
               clientPayments={activeSelectedRow?.payments || []}
               onShowReceipt={(client, payment) => setActiveReceipt({ client, payment })}
+              onDeletePayment={handleDeletePayment}
               t={t}
               themeStyles={themeStyles}
             />
