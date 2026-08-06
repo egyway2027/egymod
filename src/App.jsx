@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useCloudData } from "./hooks/useCloudData";
 
-// الشاشات والمكونات الرئيسية
+// الشاشات الرئيسية
 import AddClientScreen from "./components/AddClientScreen";
 import InstallmentsScreen from "./components/installments/InstallmentsScreen";
 import ClientQueryScreen from "./components/clientQuery/ClientQueryScreen";
@@ -10,24 +10,35 @@ import DeleteClientScreen from "./components/DeleteClientScreen";
 
 // النوافذ الشاملة
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
+import { RecycleBinModal } from "./components/modals/RecycleBinModal";
+import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
 
-// أيقونات الواجهة
-import { 
-  UserPlus, 
-  CreditCard, 
-  Search, 
-  CalendarClock, 
-  UserX, 
-  SearchCode,
+// الأيقونات
+import {
+  UserPlus,
+  CreditCard,
+  Search,
+  CalendarClock,
+  Trash2,
+  Users,
   Wallet,
-  TrendingUp
+  Settings,
+  CloudUpload,
+  LogOut,
+  TrendingUp,
+  AlertCircle,
+  Calculator,
+  Palette,
+  Globe
 } from "lucide-react";
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState("main");
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+  const [isRecycleBinOpen, setIsRecycleBinOpen] = useState(false);
+  const [isWhatsAppHubOpen, setIsWhatsAppHubOpen] = useState(false);
 
-  // جلب كافة البيانات والدوال المحدثة من الهوك السحابي
+  // جلب كافة البيانات والدوال المحدثة من السحابة
   const {
     clientsList,
     isLoading,
@@ -36,128 +47,202 @@ export default function App() {
     addPayment
   } = useCloudData();
 
+  // 📊 حساب الإحصائيات الحقيقية للواجهة الرئيسية
+  const dashboardStats = useMemo(() => {
+    let totalRemaining = 0;
+    let monthlyDues = 0;
+    let totalProfits = 0;
+    let lateClientsCount = 0;
+
+    (clientsList || []).forEach((c) => {
+      if (c.status === "active" || !c.status) {
+        const rem = Number(c.remainingAmount ?? c.remaining ?? 0);
+        const monthly = Number(c.monthlyInstallment ?? c.monthly ?? 0);
+        const cost = Number(c.cost || 0);
+        const sale = Number(c.sale || c.total || 0);
+
+        totalRemaining += rem;
+        totalProfits += Math.max(0, sale - cost);
+
+        if (rem > 0) {
+          monthlyDues += Math.min(monthly, rem);
+          lateClientsCount += 1;
+        }
+      }
+    });
+
+    return { totalRemaining, monthlyDues, totalProfits, lateClientsCount };
+  }, [clientsList]);
+
   const themeStyles = {
-    card: "#141414",
-    cardBorder: "#262626",
-    border: "#333333",
-    inputBg: "#1a1a1a",
+    card: "#181818",
+    border: "#282828",
+    inputBg: "#121212",
     text: "#ffffff",
     subText: "#aaaaaa",
     accentGold: "#d69a5f",
     accent: "#b06a35",
-    borderRadius: 16
+    borderRadius: 14
   };
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#d69a5f", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Cairo, sans-serif", direction: "rtl" }}>
-        <h2 style={{ fontSize: "18px", fontWeight: 800 }}>جاري جلب البيانات والاتصال بالسحابة...</h2>
+      <div style={{ minHeight: "100vh", background: "#0e0e0e", color: "#d69a5f", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Cairo, sans-serif", direction: "rtl" }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800 }}>جاري جلب البيانات والاتصال بالسحابة...</h2>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#ffffff", fontFamily: "Cairo, sans-serif", padding: "20px 16px", direction: "rtl", boxSizing: "border-box" }}>
+    <div style={{ minHeight: "100vh", background: "#0e0e0e", color: "#ffffff", fontFamily: "Cairo, sans-serif", padding: "16px", direction: "rtl", boxSizing: "border-box" }}>
       
-      {/* 1. الشاشة الرئيسية (Dashboard) */}
+      {/* 1. الشاشة الرئيسية الأصلية (Dashboard) */}
       {currentScreen === "main" && (
-        <div style={{ maxWidth: 1050, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1050, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
           
-          {/* الشريط العلوي */}
-          <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid #1f1f1f" }}>
-            <div>
-              <h1 style={{ color: "#ffffff", fontSize: 22, fontWeight: 900, margin: 0 }}>نظام إيجيمود لإدارة الأقساط والمبيعات</h1>
-              <p style={{ color: "#777777", fontSize: 13, margin: "4px 0 0 0" }}>مرحباً بك، لوحة التحكم السحابية الموحدة</p>
+          {/* Header العلوي الأصلي */}
+          <header style={{ background: "linear-gradient(145deg, #df9b6d, #c37b4c)", color: "#000000", borderRadius: 18, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ background: "rgba(0,0,0,0.15)", padding: 10, borderRadius: 12, display: "flex" }}>
+                <Calculator size={24} color="#000" />
+              </div>
+              <div>
+                <h1 style={{ fontSize: 20, fontWeight: 900, margin: 0, color: "#000" }}>نظام إدارة الأقساط والمبيعات</h1>
+                <span style={{ fontSize: 12, opacity: 0.8, fontWeight: 700 }}>Cloud Enterprise Active</span>
+              </div>
             </div>
-            
-            <button
-              onClick={() => setIsGlobalSearchOpen(true)}
-              style={{
-                background: "#161616",
-                border: "1px solid #333333",
-                color: "#d69a5f",
-                padding: "10px 18px",
-                borderRadius: 12,
-                cursor: "pointer",
-                fontWeight: 800,
-                fontSize: 13,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                transition: "all 0.2s"
-              }}
-            >
-              <SearchCode size={18} />
-              <span>البحث السريع</span>
-            </button>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ background: "rgba(0,0,0,0.2)", padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 800 }}>
+                مرحباً، egymod
+              </span>
+              <button style={headerTopBtnStyle}><Globe size={14} /> EG العربية</button>
+              <button style={headerTopBtnStyle}><Palette size={14} /> تيمات وألوان الواجهة</button>
+              <button style={{ ...headerTopBtnStyle, background: "#000000", color: "#ffffff" }}>خروج</button>
+            </div>
           </header>
 
-          {/* شبكة الخيارات الرئيسية */}
-          <main style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+          {/* بطاقات الإحصائيات العلوية الثلاث */}
+          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+            <div style={kpiCardStyle}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <span style={{ fontSize: 12, color: "#aaaaaa", fontWeight: 700 }}>صافي الأرباح حتى اليوم</span>
+                <TrendingUp size={20} color="#d69a5f" />
+              </div>
+              <div style={kpiValueStyle}>{dashboardStats.totalProfits.toLocaleString()} ج.م</div>
+              <span style={{ fontSize: 11, color: "#666666" }}>إجمالي أرباح العقود والتحصيلات الصافية</span>
+            </div>
+
+            <div style={kpiCardStyle}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <span style={{ fontSize: 12, color: "#aaaaaa", fontWeight: 700 }}>مستحقات هذا الشهر</span>
+                <CalendarClock size={20} color="#d69a5f" />
+              </div>
+              <div style={kpiValueStyle}>{dashboardStats.monthlyDues.toLocaleString()} ج.م</div>
+              <span style={{ fontSize: 11, color: "#666666" }}>المطلوب تحصيله حالياً</span>
+            </div>
+
+            <div style={kpiCardStyle}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <span style={{ fontSize: 12, color: "#aaaaaa", fontWeight: 700 }}>إجمالي الأقساط المتبقية</span>
+                <Wallet size={20} color="#d69a5f" />
+              </div>
+              <div style={kpiValueStyle}>{dashboardStats.totalRemaining.toLocaleString()} ج.م</div>
+              <span style={{ fontSize: 11, color: "#666666" }}>المبالغ المتبقية في ذمة العملاء</span>
+            </div>
+          </section>
+
+          {/* أزرار اللوحة الرئيسية (شبكة عمودين متوازيين بنفس الترتيب والألوان) */}
+          <main style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
             
-            <div 
-              onClick={() => setCurrentScreen("add_client")}
-              style={{ ...cardStyle, background: "linear-gradient(145deg, #181818, #121212)", border: "1px solid #2a2a2a" }}
-            >
-              <div style={iconBoxStyle("#14291f", "#4ade80")}>
-                <UserPlus size={22} />
-              </div>
-              <div>
-                <div style={cardTitleStyle}>إضافة عميل جديد</div>
-                <div style={cardSubTitleStyle}>تسجيل عقد جديد وتفاصيل الأقساط</div>
-              </div>
+            {/* العمود الأول */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <button onClick={() => setCurrentScreen("add_client")} style={actionBtnStyle("#181818", "#ffffff")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("#1f2d24", "#4ade80")}><UserPlus size={18} /></div>
+                  <span style={btnTextStyle}>إضافة عميل جديد</span>
+                </div>
+              </button>
+
+              <button onClick={() => setCurrentScreen("client_query")} style={actionBtnStyle("#222222", "#ffffff")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("#1a2634", "#60a5fa")}><Search size={18} /></div>
+                  <span style={btnTextStyle}>استعلام عن عميل</span>
+                </div>
+              </button>
+
+              <button onClick={() => setIsWhatsAppHubOpen(true)} style={actionBtnStyle("#a34343", "#ffffff")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><AlertCircle size={18} /></div>
+                  <span style={btnTextStyle}>المتأخرين عن السداد ({dashboardStats.lateClientsCount})</span>
+                </div>
+              </button>
+
+              <button style={actionBtnStyle("#8b3a3a", "#ffffff")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><Wallet size={18} /></div>
+                  <span style={btnTextStyle}>توزيع الأرباح والخزينة</span>
+                </div>
+              </button>
+
+              <button style={actionBtnStyle("#2b2b2b", "#ffffff")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><Users size={18} /></div>
+                  <span style={btnTextStyle}>شؤون الموظفين والرواتب</span>
+                </div>
+              </button>
+
+              <button style={actionBtnStyle("#c27258", "#ffffff")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><CloudUpload size={18} /></div>
+                  <span style={btnTextStyle}>النسخ الاحتياطي السحابي</span>
+                </div>
+              </button>
             </div>
 
-            <div 
-              onClick={() => setCurrentScreen("installments")}
-              style={{ ...cardStyle, background: "linear-gradient(145deg, #181818, #121212)", border: "1px solid #2a2a2a" }}
-            >
-              <div style={iconBoxStyle("#3a2a16", "#d69a5f")}>
-                <CreditCard size={22} />
-              </div>
-              <div>
-                <div style={cardTitleStyle}>سداد الأقساط</div>
-                <div style={cardSubTitleStyle}>تحصيل الدفعات وطباعة الإيصالات</div>
-              </div>
-            </div>
+            {/* العمود الثاني */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <button onClick={() => setCurrentScreen("installments")} style={actionBtnStyle("#df9b6d", "#000000")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("rgba(0,0,0,0.15)", "#000000")}><CreditCard size={18} /></div>
+                  <span style={{ ...btnTextStyle, color: "#000000" }}>سداد الأقساط</span>
+                </div>
+              </button>
 
-            <div 
-              onClick={() => setCurrentScreen("client_query")}
-              style={{ ...cardStyle, background: "linear-gradient(145deg, #181818, #121212)", border: "1px solid #2a2a2a" }}
-            >
-              <div style={iconBoxStyle("#182838", "#60a5fa")}>
-                <Search size={22} />
-              </div>
-              <div>
-                <div style={cardTitleStyle}>استعلام عن عميل</div>
-                <div style={cardSubTitleStyle}>عرض تفاصيل العقد والسجل الكامل</div>
-              </div>
-            </div>
+              <button onClick={() => setCurrentScreen("monthly_dues")} style={actionBtnStyle("#c87f43", "#ffffff")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><CalendarClock size={18} /></div>
+                  <span style={btnTextStyle}>مستحقات هذا الشهر</span>
+                </div>
+              </button>
 
-            <div 
-              onClick={() => setCurrentScreen("monthly_dues")}
-              style={{ ...cardStyle, background: "linear-gradient(145deg, #181818, #121212)", border: "1px solid #2a2a2a" }}
-            >
-              <div style={iconBoxStyle("#2a1838", "#c084fc")}>
-                <CalendarClock size={22} />
-              </div>
-              <div>
-                <div style={cardTitleStyle}>مستحقات هذا الشهر</div>
-                <div style={cardSubTitleStyle}>متابعة المحصل والمتبقي للشهر الحالي</div>
-              </div>
-            </div>
+              <button onClick={() => setCurrentScreen("delete_client")} style={actionBtnStyle("#dd8855", "#000000")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("rgba(0,0,0,0.15)", "#000000")}><Trash2 size={18} /></div>
+                  <span style={{ ...btnTextStyle, color: "#000000" }}>حذف حساب عميل</span>
+                </div>
+              </button>
 
-            <div 
-              onClick={() => setCurrentScreen("delete_client")}
-              style={{ ...cardStyle, background: "linear-gradient(145deg, #181818, #121212)", border: "1px solid #2a2a2a" }}
-            >
-              <div style={iconBoxStyle("#3e1c24", "#f87171")}>
-                <UserX size={22} />
-              </div>
-              <div>
-                <div style={cardTitleStyle}>إدارة وحذف العملاء</div>
-                <div style={cardSubTitleStyle}>الأرشفة وسلة المهملات والحذف النهائي</div>
-              </div>
+              <button style={actionBtnStyle("#b86e3f", "#ffffff")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><Users size={18} /></div>
+                  <span style={btnTextStyle}>الشركاء ورأس المال</span>
+                </div>
+              </button>
+
+              <button style={actionBtnStyle("#181818", "#ffffff")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("#282828", "#d69a5f")}><Settings size={18} /></div>
+                  <span style={btnTextStyle}>الإعدادات والصلاحيات</span>
+                </div>
+              </button>
+
+              <button style={actionBtnStyle("#823829", "#ffffff")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><LogOut size={18} /></div>
+                  <span style={btnTextStyle}>تسجيل الخروج</span>
+                </div>
+              </button>
             </div>
 
           </main>
@@ -218,10 +303,25 @@ export default function App() {
         />
       )}
 
-      {/* نافذة البحث السريع */}
+      {/* النوافذ الشاملة */}
       <GlobalSearchModal
         isOpen={isGlobalSearchOpen}
         onClose={() => setIsGlobalSearchOpen(false)}
+        clientsList={clientsList}
+        themeStyles={themeStyles}
+      />
+
+      <RecycleBinModal
+        isOpen={isRecycleBinOpen}
+        onClose={() => setIsRecycleBinOpen(false)}
+        clientsList={clientsList}
+        onUpdateContract={handleUpdateContract}
+        themeStyles={themeStyles}
+      />
+
+      <WhatsAppHubModal
+        isOpen={isWhatsAppHubOpen}
+        onClose={() => setIsWhatsAppHubOpen(false)}
         clientsList={clientsList}
         themeStyles={themeStyles}
       />
@@ -229,38 +329,64 @@ export default function App() {
   );
 }
 
-// أنماط التنسيق لكروت الشاشة الرئيسية
-const cardStyle = {
-  padding: "20px 18px",
-  borderRadius: 16,
+// التنسيقات
+const headerTopBtnStyle = {
+  background: "rgba(0,0,0,0.15)",
+  border: "none",
+  color: "#000000",
+  padding: "6px 12px",
+  borderRadius: 20,
+  fontSize: 12,
+  fontWeight: 800,
   cursor: "pointer",
   display: "flex",
   alignItems: "center",
-  gap: 16,
-  userSelect: "none",
-  transition: "transform 0.15s ease, border-color 0.15s ease"
+  gap: 6
 };
 
-const iconBoxStyle = (bg, color) => ({
-  width: 46,
-  height: 46,
-  borderRadius: 12,
+const kpiCardStyle = {
+  background: "#181818",
+  border: "1px solid #282828",
+  borderRadius: 16,
+  padding: "16px 20px",
+  display: "flex",
+  flexDirection: "column",
+  gap: 6
+};
+
+const kpiValueStyle = {
+  fontSize: 22,
+  fontWeight: 900,
+  color: "#ffffff",
+  margin: "4px 0"
+};
+
+const actionBtnStyle = (bg, color) => ({
+  background: bg,
+  color: color,
+  border: "none",
+  borderRadius: 14,
+  padding: "14px 18px",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  width: "100%",
+  boxSizing: "border-box"
+});
+
+const btnIconBg = (bg, color) => ({
+  width: 36,
+  height: 36,
+  borderRadius: 10,
   background: bg,
   color: color,
   display: "flex",
   alignItems: "center",
-  justifyContent: "center",
-  flexShrink: 0
+  justifyContent: "center"
 });
 
-const cardTitleStyle = {
-  fontSize: 16,
-  fontWeight: 800,
-  color: "#ffffff"
-};
-
-const cardSubTitleStyle = {
-  fontSize: 12,
-  color: "#888888",
-  marginTop: 4
+const btnTextStyle = {
+  fontSize: 15,
+  fontWeight: 800
 };
