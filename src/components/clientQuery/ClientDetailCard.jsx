@@ -8,13 +8,15 @@
  */
 
 import React, { useState } from "react";
-import { Edit3, CheckCircle, XCircle } from "lucide-react";
+import { Edit3, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { CustomDatePicker } from "../CustomDatePicker";
 import { getContractStatus } from "../../services/clientQueryService";
+import { supabase } from "../../supabaseClient";
 
 export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles = {} }) {
   const isEN = t?.currency === "EGP" || document.documentElement.lang === "en" || document.documentElement.dir === "ltr";
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({ ...contract });
 
   if (!contract) return null;
@@ -54,11 +56,79 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
     setEditForm((prev) => ({ ...prev, contractDate: cDate, firstPayDate: firstPay }));
   };
 
-  const handleSave = () => {
-    if (onSaveUpdate) {
-      onSaveUpdate(editForm);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const clientId = contract.client_id || contract.clients?.id;
+      const contractId = contract.id;
+
+      // 1. تحديث جدول العملاء بالسحابة (clients)
+      if (clientId) {
+        await supabase
+          .from("clients")
+          .update({
+            name: editForm.name,
+            phone: editForm.phone,
+            guarantor_name: editForm.guarantor,
+            guarantor_phone: editForm.guarantorPhone
+          })
+          .eq("id", clientId);
+      }
+
+      // 2. تحديث جدول العقود بالسحابة (contracts)
+      if (contractId) {
+        await supabase
+          .from("contracts")
+          .update({
+            item_name: editForm.item,
+            item: editForm.item,
+            cost: Number(editForm.cost || 0),
+            cost_price: Number(editForm.cost || 0),
+            sale: Number(editForm.sale || 0),
+            sale_price: Number(editForm.sale || 0),
+            total: Number(editForm.sale || 0),
+            down: Number(editForm.down || 0),
+            down_payment: Number(editForm.down || 0),
+            monthly: Number(editForm.monthly || 0),
+            monthly_installment: Number(editForm.monthly || 0),
+            contract_date: editForm.contractDate,
+            start_date: editForm.contractDate,
+            notes: editForm.notes
+          })
+          .eq("id", contractId);
+      }
+
+      // 3. توحيد البيانات لتحديث العرض المباشر
+      const updatedFull = {
+        ...contract,
+        ...editForm,
+        name: editForm.name,
+        clientName: editForm.name,
+        phone: editForm.phone,
+        clientPhone: editForm.phone,
+        guarantor: editForm.guarantor,
+        guarantorPhone: editForm.guarantorPhone,
+        item: editForm.item,
+        itemName: editForm.item,
+        cost: Number(editForm.cost || 0),
+        sale: Number(editForm.sale || 0),
+        down: Number(editForm.down || 0),
+        monthly: Number(editForm.monthly || 0),
+        contractDate: editForm.contractDate,
+        notes: editForm.notes
+      };
+
+      if (onSaveUpdate) {
+        await onSaveUpdate(updatedFull);
+      }
+
+      setIsEditing(false);
+    } catch (err) {
+      console.error("❌ خطأ أثناء حفظ تعديلات العميل بالسحابة:", err);
+      alert("حدث خطأ أثناء حفظ التعديلات بالسحابة.");
+    } finally {
+      setSaving(false);
     }
-    setIsEditing(false);
   };
 
   return (
@@ -71,7 +141,28 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
             : `${t.clientDataTitle || (isEN ? "Client Contract Details:" : "بيانات عقد العميل:")} ${contract.name}`}
         </h3>
         {!isEditing ? (
-          <button type="button" onClick={() => setIsEditing(true)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(224,122,95,0.15)", border: "1px solid #e07a5f", color: "#e07a5f", padding: "6px 14px", borderRadius: "8px", cursor: "pointer", fontSize: "12.5px", fontWeight: 700 }}>
+          <button 
+            type="button" 
+            onClick={() => {
+              setEditForm({
+                ...contract,
+                name: contract.name || contract.clientName || contract.client_name || "",
+                phone: contract.phone || contract.clientPhone || contract.client_phone || "",
+                guarantor: contract.guarantor || contract.guarantor_name || contract.clients?.guarantor_name || "",
+                guarantorPhone: contract.guarantorPhone || contract.guarantor_phone || contract.clients?.guarantor_phone || "",
+                item: contract.item || contract.itemName || contract.item_name || "",
+                cost: contract.cost ?? contract.cost_price ?? 0,
+                sale: contract.sale ?? contract.sale_price ?? contract.total ?? 0,
+                down: contract.down ?? contract.down_payment ?? 0,
+                monthly: contract.monthly ?? contract.monthly_installment ?? 0,
+                contractDate: contract.contractDate || contract.contract_date || contract.start_date || "",
+                firstPayDate: contract.firstPayDate || contract.first_pay_date || "",
+                notes: contract.notes || ""
+              });
+              setIsEditing(true);
+            }} 
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(224,122,95,0.15)", border: "1px solid #e07a5f", color: "#e07a5f", padding: "6px 14px", borderRadius: "8px", cursor: "pointer", fontSize: "12.5px", fontWeight: 700 }}
+          >
             <Edit3 size={14} /> {t.editClientDataBtn || (isEN ? "Edit Client Data" : "تعديل بيانات العميل")}
           </button>
         ) : (
@@ -193,8 +284,29 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
 
       {/* SAVE BUTTON */}
       {isEditing && (
-        <button type="button" onClick={handleSave} style={{ width: "100%", background: "linear-gradient(135deg, #e07a5f, #d4af37)", color: "#111111", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: 800, cursor: "pointer", marginTop: "16px" }}>
-          {t.saveToCloudBtn || (isEN ? "Save Changes to Cloud" : "حفظ التعديلات بالسحابة")}
+        <button 
+          type="button" 
+          onClick={handleSave} 
+          disabled={saving}
+          style={{ 
+            width: "100%", 
+            background: "linear-gradient(135deg, #e07a5f, #d4af37)", 
+            color: "#111111", 
+            border: "none", 
+            borderRadius: "10px", 
+            padding: "12px", 
+            fontSize: "14px", 
+            fontWeight: 800, 
+            cursor: saving ? "wait" : "pointer", 
+            marginTop: "16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px"
+          }}
+        >
+          {saving ? <Loader2 size={18} className="animate-spin" /> : null}
+          {saving ? "جاري حفظ التعديلات..." : (t.saveToCloudBtn || (isEN ? "Save Changes to Cloud" : "حفظ التعديلات بالسحابة"))}
         </button>
       )}
     </div>
