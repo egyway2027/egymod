@@ -79,8 +79,8 @@ export default function InstallmentsScreen({
             amount: amt,
             payDate: pDate,
             date: pDate,
-            method: i.payment_method || i.method || "نقداً / كاش",
-            collector: i.collector || i.employee || "المشرف العام",
+            method: i.payment_method || i.method || i.paymentMethod || i.pay_method || "نقداً / كاش",
+            collector: i.collector || i.employee || i.collector_name || i.collectorName || "المشرف العام",
             remainingAfter: remAfter
           };
         });
@@ -153,7 +153,7 @@ export default function InstallmentsScreen({
     }
 
     try {
-      // المحاولة الأولى: الحفظ مع الحقول المكتملة
+      // المحاولة الأولى: الحفظ مع جميع مسميات الأعمدة المحتملة بالسحابة
       let { error } = await supabase
         .from("installments")
         .insert([
@@ -162,28 +162,51 @@ export default function InstallmentsScreen({
             amount: numAmount,
             due_date: payDate || new Date().toISOString().split("T")[0],
             payment_method: method || "نقداً / كاش",
+            method: method || "نقداً / كاش",
             collector: collector || "المشرف العام",
+            employee: collector || "المشرف العام",
             is_paid: true,
             paid_at: new Date().toISOString(),
             status: "paid"
           }
         ]);
 
-      // المحاولة الاحتياطية (إذا كانت بعض الأعمدة غير موجودة بالسحابة)
+      // محاولة احتياطية للأعمدة الأساسية (payment_method / collector)
       if (error) {
-        const fallback = await supabase
+        const fallback1 = await supabase
           .from("installments")
           .insert([
             {
               contract_id: activeSelectedRow.id,
               amount: numAmount,
               due_date: payDate || new Date().toISOString().split("T")[0],
+              payment_method: method || "نقداً / كاش",
+              collector: collector || "المشرف العام",
               is_paid: true,
               paid_at: new Date().toISOString(),
               status: "paid"
             }
           ]);
-        error = fallback.error;
+        error = fallback1.error;
+      }
+
+      // محاولة احتياطية ثانية للأعمدة البديلة (method / employee)
+      if (error) {
+        const fallback2 = await supabase
+          .from("installments")
+          .insert([
+            {
+              contract_id: activeSelectedRow.id,
+              amount: numAmount,
+              due_date: payDate || new Date().toISOString().split("T")[0],
+              method: method || "نقداً / كاش",
+              employee: collector || "المشرف العام",
+              is_paid: true,
+              paid_at: new Date().toISOString(),
+              status: "paid"
+            }
+          ]);
+        error = fallback2.error;
       }
 
       if (!error) {
