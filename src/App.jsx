@@ -25,7 +25,7 @@ import DeleteClientScreen from "./components/DeleteClientScreen";
 import { useNavigation } from "./hooks/useNavigation";
 import { useCloudData } from "./hooks/useCloudData";
 import { useThemeAndLang } from "./hooks/useThemeAndLang";
-import OverdueScreen from "./components/overdue/OverdueScreen";
+
 export function App() {
   const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
   const { clientsList, isLoading, handleSaveClient, handleUpdateContract, handleDeleteContract, fetchContracts, addPayment } = useCloudData();
@@ -210,13 +210,7 @@ export function App() {
               themeStyles={themeStyles}
             />
           )}
-{activeScreen === "overdue" && (
-  <OverdueScreen
-    onBack={() => setActiveScreen("main")}
-    themeStyles={themeStyles}
-    t={t}
-  />
-)}
+
           {/* 4. شاشة الإعدادات الشاملة */}
           {currentScreen === "settings" && (
             <SettingsScreen
@@ -262,13 +256,7 @@ export function App() {
                   <button onClick={() => setShowCentralRecordsModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
                     <FolderKanban size={15} /> <span>مركز السجلات</span>
                   </button>
-<button
-  type="button"
-  onClick={() => setActiveScreen("overdue")}
-  // ... باقي تنسيقات الزر القديم الخاص بك
->
-  ⚠️ المتأخرين عن السداد
-</button>
+
                   <button onClick={() => setShowRecycleBinModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(239,68,68,0.4)", color: "#fca5a5", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
                     <Trash2 size={15} /> <span>سلة المهملات</span>
                   </button>
