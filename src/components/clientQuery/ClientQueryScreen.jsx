@@ -43,22 +43,43 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   const activeCount = useMemo(() => filterContracts(normalizedContracts, "", false).length, [normalizedContracts]);
   const archiveCount = useMemo(() => filterContracts(normalizedContracts, "", true).length, [normalizedContracts]);
 
-  // قائمة اقتراحات البحث النشطة
-  const suggestions = useMemo(() => {
-    return filterContracts(normalizedContracts, searchQuery, activeTab === "archive");
-  }, [normalizedContracts, searchQuery, activeTab]);
+  // ✅ قائمة اقتراحات آمنة تحمي من انهيار الشاشة البيضاء
+const suggestions = useMemo(() => {
+  const q = String(searchQuery || "").trim().toLowerCase();
+  if (!q) return [];
 
-  // معالجة اختيار العميل من البحث
-  const handleSelectSearchItem = (contract) => {
-    const matched = findContractsByPhone(normalizedContracts, contract.phone);
+  return (normalizedContracts || []).filter((item) => {
+    const isArchived = item.status === "archived" || item.status === "deleted" || item.is_deleted;
+    const isMatchTab = activeTab === "archive" ? isArchived : !isArchived;
+
+    if (!isMatchTab) return false;
+
+    const name = String(item.name || "").toLowerCase();
+    const phone = String(item.phone || "").toLowerCase();
+    const itemName = String(item.item || "").toLowerCase();
+
+    return name.includes(q) || phone.includes(q) || itemName.includes(q);
+  });
+}, [normalizedContracts, searchQuery, activeTab]);
+
+  // ✅ معالجة اختيار العميل مع حماية الأرقام الفارغة
+const handleSelectSearchItem = (contract) => {
+  const phone = String(contract.phone || "").trim();
+  
+  if (phone) {
+    const matched = (normalizedContracts || []).filter(
+      (c) => String(c.phone || "").trim() === phone
+    );
 
     if (matched.length > 1) {
       setMultiContractList(matched);
       setIsMultiModalOpen(true);
-    } else {
-      setSelectedContract(contract);
+      return;
     }
-  };
+  }
+
+  setSelectedContract(contract);
+};
 
   return (
     <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1050px", margin: "0 auto", padding: "10px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
