@@ -1,392 +1,814 @@
+ * =========================================================
+
+ * 📌 الملف: الشاشة الرئيسية للنظام (Main App Container)
+
+ * 📁 المسار: src/App.jsx
+
+ * 📝 الوظيفة: الموزع الرئيسي للشاشات المربوط بـ 15 لغة و 100 ثيم
+
+ *             مع المزامنة السحابية والحفظ التلقائي للواجهة.
+
+ * =========================================================
+
+ */
+
+
+
 import React, { useState, useMemo } from "react";
-import { useCloudData } from "./hooks/useCloudData";
 
-// الشاشات الرئيسية
-import AddClientScreen from "./components/AddClientScreen";
-import InstallmentsScreen from "./components/installments/InstallmentsScreen";
-import ClientQueryScreen from "./components/clientQuery/ClientQueryScreen";
-import MonthlyDuesScreen from "./components/MonthlyDuesScreen";
-import DeleteClientScreen from "./components/DeleteClientScreen";
-
-// النوافذ الشاملة
-import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
-import { RecycleBinModal } from "./components/modals/RecycleBinModal";
-import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
-
-// الأيقونات
 import {
-  UserPlus,
-  CreditCard,
-  Search,
-  CalendarClock,
-  Trash2,
-  Users,
-  Wallet,
-  Settings,
-  UploadCloud,
-  LogOut,
-  TrendingUp,
-  AlertCircle,
-  Calculator,
-  Palette,
-  Globe
+
+  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, Power, TrendingUp, Calculator, Globe, Palette, X, Loader2, MessageSquare, FolderKanban
+
 } from "lucide-react";
 
-export default function App() {
-  const [currentScreen, setCurrentScreen] = useState("main");
-  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
-  const [isRecycleBinOpen, setIsRecycleBinOpen] = useState(false);
-  const [isWhatsAppHubOpen, setIsWhatsAppHubOpen] = useState(false);
 
-  // جلب كافة البيانات والدوال المحدثة من السحابة
+
+import { AddClientScreen } from "./components/AddClientScreen";
+
+import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
+
+import { SettingsScreen } from "./components/SettingsScreen";
+
+import InstallmentsScreen from "./components/installments/InstallmentsScreen";
+
+import MonthlyDues from "./components/MonthlyDues"; // 👈 التعديل هنا
+
+import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
+
+import { RecycleBinModal } from "./components/modals/RecycleBinModal";
+
+import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
+
+import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
+
+import DeleteClientScreen from "./components/DeleteClientScreen";
+
+import { useNavigation } from "./hooks/useNavigation";
+
+import { useCloudData } from "./hooks/useCloudData";
+
+import { useThemeAndLang } from "./hooks/useThemeAndLang";
+
+
+
+export function App() {
+
+  const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
+
+  const { clientsList, isLoading, handleSaveClient, handleUpdateContract, handleDeleteContract, fetchContracts } = useCloudData();
+
+  
+
+  // 🌐🎨 محرك اللغات الـ 15 والثيمات الـ 100
+
   const {
-    clientsList,
-    isLoading,
-    handleSaveClient,
-    handleUpdateContract,
-    addPayment
-  } = useCloudData();
 
-  // 📊 حساب الإحصائيات الحقيقية للواجهة الرئيسية
-  const dashboardStats = useMemo(() => {
-    let totalRemaining = 0;
-    let monthlyDues = 0;
-    let totalProfits = 0;
-    let lateClientsCount = 0;
+    currentLang,
 
-    (clientsList || []).forEach((c) => {
-      if (c.status === "active" || !c.status) {
-        const rem = Number(c.remainingAmount ?? c.remaining ?? 0);
-        const monthly = Number(c.monthlyInstallment ?? c.monthly ?? 0);
-        const cost = Number(c.cost || 0);
-        const sale = Number(c.sale || c.total || 0);
+    changeLang,
 
-        totalRemaining += rem;
-        totalProfits += Math.max(0, sale - cost);
+    currentThemeId,
 
-        if (rem > 0) {
-          monthlyDues += Math.min(monthly, rem);
-          lateClientsCount += 1;
-        }
-      }
-    });
+    changeTheme,
 
-    return { totalRemaining, monthlyDues, totalProfits, lateClientsCount };
-  }, [clientsList]);
+    t,
 
-  const themeStyles = {
-    card: "#181818",
-    border: "#282828",
-    inputBg: "#121212",
-    text: "#ffffff",
-    subText: "#aaaaaa",
-    accentGold: "#d69a5f",
-    accent: "#b06a35",
-    borderRadius: 14
+    themeStyles,
+
+    isRTL,
+
+    LANGUAGES,
+
+    THEMES_LIST,
+
+    THEME_CATEGORIES
+
+  } = useThemeAndLang();
+
+
+
+  const [showLangModal, setShowLangModal] = useState(false);
+
+  const [showThemeModal, setShowThemeModal] = useState(false);
+
+
+
+  // 📌 حالات الاختصارات والنوافذ الجديدة
+
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+
+  const [showRecycleBinModal, setShowRecycleBinModal] = useState(false);
+
+  const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
+
+  const [showCentralRecordsModal, setShowCentralRecordsModal] = useState(false);
+
+
+
+  // ☁️ حفظ عميل جديد
+
+  const onSaveClientSubmit = async (newClientData) => {
+
+    const res = await handleSaveClient(newClientData);
+
+    if (res?.success) {
+
+      alert(t.saveSuccess || "تم حفظ العقد بنجاح!");
+
+      handleBack();
+
+    } else {
+
+      alert("حدث خطأ أثناء حفظ العقد بالسحابة.");
+
+    }
+
   };
 
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#0e0e0e", color: "#d69a5f", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Cairo, sans-serif", direction: "rtl" }}>
-        <h2 style={{ fontSize: 18, fontWeight: 800 }}>جاري جلب البيانات والاتصال بالسحابة...</h2>
-      </div>
-    );
-  }
+
+
+  // ☁️ تحديث بيانات عقد
+
+ const onUpdateContractSubmit = async (updatedContract) => {
+
+    let res;
+
+    
+
+    // إذا كان الطلب حذف نهائي من قواعد البيانات
+
+    if (updatedContract.is_permanently_deleted && typeof handleDeleteContract === "function") {
+
+      res = await handleDeleteContract(updatedContract.id);
+
+    } else {
+
+      res = await handleUpdateContract(updatedContract);
+
+    }
+
+
+
+    if (res?.success || res?.status === 200 || !res?.error) {
+
+      // إعادة جلب القائمة المحدثة فوراً من السحابة
+
+      if (typeof fetchContracts === "function") {
+
+        await fetchContracts();
+
+      }
+
+      return { success: true };
+
+    } else {
+
+      alert("حدث خطأ أثناء تحديث البيانات بالسحابة.");
+
+      return { success: false };
+
+    }
+
+  };
+
+
+
+  // أزرار شبكة التحكم الرئيسية
+
+  const buttons = [
+
+    { key: "addClient", label: t.addClient, icon: UserPlus, tone: "dark" },
+
+    { key: "pay", label: t.pay, icon: CreditCard, tone: "gold" },
+
+    { key: "search", label: t.search, icon: Search, tone: "silver" },
+
+    { key: "monthlyDues", label: t.monthlyDues, icon: CalendarClock, tone: "copper" },
+
+    { key: "lateClients", label: t.lateClients, icon: UserX, tone: "rose" },
+
+    { key: "deleteClient", label: t.deleteClient, icon: Trash2, tone: "gold" },
+
+    { key: "treasury", label: t.treasury, icon: Wallet, tone: "roseDark" },
+
+    { key: "treasuryPartners", label: t.treasuryPartners, icon: Users, tone: "copper" },
+
+    { key: "treasuryEmployees", label: t.treasuryEmployees, icon: UserCog, tone: "silver" },
+
+    { key: "settings", label: t.settings, icon: Settings, tone: "tan" },
+
+    { key: "whatsapp", label: "مركز الواتساب الذكي", icon: MessageSquare, tone: "roseLight" },
+
+    { key: "exit", label: t.exit, icon: Power, tone: "dark" },
+
+  ];
+
+
+
+  const currentLangObj = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
+
+const netProfit = useMemo(() => {
+
+    return (clientsList || []).reduce((acc, curr) => {
+
+      const sale = Number(curr.sale ?? curr.salePrice ?? curr.sale_price ?? 0);
+
+      const cost = Number(curr.cost ?? curr.costPrice ?? curr.cost_price ?? 0);
+
+      const down = Number(curr.down ?? curr.downPayment ?? curr.down_payment ?? 0);
+
+      const totalPaid = Number(curr.totalPaid ?? curr.total_paid ?? 0);
+
+      if (sale <= 0) return acc;
+
+      return acc + Math.round((down + totalPaid) * ((sale - cost) / sale));
+
+    }, 0);
+
+  }, [clientsList]);
+
+
+
+  const monthlyDues = useMemo(() => {
+
+    return (clientsList || []).reduce((acc, curr) => {
+
+      if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
+
+
+
+      const total = Number(curr.total ?? curr.sale ?? curr.salePrice ?? curr.sale_price ?? 0);
+
+      const down = Number(curr.downPayment ?? curr.down ?? curr.down_payment ?? 0);
+
+      const totalPaid = Number(curr.totalPaid ?? curr.total_paid ?? 0);
+
+      const remainingCalculated = Math.max(0, total - down - totalPaid);
+
+      const remaining = Number(curr.remaining) > 0 ? Number(curr.remaining) : remainingCalculated;
+
+      const monthly = Number(curr.monthlyInstallment ?? curr.monthly ?? curr.monthly_installment ?? 0);
+
+
+
+      if (remaining <= 0 || monthly <= 0) return acc;
+
+      return acc + Math.min(monthly, remaining);
+
+    }, 0);
+
+  }, [clientsList]);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0e0e0e", color: "#ffffff", fontFamily: "Cairo, sans-serif", padding: "16px", direction: "rtl", boxSizing: "border-box" }}>
+
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
+
       
-      {/* 1. الشاشة الرئيسية الأصلية (Dashboard) */}
-      {currentScreen === "main" && (
-        <div style={{ maxWidth: 1050, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-          
-          {/* Header العلوي الأصلي */}
-          <header style={{ background: "linear-gradient(145deg, #df9b6d, #c37b4c)", color: "#000000", borderRadius: 18, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ background: "rgba(0,0,0,0.15)", padding: 10, borderRadius: 12, display: "flex" }}>
-                <Calculator size={24} color="#000" />
-              </div>
-              <div>
-                <h1 style={{ fontSize: 20, fontWeight: 900, margin: 0, color: "#000" }}>نظام إدارة الأقساط والمبيعات</h1>
-                <span style={{ fontSize: 12, opacity: 0.8, fontWeight: 700 }}>Cloud Enterprise Active</span>
-              </div>
-            </div>
 
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-              <span style={{ background: "rgba(0,0,0,0.2)", padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 800 }}>
-                مرحباً، egymod
-              </span>
-              <button style={headerTopBtnStyle}><Globe size={14} /> EG العربية</button>
-              <button style={headerTopBtnStyle}><Palette size={14} /> تيمات وألوان الواجهة</button>
-              <button style={{ ...headerTopBtnStyle, background: "#000000", color: "#ffffff" }}>خروج</button>
-            </div>
-          </header>
+      {isLoading ? (
 
-          {/* بطاقات الإحصائيات العلوية الثلاث */}
-          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
-            <div style={kpiCardStyle}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <span style={{ fontSize: 12, color: "#aaaaaa", fontWeight: 700 }}>صافي الأرباح حتى اليوم</span>
-                <TrendingUp size={20} color="#d69a5f" />
-              </div>
-              <div style={kpiValueStyle}>{dashboardStats.totalProfits.toLocaleString()} ج.م</div>
-              <span style={{ fontSize: 11, color: "#666666" }}>إجمالي أرباح العقود والتحصيلات الصافية</span>
-            </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80vh", gap: "12px" }}>
 
-            <div style={kpiCardStyle}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <span style={{ fontSize: 12, color: "#aaaaaa", fontWeight: 700 }}>مستحقات هذا الشهر</span>
-                <CalendarClock size={20} color="#d69a5f" />
-              </div>
-              <div style={kpiValueStyle}>{dashboardStats.monthlyDues.toLocaleString()} ج.م</div>
-              <span style={{ fontSize: 11, color: "#666666" }}>المطلوب تحصيله حالياً</span>
-            </div>
+          <Loader2 size={36} className="animate-spin" style={{ color: themeStyles.accentGold || "#d4af37" }} />
 
-            <div style={kpiCardStyle}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <span style={{ fontSize: 12, color: "#aaaaaa", fontWeight: 700 }}>إجمالي الأقساط المتبقية</span>
-                <Wallet size={20} color="#d69a5f" />
-              </div>
-              <div style={kpiValueStyle}>{dashboardStats.totalRemaining.toLocaleString()} ج.م</div>
-              <span style={{ fontSize: 11, color: "#666666" }}>المبالغ المتبقية في ذمة العملاء</span>
-            </div>
-          </section>
+          <span style={{ fontWeight: 700, fontSize: "14px", color: themeStyles.subText || "#aaaaaa" }}>{t.loadingCloud}</span>
 
-          {/* أزرار اللوحة الرئيسية (شبكة عمودين متوازيين بنفس الترتيب والألوان) */}
-          <main style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
-            
-            {/* العمود الأول */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <button onClick={() => setCurrentScreen("add_client")} style={actionBtnStyle("#181818", "#ffffff")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("#1f2d24", "#4ade80")}><UserPlus size={18} /></div>
-                  <span style={btnTextStyle}>إضافة عميل جديد</span>
-                </div>
-              </button>
-
-              <button onClick={() => setCurrentScreen("client_query")} style={actionBtnStyle("#222222", "#ffffff")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("#1a2634", "#60a5fa")}><Search size={18} /></div>
-                  <span style={btnTextStyle}>استعلام عن عميل</span>
-                </div>
-              </button>
-
-              <button onClick={() => setIsWhatsAppHubOpen(true)} style={actionBtnStyle("#a34343", "#ffffff")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><AlertCircle size={18} /></div>
-                  <span style={btnTextStyle}>المتأخرين عن السداد ({dashboardStats.lateClientsCount})</span>
-                </div>
-              </button>
-
-              <button style={actionBtnStyle("#8b3a3a", "#ffffff")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><Wallet size={18} /></div>
-                  <span style={btnTextStyle}>توزيع الأرباح والخزينة</span>
-                </div>
-              </button>
-
-              <button style={actionBtnStyle("#2b2b2b", "#ffffff")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><Users size={18} /></div>
-                  <span style={btnTextStyle}>شؤون الموظفين والرواتب</span>
-                </div>
-              </button>
-
-              <button style={actionBtnStyle("#c27258", "#ffffff")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><UploadCloud size={18} /></div>
-                  <span style={btnTextStyle}>النسخ الاحتياطي السحابي</span>
-                </div>
-              </button>
-            </div>
-
-            {/* العمود الثاني */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <button onClick={() => setCurrentScreen("installments")} style={actionBtnStyle("#df9b6d", "#000000")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("rgba(0,0,0,0.15)", "#000000")}><CreditCard size={18} /></div>
-                  <span style={{ ...btnTextStyle, color: "#000000" }}>سداد الأقساط</span>
-                </div>
-              </button>
-
-              <button onClick={() => setCurrentScreen("monthly_dues")} style={actionBtnStyle("#c87f43", "#ffffff")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><CalendarClock size={18} /></div>
-                  <span style={btnTextStyle}>مستحقات هذا الشهر</span>
-                </div>
-              </button>
-
-              <button onClick={() => setCurrentScreen("delete_client")} style={actionBtnStyle("#dd8855", "#000000")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("rgba(0,0,0,0.15)", "#000000")}><Trash2 size={18} /></div>
-                  <span style={{ ...btnTextStyle, color: "#000000" }}>حذف حساب عميل</span>
-                </div>
-              </button>
-
-              <button style={actionBtnStyle("#b86e3f", "#ffffff")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><Users size={18} /></div>
-                  <span style={btnTextStyle}>الشركاء ورأس المال</span>
-                </div>
-              </button>
-
-              <button style={actionBtnStyle("#181818", "#ffffff")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("#282828", "#d69a5f")}><Settings size={18} /></div>
-                  <span style={btnTextStyle}>الإعدادات والصلاحيات</span>
-                </div>
-              </button>
-
-              <button style={actionBtnStyle("#823829", "#ffffff")}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={btnIconBg("rgba(0,0,0,0.2)", "#ffffff")}><LogOut size={18} /></div>
-                  <span style={btnTextStyle}>تسجيل الخروج</span>
-                </div>
-              </button>
-            </div>
-
-          </main>
         </div>
+
+      ) : (
+
+        <>
+
+          {/* 1. شاشة إضافة عميل */}
+
+          {currentScreen === "addClient" && (
+
+            <AddClientScreen
+
+              onSave={onSaveClientSubmit}
+
+              onBack={handleBack}
+
+              t={t}
+
+              themeStyles={themeStyles}
+
+            />
+
+          )}
+
+
+
+          {/* 2. شاشة الاستعلام عن عميل الأصيلة بدون أي تعديل */}
+
+          {currentScreen === "clientQuery" && (
+
+            <ClientQueryScreen
+
+              contracts={clientsList}
+
+              onUpdateContract={onUpdateContractSubmit}
+
+              onBack={handleBack}
+
+              t={t}
+
+              themeStyles={themeStyles}
+
+            />
+
+          )}
+
+
+
+          {/* 3. شاشة سداد الأقساط المربوطة بـ clientsList و handleUpdateContract */}
+
+          {currentScreen === "pay" && (
+
+            <InstallmentsScreen
+
+              contracts={clientsList}
+
+              onUpdateContract={onUpdateContractSubmit}
+
+              onBack={handleBack}
+
+              t={t}
+
+              themeStyles={themeStyles}
+
+            />
+
+          )}
+
+{/* 📌 شاشة مستحقات هذا الشهر */}
+
+{currentScreen === "monthlyDues" && (
+
+  <MonthlyDues
+
+    clientsList={clientsList}
+
+    onOpenPaymentModal={() => navigateTo("pay")}
+
+    onBack={handleBack}
+
+  />
+
+)}
+
+{/* 📌 شاشة إدارة وحذف حسابات العملاء */}
+
+{currentScreen === "deleteClient" && (
+
+  <DeleteClientScreen
+
+    clientsList={clientsList}
+
+    onUpdateContract={async (updatedClient) => {
+
+      await onUpdateContractSubmit(updatedClient);
+
+    }}
+
+    onBack={handleBack}
+
+    t={t}
+
+    themeStyles={themeStyles}
+
+  />
+
+)}
+
+          {/* 4. شاشة الإعدادات الشاملة (15 لغة و 100 ثيم) */}
+
+          {currentScreen === "settings" && (
+
+            <SettingsScreen
+
+              currentLang={currentLang}
+
+              changeLang={changeLang}
+
+              currentThemeId={currentThemeId}
+
+              changeTheme={changeTheme}
+
+              t={t}
+
+              themeStyles={themeStyles}
+
+              isRTL={isRTL}
+
+              LANGUAGES={LANGUAGES}
+
+              THEMES_LIST={THEMES_LIST}
+
+              THEME_CATEGORIES={THEME_CATEGORIES}
+
+              onBack={handleBack}
+
+            />
+
+          )}
+
+
+
+          {/* 5. لوحة التحكم الرئيسية */}
+
+          {currentScreen === "dashboard" && (
+
+            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+
+              <header style={{
+
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+
+                background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
+
+                borderRadius: 18, padding: "18px 24px", marginBottom: 20, color: "#fff"
+
+              }}>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+
+                  <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>
+
+                    {t.welcome} {t.generalSupervisor}
+
+                  </div>
+
+
+
+                  <button onClick={() => setShowLangModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+
+                    <Globe size={15} /> <span>{currentLangObj.flag} {currentLangObj.name}</span>
+
+                  </button>
+
+
+
+                  <button onClick={() => navigateTo("settings")} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+
+                    <Palette size={15} /> <span>{t.appThemes} (100)</span>
+
+                  </button>
+
+
+
+                  <button onClick={() => setShowGlobalSearchModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+
+                    <Search size={15} /> <span>البحث الشامل</span>
+
+                  </button>
+
+
+
+                  <button onClick={() => setShowCentralRecordsModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+
+                    <FolderKanban size={15} /> <span>مركز السجلات</span>
+
+                  </button>
+
+
+
+                  <button onClick={() => setShowRecycleBinModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(239,68,68,0.4)", color: "#fca5a5", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+
+                    <Trash2 size={15} /> <span>سلة المهملات</span>
+
+                  </button>
+
+                </div>
+
+
+
+                <div style={{ textAlign: "center" }}>
+
+                  <div style={{ fontSize: 20, fontWeight: 800 }}>{t.appName}</div>
+
+                  <div style={{ fontSize: 11, opacity: 0.8 }}>Cloud Enterprise Active</div>
+
+                </div>
+
+
+
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+
+                  <Calculator size={22} />
+
+                </div>
+
+              </header>
+
+
+
+              <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
+
+                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+
+                  <TrendingUp size={24} color={themeStyles.accentGold} />
+
+                 <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{netProfit.toLocaleString()} {t.currency}</div>
+
+                  <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.netProfit}</div>
+
+                  <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.netProfitSub}</div>
+
+                </div>
+
+
+
+                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+
+                  <CalendarClock size={24} color={themeStyles.accentGold} />
+
+                  <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{monthlyDues.toLocaleString()} {t.currency}</div>
+
+                  <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.monthlyDues}</div>
+
+                  <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.monthlyDuesSub}</div>
+
+                </div>
+
+
+
+                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+
+    <Wallet size={24} color={themeStyles.accentGold} />
+
+    <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
+
+      {(clientsList || []).reduce((acc, curr) => {
+
+        if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
+
+        const total = Number(curr.total ?? curr.sale ?? 0);
+
+        const down = Number(curr.downPayment ?? curr.down ?? 0);
+
+        const totalPaid = Number(curr.totalPaid ?? 0);
+
+        const remCalculated = Math.max(0, total - down - totalPaid);
+
+        const rem = Number(curr.remaining) > 0 ? Number(curr.remaining) : remCalculated;
+
+        return acc + rem;
+
+      }, 0).toLocaleString()} {t.currency}
+
+    </div>
+
+    <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
+
+    <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
+
+  </div>
+
+              </section>
+
+
+
+              <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+
+                {buttons.map((b) => {
+
+                  const Icon = b.icon;
+
+                  return (
+
+                    <button
+
+                      key={b.key}
+
+                      onClick={() => {
+
+                        if (b.key === "addClient") {
+
+                          navigateTo("addClient");
+
+                        } else if (b.key === "pay") {
+
+                          navigateTo("pay");
+
+                          } else if (b.key === "monthlyDues") {
+
+  navigateTo("monthlyDues"); // 👈 التعديل هنا لتوجيه الشاشة
+
+                        } else if (b.key === "search") {
+
+                          navigateTo("clientQuery");
+
+                        } else if (b.key === "settings") {
+
+                          navigateTo("settings");
+
+                        } else if (b.key === "whatsapp") {
+
+                          setShowWhatsAppModal(true);
+
+                       } else if (b.key === "deleteClient") {
+
+                          navigateTo("deleteClient");
+
+                        }
+
+                      }}
+
+                      style={{
+
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+
+                        background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : themeStyles.card,
+
+                        color: b.tone === "silver" || b.tone === "rose" ? "#111" : "#fff",
+
+                        border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.buttonRadius || 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
+
+                      }}
+
+                    >
+
+                      <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
+
+                      <span style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+
+                        <Icon size={18} />
+
+                      </span>
+
+                    </button>
+
+                  );
+
+                })}
+
+              </section>
+
+            </div>
+
+          )}
+
+        </>
+
       )}
 
-      {/* 2. شاشة إضافة عميل */}
-      {currentScreen === "add_client" && (
-        <AddClientScreen
-          onSave={async (data) => {
-            const res = await handleSaveClient(data);
-            if (res?.success) setCurrentScreen("main");
-          }}
-          onBack={() => setCurrentScreen("main")}
-          themeStyles={themeStyles}
-        />
-      )}
 
-      {/* 3. شاشة سداد الأقساط */}
-      {currentScreen === "installments" && (
-        <InstallmentsScreen
-          contracts={clientsList}
-          onPay={addPayment}
-          onBack={() => setCurrentScreen("main")}
-          themeStyles={themeStyles}
-        />
-      )}
 
-      {/* 4. شاشة الاستعلام عن عميل */}
-      {currentScreen === "client_query" && (
-        <ClientQueryScreen
-          contracts={clientsList}
-          onUpdateContract={handleUpdateContract}
-          onBack={() => setCurrentScreen("main")}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {/* 5. شاشة مستحقات الشهر */}
-      {currentScreen === "monthly_dues" && (
-        <MonthlyDuesScreen
-          rows={clientsList}
-          onPay={async (contractId, amount, payDate) => {
-            await addPayment({ contractId, amount, payDate });
-          }}
-          onBack={() => setCurrentScreen("main")}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {/* 6. شاشة إدارة وحذف العملاء */}
-      {currentScreen === "delete_client" && (
-        <DeleteClientScreen
-          clientsList={clientsList}
-          onUpdateContract={handleUpdateContract}
-          onBack={() => setCurrentScreen("main")}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {/* النوافذ الشاملة */}
-      <GlobalSearchModal
-        isOpen={isGlobalSearchOpen}
-        onClose={() => setIsGlobalSearchOpen(false)}
-        clientsList={clientsList}
-        themeStyles={themeStyles}
-      />
-
-      <RecycleBinModal
-        isOpen={isRecycleBinOpen}
-        onClose={() => setIsRecycleBinOpen(false)}
-        clientsList={clientsList}
-        onUpdateContract={handleUpdateContract}
-        themeStyles={themeStyles}
-      />
+      {/* 📱 مركز الواتساب الذكي */}
 
       <WhatsAppHubModal
-        isOpen={isWhatsAppHubOpen}
-        onClose={() => setIsWhatsAppHubOpen(false)}
-        clientsList={clientsList}
+
+        isOpen={showWhatsAppModal}
+
+        onClose={() => setShowWhatsAppModal(false)}
+
+        overdueContracts={clientsList.filter(c => Number(c.remainingAmount ?? c.remaining) > 0)}
+
+        t={t}
+
         themeStyles={themeStyles}
+
       />
+
+
+
+      {/* 🗑️ سلة المهملات الشاملة */}
+
+      <RecycleBinModal
+
+        isOpen={showRecycleBinModal}
+
+        onClose={() => setShowRecycleBinModal(false)}
+
+        deletedItems={[]}
+
+        t={t}
+
+        themeStyles={themeStyles}
+
+      />
+
+
+
+      {/* 🔍 البحث الشامل عابر الشاشات */}
+
+      <GlobalSearchModal
+
+        isOpen={showGlobalSearchModal}
+
+        onClose={() => setShowGlobalSearchModal(false)}
+
+        contracts={clientsList}
+
+        onSelectResult={() => navigateTo("clientQuery")}
+
+        t={t}
+
+        themeStyles={themeStyles}
+
+      />
+
+
+
+      {/* 📊 مركز السجلات والتقارير الشامل */}
+
+      <CentralRecordsMenu
+
+        isOpen={showCentralRecordsModal}
+
+        onClose={() => setShowCentralRecordsModal(false)}
+
+        onSelectRecord={(recordId) => {
+
+          if (recordId === "active_contracts" || recordId === "all_clients_register" || recordId === "archived_contracts") {
+
+            navigateTo("clientQuery");
+
+          }
+
+        }}
+
+        t={t}
+
+        themeStyles={themeStyles}
+
+      />
+
+
+
+      {/* 🌐 نافذة اختيار اللغات الـ 15 المكتملة */}
+
+      {showLangModal && (
+
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+
+          <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 20, padding: 24, width: "100%", maxWidth: 460, maxHeight: "85vh", overflowY: "auto" }}>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+
+              <span style={{ fontWeight: 800, fontSize: 18, color: themeStyles.accentGold }}>{t.selectLang} (15)</span>
+
+              <X style={{ cursor: "pointer" }} onClick={() => setShowLangModal(false)} />
+
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(1, 1fr)", gap: 8 }}>
+
+              {LANGUAGES.map(l => (
+
+                <button
+
+                  key={l.code}
+
+                  onClick={() => {
+
+                    changeLang(l.code);
+
+                    setShowLangModal(false);
+
+                  }}
+
+                  style={{
+
+                    width: "100%", padding: "12px 16px",
+
+                    background: currentLang === l.code ? "rgba(212, 175, 55, 0.2)" : themeStyles.inputBg,
+
+                    border: `1px solid ${currentLang === l.code ? themeStyles.accentGold : themeStyles.border}`,
+
+                    color: themeStyles.text, borderRadius: 10, textAlign: "start", fontWeight: 700, cursor: "pointer",
+
+                    display: "flex", alignItems: "center", justifyContent: "space-between"
+
+                  }}
+
+                >
+
+                  <span>{l.flag} {l.name}</span>
+
+                  <span style={{ fontSize: 12, opacity: 0.6 }}>{l.code.toUpperCase()}</span>
+
+                </button>
+
+              ))}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
     </div>
+
   );
+
 }
 
-// التنسيقات
-const headerTopBtnStyle = {
-  background: "rgba(0,0,0,0.15)",
-  border: "none",
-  color: "#000000",
-  padding: "6px 12px",
-  borderRadius: 20,
-  fontSize: 12,
-  fontWeight: 800,
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  gap: 6
-};
 
-const kpiCardStyle = {
-  background: "#181818",
-  border: "1px solid #282828",
-  borderRadius: 16,
-  padding: "16px 20px",
-  display: "flex",
-  flexDirection: "column",
-  gap: 6
-};
 
-const kpiValueStyle = {
-  fontSize: 22,
-  fontWeight: 900,
-  color: "#ffffff",
-  margin: "4px 0"
-};
+export default App; 
 
-const actionBtnStyle = (bg, color) => ({
-  background: bg,
-  color: color,
-  border: "none",
-  borderRadius: 14,
-  padding: "14px 18px",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  width: "100%",
-  boxSizing: "border-box"
-});
-
-const btnIconBg = (bg, color) => ({
-  width: 36,
-  height: 36,
-  borderRadius: 10,
-  background: bg,
-  color: color,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center"
-});
-
-const btnTextStyle = {
-  fontSize: 15,
-  fontWeight: 800
-};
