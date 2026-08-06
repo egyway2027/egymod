@@ -24,7 +24,7 @@ export function MonthlyDuesScreen({
   const [payAmount, setPayAmount] = useState("");
 
   const isEN = useMemo(() => {
-    return t?.lang === "en" || document.documentElement.lang === "en";
+    return t?.lang === "en" || (typeof document !== "undefined" && document.documentElement.lang === "en");
   }, [t]);
 
   const today = new Date();
@@ -34,28 +34,29 @@ export function MonthlyDuesScreen({
   );
 
   // 🗓️ استخراج فلترة الأقساط الخاصة بالشهر الحالي بناءً على المديونية والمطلوب
-  const dataRows = (rows && rows.length > 0) ? rows : clientsList;
+  const dataRows = rows && rows.length > 0 ? rows : clientsList;
 
   const processedRows = useMemo(() => {
     return (dataRows || [])
       .map((r) => {
-        const sale = Number(r.sale || r.salePrice || r.sale_price || r.price || 0);
-        const down = Number(r.down || r.downPayment || r.down_payment || 0);
-        const totalPaid = Number(r.totalPaid || r.total_paid || 0);
+        const sale = Number(r.total ?? r.sale ?? r.salePrice ?? r.sale_price ?? 0);
+        const down = Number(r.down_payment ?? r.down ?? r.downPayment ?? 0);
+        const totalPaid = Number(r.totalPaid ?? r.total_paid ?? r.paidAmount ?? r.paid_amount ?? 0);
 
-        const name = r.name || r.clientName || r.client_name || "عميل";
-        const item = r.item || r.itemName || r.item_name || "سلعة";
+        const name = r.name || r.clientName || r.client_name || "عميل بدون اسم";
+        const item = r.item || r.itemName || r.item_name || "سلعة بدون اسم";
         const phone = r.phone || r.clientPhone || r.client_phone || "";
 
-        const remaining = Number(r.remaining || r.remainingAmount || r.remaining_amount || (sale - down - totalPaid)) || 0;
-        const monthly = Number(r.monthly || r.monthlyInstallment || r.monthly_installment || r.installment || 0) || 0;
+        const remainingCalculated = Math.max(0, sale - down - totalPaid);
+        const remaining = Number(r.remaining ?? r.remainingAmount ?? r.remaining_amount ?? remainingCalculated);
+        const monthly = Number(r.monthly_installment ?? r.monthlyInstallment ?? r.monthly ?? 0);
 
-        return { ...r, name, item, phone, remaining, monthly };
+        return { ...r, name, item, phone, remaining, monthly, sale, down, totalPaid };
       })
-      .filter((r) => r.remaining > 0 && r.monthly > 0)
+      .filter((r) => (r.status === "active" || !r.status) && !Boolean(r.is_deleted) && r.remaining > 0 && r.monthly > 0)
       .map((r) => {
         const monthlyReq = Math.round(Math.min(r.monthly, r.remaining));
-        const debt = (r.debtAmount !== undefined && Number(r.debtAmount) > 0) ? Math.round(Number(r.debtAmount)) : monthlyReq;
+        const debt = r.debtAmount !== undefined && Number(r.debtAmount) > 0 ? Math.round(Number(r.debtAmount)) : monthlyReq;
         let status = "unpaid";
         let paidThisMonth = 0;
 
@@ -136,7 +137,7 @@ export function MonthlyDuesScreen({
       />
 
       {/* 2. بطاقات الإحصائيات العلوية الثلاث */}
-    <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 16 }}>
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 16 }}>
         <KPI
           icon={CalendarClock}
           label={t.totalMonthlyRequired || (isEN ? "Total Required This Month" : "إجمالي المطلوب هذا الشهر")}
@@ -164,36 +165,36 @@ export function MonthlyDuesScreen({
       </section>
 
       {/* 3. حقل البحث وأزرار التصفية السريعة */}
-<div
-  style={{
-    background: "#141414",
-    border: "1px solid #262626",
-    borderRadius: 16,
-    marginBottom: 16,
-    padding: "14px 18px",
-    display: "flex",
-    flexWrap: "wrap-reverse",
-    gap: 12,
-    alignItems: "center",
-    justifyContent: "space-between"
-  }}
->
+      <div
+        style={{
+          background: "#141414",
+          border: "1px solid #262626",
+          borderRadius: 16,
+          marginBottom: 16,
+          padding: "14px 18px",
+          display: "flex",
+          flexWrap: "wrap-reverse",
+          gap: 12,
+          alignItems: "center",
+          justifyContent: "space-between"
+        }}
+      >
         <input
-  style={{
-    background: "#1a1a1a",
-    border: "1px solid #333333",
-    color: "#ffffff",
-    padding: "10px 16px",
-    borderRadius: 10,
-    fontSize: 13,
-    width: "100%",
-    maxWidth: 320,
-    outline: "none"
-  }}
-  placeholder={t.searchClientPlaceholder || (isEN ? "Search by client, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-/>
+          style={{
+            background: "#1a1a1a",
+            border: "1px solid #333333",
+            color: "#ffffff",
+            padding: "10px 16px",
+            borderRadius: 10,
+            fontSize: 13,
+            width: "100%",
+            maxWidth: 320,
+            outline: "none"
+          }}
+          placeholder={t.searchClientPlaceholder || (isEN ? "Search by client, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {[
@@ -206,17 +207,16 @@ export function MonthlyDuesScreen({
               key={btn.key}
               type="button"
               onClick={() => setStatusFilter(btn.key)}
-
-   style={{
-  background: statusFilter === btn.key ? "#d69a5f" : "#1a1a1a",
-  color: statusFilter === btn.key ? "#000000" : "#aaaaaa",
-  border: `1px solid ${statusFilter === btn.key ? "#d69a5f" : "#333333"}`,
-  padding: "8px 16px",
-  borderRadius: 8,
-  fontSize: 13,
-  fontWeight: 800,
-  cursor: "pointer"
-}}
+              style={{
+                background: statusFilter === btn.key ? "#d69a5f" : "#1a1a1a",
+                color: statusFilter === btn.key ? "#000000" : "#aaaaaa",
+                border: `1px solid ${statusFilter === btn.key ? "#d69a5f" : "#333333"}`,
+                padding: "8px 16px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 800,
+                cursor: "pointer"
+              }}
             >
               {btn.label}
             </button>
@@ -225,7 +225,7 @@ export function MonthlyDuesScreen({
       </div>
 
       {/* 4. قائمة كروت العملاء والمستحقات */}
-     <div style={{ background: "#141414", border: "1px solid #262626", borderRadius: 16, padding: 16 }}>
+      <div style={{ background: "#141414", border: "1px solid #262626", borderRadius: 16, padding: 16 }}>
         {filtered.length === 0 ? (
           <div style={styles.emptyState}>
             {t.noDuesNote || (isEN ? "No dues match the search query." : "لا توجد مستحقات تنطبق عليها معايير البحث.")}
@@ -236,8 +236,8 @@ export function MonthlyDuesScreen({
               <div
                 key={item.id}
                 style={{
-                  background: themeStyles.inputBg,
-                  border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`,
+                  background: themeStyles.inputBg || "#1a1a1a",
+                  border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}`,
                   borderRadius: themeStyles.borderRadius || 12,
                   padding: 16,
                   display: "flex",
@@ -248,24 +248,24 @@ export function MonthlyDuesScreen({
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: themeStyles.text }}>{item.name}</div>
-                  <div style={{ fontSize: 13, color: themeStyles.accentGold, marginTop: 2 }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>{item.name}</div>
+                  <div style={{ fontSize: 13, color: themeStyles.accentGold || "#d69a5f", marginTop: 2 }}>
                     {item.item} · {item.phone}
                   </div>
                 </div>
 
                 <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: themeStyles.subText }}>
+                    <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>
                       {t.monthInstallment || (isEN ? "Monthly Installment" : "قسط الشهر")}
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: themeStyles.accentGold }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>
                       {fmtCleanInt(item.dueThisMonth)} {t.currency || (isEN ? "EGP" : "ج.م")}
                     </div>
                   </div>
 
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: themeStyles.subText }}>
+                    <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>
                       {t.paymentStatus || (isEN ? "Payment Status" : "حالة السداد")}
                     </div>
                     <div
@@ -274,25 +274,25 @@ export function MonthlyDuesScreen({
                         fontWeight: 800,
                         padding: "4px 8px",
                         borderRadius: themeStyles.borderRadius || 6,
-                  background:
-  item.monthStatus === "paid"
-    ? "#143820"
-    : item.monthStatus === "partial"
-    ? "#3d3019"
-    : "#3e1c24",
-color:
-  item.monthStatus === "paid"
-    ? "#4ade80"
-    : item.monthStatus === "partial"
-    ? "#fbbf24"
-    : "#f87171",
-border: `1px solid ${
-  item.monthStatus === "paid"
-    ? "#22c55e55"
-    : item.monthStatus === "partial"
-    ? "#f59e0b55"
-    : "#ef444455"
-}`
+                        background:
+                          item.monthStatus === "paid"
+                            ? "#143820"
+                            : item.monthStatus === "partial"
+                            ? "#3d3019"
+                            : "#3e1c24",
+                        color:
+                          item.monthStatus === "paid"
+                            ? "#4ade80"
+                            : item.monthStatus === "partial"
+                            ? "#fbbf24"
+                            : "#f87171",
+                        border: `1px solid ${
+                          item.monthStatus === "paid"
+                            ? "#22c55e55"
+                            : item.monthStatus === "partial"
+                            ? "#f59e0b55"
+                            : "#ef444455"
+                        }`
                       }}
                     >
                       {item.monthStatus === "paid"
@@ -348,7 +348,7 @@ border: `1px solid ${
                           setPayAmount(item.remainingThisMonth);
                         }}
                         style={{
-                          background: `linear-gradient(145deg, ${themeStyles.accentGold}, ${themeStyles.accent})`,
+                          background: `linear-gradient(145deg, ${themeStyles.accentGold || "#d69a5f"}, ${themeStyles.accent || "#b06a35"})`,
                           color: "#111111",
                           border: "none",
                           padding: "8px 14px",
@@ -356,7 +356,7 @@ border: `1px solid ${
                           cursor: "pointer",
                           fontSize: 12,
                           fontWeight: 800,
-                          boxShadow: themeStyles.buttonShadow
+                          boxShadow: themeStyles.buttonShadow || "none"
                         }}
                       >
                         {t.collect || (isEN ? "Collect" : "تحصيل")}
@@ -386,8 +386,8 @@ border: `1px solid ${
             padding: 16
           }}
         >
-          <div style={{ ...styles.card, width: "100%", maxWidth: 400 }}>
-            <h3 style={{ color: themeStyles.accentGold, fontSize: 17, fontWeight: 800, marginBottom: 12 }}>
+          <div style={{ ...(styles.card || {}), background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: 16, padding: 20, width: "100%", maxWidth: 400 }}>
+            <h3 style={{ color: themeStyles.accentGold || "#d69a5f", fontSize: 17, fontWeight: 800, marginBottom: 12 }}>
               {t.collectInstallment || (isEN ? "Collect Installment" : "تحصيل قسط")}: {payTarget.name}
             </h3>
             <form onSubmit={handleConfirmPay} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -395,7 +395,16 @@ border: `1px solid ${
                 <input
                   type="number"
                   step="1"
-                  style={styles.input}
+                  style={{
+                    width: "100%",
+                    background: themeStyles.inputBg || "#1b1b1d",
+                    border: `1px solid ${themeStyles.border || "#333333"}`,
+                    borderRadius: "10px",
+                    padding: "10px 14px",
+                    color: themeStyles.text || "#ffffff",
+                    fontSize: "14px",
+                    outline: "none"
+                  }}
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
                   placeholder="0"
@@ -403,17 +412,17 @@ border: `1px solid ${
                 />
               </Field>
               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                <button type="submit" style={{ ...styles.saveBtn, flex: 1, marginTop: 0 }}>
+                <button type="submit" style={{ flex: 1, background: `linear-gradient(145deg, ${themeStyles.accentGold || "#d69a5f"}, ${themeStyles.accent || "#b06a35"})`, color: "#111111", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: 800, cursor: "pointer" }}>
                   {t.confirmCollection || (isEN ? "Confirm Collection" : "تأكيد التحصيل")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setPayTarget(null)}
                   style={{
-                    background: themeStyles.inputBg,
-                    border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`,
-                    color: themeStyles.text,
-                    borderRadius: themeStyles.borderRadius || 12,
+                    background: themeStyles.inputBg || "#1b1b1d",
+                    border: `1px solid ${themeStyles.border || "#333333"}`,
+                    color: themeStyles.text || "#ffffff",
+                    borderRadius: "10px",
                     padding: "12px 16px",
                     cursor: "pointer",
                     fontWeight: 700
