@@ -163,34 +163,34 @@ export function useCloudData() {
   };
 
   // 💳 إضافة قسط مسدد مباشرة بجدول installments مع حفظ المحصل وطريقة الدفع
-const addPayment = async ({ contractId, amount, payDate, method, collector }) => {
-  try {
-    const { data, error } = await supabase
-      .from("installments")
-      .insert([
-        {
-          contract_id: contractId,
-          amount: Number(amount || 0),
-          due_date: payDate || new Date().toISOString().split("T")[0],
-          payment_method: method || "نقداً / كاش",
-          collector: collector || "المشرف العام",
-          is_paid: true,
-          paid_at: new Date().toISOString(),
-          status: "paid"
-        }
-      ])
-      .select()
-      .single();
+  const addPayment = async ({ contractId, amount, payDate, method, collector }) => {
+    try {
+      const { data, error } = await supabase
+        .from("installments")
+        .insert([
+          {
+            contract_id: contractId,
+            amount: Number(amount || 0),
+            due_date: payDate || new Date().toISOString().split("T")[0],
+            payment_method: method || "نقداً / كاش",
+            collector: collector || "المشرف العام",
+            is_paid: true,
+            paid_at: new Date().toISOString(),
+            status: "paid"
+          }
+        ])
+        .select()
+        .single();
 
-    if (!error) {
-      await refreshAllData();
-      return { success: true, data };
+      if (!error) {
+        await refreshAllData();
+        return { success: true, data };
+      }
+      return { success: false, error };
+    } catch (err) {
+      return { success: false, error: err };
     }
-    return { success: false, error };
-  } catch (err) {
-    return { success: false, error: err };
-  }
-};
+  };
 
   // 🎯 تصدير كافة الدوال للاستخدام في الشاشات
   return {
