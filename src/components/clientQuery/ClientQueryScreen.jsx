@@ -176,23 +176,26 @@ const handleSelectSearchItem = (contract) => {
             <label style={{ display: "block", fontSize: "13px", fontWeight: 700, color: themeStyles.subText || "#aaaaaa", marginBottom: "8px" }}>
               {t.searchPlaceholder || (isEN ? "Search by client name, phone, or item..." : "ابحث باسم العميل أو رقم التليفون أو السلعة")}
             </label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t.searchPlaceholder || (isEN ? "Search by client name, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
-              style={{
-                width: "100%",
-                background: themeStyles.inputBg || "#1b1b1d",
-                border: `1px solid ${themeStyles.border || "#333333"}`,
-                borderRadius: "10px",
-                padding: "12px 14px",
-                color: themeStyles.text || "#ffffff",
-                fontSize: "14px",
-                outline: "none",
-                boxSizing: "border-box"
-              }}
-            />
+   <input
+  type="text"
+  value={searchQuery}
+  onChange={(e) => {
+    setSearchQuery(e.target.value);
+    setSelectedContract(null); // 🎯 إعادة إظهار قائمة الاقتراحات عند التعديل
+  }}
+  placeholder={t.searchPlaceholder || (isEN ? "Search by client name, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
+  style={{
+    width: "100%",
+    background: themeStyles.inputBg || "#1b1b1d",
+    border: `1px solid ${themeStyles.border || "#333333"}`,
+    borderRadius: "10px",
+    padding: "12px 14px",
+    color: themeStyles.text || "#ffffff",
+    fontSize: "14px",
+    outline: "none",
+    boxSizing: "border-box"
+  }}
+/>
           </div>
 
           {/* SUGGESTIONS LIST */}
