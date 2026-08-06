@@ -44,31 +44,56 @@ export default function InstallmentsScreen({
   const activeSelectedRow = rows.find((r) => String(r.id) === String(selectedId)) || null;
 
   const handlePaySubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedContract) return;
+  e.preventDefault();
+  if (!selectedContract) return;
 
-    const numAmount = Math.round(parseFloat(amount) || 0);
-    if (numAmount <= 0) return;
+  const numAmount = Math.round(parseFloat(amount) || 0);
+  if (numAmount <= 0) return;
 
-    if (onPay) {
-      const res = await onPay({
-        contractId: selectedContract.id,
-        amount: numAmount,
-        payDate
+  if (onPay) {
+    const res = await onPay({
+      contractId: selectedContract.id,
+      amount: numAmount,
+      payDate,
+      method,
+      collector
+    });
+
+    if (res?.success) {
+      const currentPaid = Number(activeSelectedRow?.paidAmount || activeSelectedRow?.totalPaid || 0);
+      const sale = Number(activeSelectedRow?.sale || activeSelectedRow?.total || 0);
+      const down = Number(activeSelectedRow?.down || activeSelectedRow?.downPayment || 0);
+
+      const newPaid = currentPaid + numAmount;
+      const newRem = Math.max(0, sale - down - newPaid);
+
+      // 🎯 فتح نافذة الإيصال فوراً ببيانات دقيقة ومكتملة
+      setActiveReceipt({
+        client: {
+          ...activeSelectedRow,
+          clientName: activeSelectedRow?.name || activeSelectedRow?.clientName,
+          itemName: activeSelectedRow?.item || activeSelectedRow?.itemName,
+          totalPaid: newPaid,
+          paidAmount: newPaid,
+          remaining: newRem,
+          remainingAmount: newRem,
+          sale,
+          down
+        },
+        payment: {
+          amount: numAmount,
+          payDate,
+          date: payDate,
+          method,
+          collector,
+          remainingAfter: newRem
+        }
       });
 
-      if (res?.success) {
-        const newPaid = Number(activeSelectedRow?.paidAmount || 0) + numAmount;
-        const newRem = Math.max(0, Number(activeSelectedRow?.sale || 0) - Number(activeSelectedRow?.down || 0) - newPaid);
-
-        setActiveReceipt({
-          client: { ...activeSelectedRow, totalPaid: newPaid, remaining: newRem },
-          payment: { amount: numAmount, payDate, method, collector }
-        });
-        setAmount("");
-      }
+      setAmount("");
     }
-  };
+  }
+};
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
