@@ -1,3 +1,12 @@
+/**
+ * =========================================================
+ * 📌 الشاشة: إدارة وحذف حسابات العملاء (DeleteClientScreen.jsx)
+ * 📁 المسار: src/components/DeleteClientScreen.jsx
+ * 📝 الوظيفة: التبديل بين العملاء النشطين وسلة المهملات، تنفيذ الحذف المؤقت
+ *              (soft delete)، الاستعادة، والحذف النهائي مع الهيكلة الجديدة.
+ * =========================================================
+ */
+
 import React, { useState, useMemo, useEffect } from "react";
 import { Trash2, RotateCcw, Search, UserX, AlertTriangle, ArrowRight, X } from "lucide-react";
 
@@ -19,29 +28,40 @@ export function DeleteClientScreen({
     setLocalClients(clientsList);
   }, [clientsList]);
 
-  // 🔍 فصل العقود إلى نشطة ومحذوفة اعتماداً على الـ State المحلي
+  // 🔍 توحيد وتقسيم البيانات بين النشط والمحذوف بداخل سلة المهملات
   const { activeClients, trashedClients } = useMemo(() => {
     const active = [];
     const trashed = [];
 
     (localClients || []).forEach((client) => {
-      const isArchived =
-        client.is_deleted === true ||
-        client.is_deleted === "true" ||
+      const isTrashed =
+        client.status === "deleted" ||
         client.status === "archived" ||
-        client.status === "deleted";
+        client.is_deleted === true ||
+        client.is_deleted === "true";
 
-      if (isArchived) {
-        trashed.push(client);
+      const normalizedClient = {
+        ...client,
+        id: client.id,
+        name: client.name || client.clientName || client.client_name || "عميل بدون اسم",
+        phone: client.phone || client.clientPhone || client.client_phone || "بدون رقم",
+        item: client.item || client.itemName || client.item_name || "غير محدد",
+        remaining: Number(
+          client.remaining ?? client.remainingAmount ?? client.remaining_amount ?? 0
+        )
+      };
+
+      if (isTrashed) {
+        trashed.push(normalizedClient);
       } else {
-        active.push(client);
+        active.push(normalizedClient);
       }
     });
 
     return { activeClients: active, trashedClients: trashed };
   }, [localClients]);
 
-  // 🎯 القائمة المفلترة حسب التبويب والبحث
+  // 🎯 القائمة المفلترة حسب التبويب المختار وشريط البحث
   const filteredList = useMemo(() => {
     const source = activeTab === "active" ? activeClients : trashedClients;
     const q = search.trim().toLowerCase();
@@ -49,14 +69,14 @@ export function DeleteClientScreen({
     if (!q) return source;
 
     return source.filter((c) => {
-      const name = (c.name || c.clientName || "").toLowerCase();
-      const phone = (c.phone || c.clientPhone || "").toLowerCase();
-      const item = (c.item || c.itemName || "").toLowerCase();
+      const name = (c.name || "").toLowerCase();
+      const phone = (c.phone || "").toLowerCase();
+      const item = (c.item || "").toLowerCase();
       return name.includes(q) || phone.includes(q) || item.includes(q);
     });
   }, [activeTab, activeClients, trashedClients, search]);
 
-  // ⚡ تنفيذ الإجراءات مع التحديث الفوري للواجهة
+  // ⚡ تنفيذ الإجراءات فوراً بداخل الـ State وإرسالها للسحابة
   const handleConfirmAction = async () => {
     if (!targetClient || !actionType) return;
     setIsProcessing(true);
@@ -65,7 +85,7 @@ export function DeleteClientScreen({
 
     if (actionType === "soft_delete") {
       clientToUpdate.is_deleted = true;
-      clientToUpdate.status = "archived";
+      clientToUpdate.status = "deleted";
     } else if (actionType === "restore") {
       clientToUpdate.is_deleted = false;
       clientToUpdate.status = "active";
@@ -74,21 +94,21 @@ export function DeleteClientScreen({
       clientToUpdate.is_permanently_deleted = true;
     }
 
-    // 1. تحديث القائمة فوراً على الشاشة
+    // 1. تحديث القائمة فوراً على الواجهة
     setLocalClients((prev) => {
       if (actionType === "permanent_delete") {
-        return prev.filter((c) => c.id !== targetClient.id);
+        return prev.filter((c) => String(c.id) !== String(targetClient.id));
       }
-      return prev.map((c) => (c.id === targetClient.id ? clientToUpdate : c));
+      return prev.map((c) => (String(c.id) === String(targetClient.id) ? clientToUpdate : c));
     });
 
-    // 2. إرسال التحديث للسحابة في الخلفية
+    // 2. إرسال الاستعلام للسحابة
     try {
       if (onUpdateContract) {
         await onUpdateContract(clientToUpdate);
       }
     } catch (err) {
-      console.error("Error executing client status update:", err);
+      console.error("❌ خطأ أثناء تحديث حالة العميل بالسحابة:", err);
     } finally {
       setIsProcessing(false);
       setTargetClient(null);
@@ -105,8 +125,8 @@ export function DeleteClientScreen({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          background: "#141414",
-          border: "1px solid #262626",
+          background: themeStyles.card || "#141414",
+          border: `1px solid ${themeStyles.border || "#262626"}`,
           borderRadius: 16,
           padding: "14px 20px",
           marginBottom: 16
@@ -116,15 +136,17 @@ export function DeleteClientScreen({
           <div style={{ background: "#3e1c24", padding: 8, borderRadius: 10, color: "#f87171", display: "flex" }}>
             <UserX size={20} />
           </div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: "#ffffff" }}>إدارة وحذف حسابات العملاء</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>
+            إدارة وحذف حسابات العملاء
+          </span>
         </div>
 
         <button
           onClick={onBack}
           style={{
-            background: "#1a1a1a",
-            border: "1px solid #333333",
-            color: "#aaaaaa",
+            background: themeStyles.inputBg || "#1a1a1a",
+            border: `1px solid ${themeStyles.border || "#333333"}`,
+            color: themeStyles.subText || "#aaaaaa",
             padding: "8px 16px",
             borderRadius: 10,
             cursor: "pointer",
@@ -143,8 +165,8 @@ export function DeleteClientScreen({
       {/* 2. شريط البحث والتبويبات */}
       <div
         style={{
-          background: "#141414",
-          border: "1px solid #262626",
+          background: themeStyles.card || "#141414",
+          border: `1px solid ${themeStyles.border || "#262626"}`,
           borderRadius: 16,
           marginBottom: 16,
           padding: "14px 18px",
@@ -158,9 +180,9 @@ export function DeleteClientScreen({
         <div style={{ position: "relative", width: "100%", maxWidth: 320 }}>
           <input
             style={{
-              background: "#1a1a1a",
-              border: "1px solid #333333",
-              color: "#ffffff",
+              background: themeStyles.inputBg || "#1a1a1a",
+              border: `1px solid ${themeStyles.border || "#333333"}`,
+              color: themeStyles.text || "#ffffff",
               padding: "10px 16px 10px 38px",
               borderRadius: 10,
               fontSize: 13,
@@ -180,9 +202,9 @@ export function DeleteClientScreen({
             type="button"
             onClick={() => setActiveTab("active")}
             style={{
-              background: activeTab === "active" ? "#d69a5f" : "#1a1a1a",
+              background: activeTab === "active" ? (themeStyles.accentGold || "#d69a5f") : "#1a1a1a",
               color: activeTab === "active" ? "#000000" : "#aaaaaa",
-              border: `1px solid ${activeTab === "active" ? "#d69a5f" : "#333333"}`,
+              border: `1px solid ${activeTab === "active" ? (themeStyles.accentGold || "#d69a5f") : "#333333"}`,
               padding: "8px 16px",
               borderRadius: 8,
               fontSize: 13,
@@ -197,9 +219,9 @@ export function DeleteClientScreen({
             type="button"
             onClick={() => setActiveTab("trash")}
             style={{
-              background: activeTab === "trash" ? "#d69a5f" : "#1a1a1a",
+              background: activeTab === "trash" ? (themeStyles.accentGold || "#d69a5f") : "#1a1a1a",
               color: activeTab === "trash" ? "#000000" : "#aaaaaa",
-              border: `1px solid ${activeTab === "trash" ? "#d69a5f" : "#333333"}`,
+              border: `1px solid ${activeTab === "trash" ? (themeStyles.accentGold || "#d69a5f") : "#333333"}`,
               padding: "8px 16px",
               borderRadius: 8,
               fontSize: 13,
@@ -213,9 +235,9 @@ export function DeleteClientScreen({
       </div>
 
       {/* 3. قائمة العملاء */}
-      <div style={{ background: "#141414", border: "1px solid #262626", borderRadius: 16, padding: 16 }}>
+      <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: 16, padding: 16 }}>
         {filteredList.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: "#888888" }}>
+          <div style={{ textAlign: "center", padding: "40px 20px", color: themeStyles.subText || "#888888" }}>
             <AlertTriangle size={36} opacity={0.4} style={{ marginBottom: 10 }} />
             <div style={{ fontSize: 14, fontWeight: 700 }}>
               {activeTab === "active" ? "لا يوجد عملاء نشطون ينطبق عليهم البحث." : "سلة المهملات فارغة."}
@@ -224,17 +246,12 @@ export function DeleteClientScreen({
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {filteredList.map((client) => {
-              const name = client.name || client.clientName || "عميل بدون اسم";
-              const item = client.item || client.itemName || "غير محدد";
-              const phone = client.phone || client.clientPhone || "بدون رقم";
-              const remaining = Number(client.remaining || client.remainingAmount) || 0;
-
               return (
                 <div
                   key={client.id}
                   style={{
-                    background: "#1a1a1a",
-                    border: "1px solid #333333",
+                    background: themeStyles.inputBg || "#1a1a1a",
+                    border: `1px solid ${themeStyles.border || "#333333"}`,
                     borderRadius: 12,
                     padding: 16,
                     display: "flex",
@@ -245,17 +262,17 @@ export function DeleteClientScreen({
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>{name}</div>
-                    <div style={{ fontSize: 13, color: "#d69a5f", marginTop: 2 }}>
-                      {item} · {phone}
+                    <div style={{ fontSize: 16, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>{client.name}</div>
+                    <div style={{ fontSize: 13, color: themeStyles.accentGold || "#d69a5f", marginTop: 2 }}>
+                      {client.item} · {client.phone}
                     </div>
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 11, color: "#888888" }}>المتبقي عليه</div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "#d69a5f" }}>
-                        {remaining.toLocaleString()} ج.م
+                      <div style={{ fontSize: 11, color: themeStyles.subText || "#888888" }}>المتبقي عليه</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>
+                        {client.remaining.toLocaleString()} ج.م
                       </div>
                     </div>
 
@@ -356,7 +373,7 @@ export function DeleteClientScreen({
             padding: 16
           }}
         >
-          <div style={{ background: "#141414", border: "1px solid #262626", borderRadius: 18, padding: 20, width: "100%", maxWidth: 420 }}>
+          <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: 18, padding: 20, width: "100%", maxWidth: 420 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: actionType === "restore" ? "#4ade80" : "#f87171" }}>
                 {actionType === "soft_delete" && "تأكيد نقل العميل لسلّة المهملات"}
@@ -366,15 +383,15 @@ export function DeleteClientScreen({
               <X style={{ cursor: "pointer", color: "#888" }} onClick={() => setTargetClient(null)} />
             </div>
 
-            <p style={{ color: "#cccccc", fontSize: 13, lineHeight: "1.6", marginBottom: 18 }}>
+            <p style={{ color: themeStyles.subText || "#cccccc", fontSize: 13, lineHeight: "1.6", marginBottom: 18 }}>
               {actionType === "soft_delete" && (
-                <>هل أنت تأكد من نقل حساب العميل <strong>({targetClient.name || targetClient.clientName})</strong> إلى سلة المهملات؟ يمكنك استعادته لاحقاً في أي وقت.</>
+                <>هل أنت تأكد من نقل حساب العميل <strong>({targetClient.name})</strong> إلى سلة المهملات؟ يمكنك استعادته لاحقاً في أي وقت.</>
               )}
               {actionType === "restore" && (
-                <>هل تريد إعادة تنشيط حساب العميل <strong>({targetClient.name || targetClient.clientName})</strong> وإرجاعه للشاشات الرئيسية؟</>
+                <>هل تريد إعادة تنشيط حساب العميل <strong>({targetClient.name})</strong> وإرجاعه للشاشات الرئيسية؟</>
               )}
               {actionType === "permanent_delete" && (
-                <>تحذير: الحذف النهائي لعميل <strong>({targetClient.name || targetClient.clientName})</strong> سيؤدي لمسح كافة بيانات العقد تماماً من السحابة ولا يمكن التراجع عن هذا الإجراء!</>
+                <>تحذير: الحذف النهائي لعميل <strong>({targetClient.name})</strong> سيؤدي لمسح كافة بيانات العقد تماماً من السحابة ولا يمكن التراجع عن هذا الإجراء!</>
               )}
             </p>
 
@@ -402,9 +419,9 @@ export function DeleteClientScreen({
                 type="button"
                 onClick={() => setTargetClient(null)}
                 style={{
-                  background: "#1a1a1a",
-                  border: "1px solid #333333",
-                  color: "#aaaaaa",
+                  background: themeStyles.inputBg || "#1a1a1a",
+                  border: `1px solid ${themeStyles.border || "#333333"}`,
+                  color: themeStyles.subText || "#aaaaaa",
                   padding: "10px 16px",
                   borderRadius: 10,
                   fontWeight: 700,
