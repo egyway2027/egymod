@@ -17,6 +17,7 @@ import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import InstallmentsScreen from "./components/installments/InstallmentsScreen";
 import MonthlyDues from "./components/MonthlyDues";
+import OverdueScreen from "./components/overdue/OverdueScreen";
 import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
 import { RecycleBinModal } from "./components/modals/RecycleBinModal";
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
@@ -211,6 +212,15 @@ export function App() {
             />
           )}
 
+          {/* 📌 شاشة المتأخرين عن السداد */}
+          {currentScreen === "overdue" && (
+            <OverdueScreen
+              onBack={handleBack}
+              t={t}
+              themeStyles={themeStyles}
+            />
+          )}
+
           {/* 4. شاشة الإعدادات الشاملة */}
           {currentScreen === "settings" && (
             <SettingsScreen
@@ -326,6 +336,8 @@ export function App() {
                           setShowWhatsAppModal(true);
                         } else if (b.key === "deleteClient") {
                           navigateTo("deleteClient");
+                        } else if (b.key === "lateClients") {
+                          navigateTo("overdue");
                         }
                       }}
                       style={{
