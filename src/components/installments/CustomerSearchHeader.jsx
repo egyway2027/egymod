@@ -1,311 +1,109 @@
-/**
- * =========================================================
- * 📌 الملف: أداة التعديل الجراحي للأكواد (Code Patcher Tool)
- * 📁 المسار: src/components/tools/CodePatcher.jsx
- * 📝 الوظيفة: استبدال كتل الكود بدقة متناهية (SEARCH/REPLACE)
- *            دون تغيير أو المساس بباقي أسطر الملف.
- * =========================================================
- */
+import React from 'react';
+import { Search, CreditCard, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
-import React, { useState } from "react";
-import { Code, CheckCircle, AlertTriangle, Copy, RefreshCw, Sparkles } from "lucide-react";
-
-export function CodePatcher({ themeStyles = {} }) {
-  const [originalCode, setOriginalCode] = useState("");
-  const [patchBlocks, setPatchBlocks] = useState("");
-  const [resultCode, setResultCode] = useState("");
-  const [stats, setStats] = useState(null);
-  const [copied, setCopied] = useState(false);
-
-  const applyFuzzyReplace = (sourceText, searchStr, replaceStr) => {
-    if (sourceText.includes(searchStr)) {
-      return { success: true, text: sourceText.replace(searchStr, replaceStr) };
-    }
-
-    const normSource = sourceText.replace(/\r\n/g, "\n");
-    const normSearch = searchStr.replace(/\r\n/g, "\n");
-    const normReplace = replaceStr.replace(/\r\n/g, "\n");
-
-    if (normSource.includes(normSearch)) {
-      return { success: true, text: normSource.replace(normSearch, normReplace) };
-    }
-
-    const cleanSource = normSource.replace(/\n{3,}/g, "\n\n");
-    const cleanSearch = normSearch.replace(/\n{3,}/g, "\n\n");
-    if (cleanSource.includes(cleanSearch)) {
-      return { success: true, text: cleanSource.replace(cleanSearch, normReplace) };
-    }
-
-    const sourceLines = normSource.split("\n");
-    const searchLines = normSearch
-      .split("\n")
-      .map((l) => l.trim())
-      .filter((l, i, arr) => !(l === "" && (i === 0 || i === arr.length - 1)));
-
-    if (searchLines.length === 0) return { success: false, text: sourceText };
-
-    for (let i = 0; i <= sourceLines.length - searchLines.length; i++) {
-      let isMatch = true;
-      for (let j = 0; j < searchLines.length; j++) {
-        if (sourceLines[i + j].trim() !== searchLines[j]) {
-          isMatch = false;
-          break;
-        }
-      }
-      if (isMatch) {
-        const newLines = [...sourceLines];
-        const replaceLines = normReplace.split("\n");
-        newLines.splice(i, searchLines.length, ...replaceLines);
-        return { success: true, text: newLines.join("\n") };
-      }
-    }
-
-    return { success: false, text: sourceText };
+export default function CustomerSearchHeader({ 
+  searchQuery, 
+  setSearchQuery, 
+  selectedCustomer, 
+  onSelectCustomer, 
+  customersList,
+  themeStyles = {}
+}) {
+  const cardStyle = {
+    background: themeStyles.card || "#1e1e1e",
+    border: `1px solid ${themeStyles.border || "#333"}`,
+    borderRadius: "14px",
+    padding: "16px",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px"
   };
 
-  const handleApplyPatch = () => {
-    if (!originalCode.trim() || !patchBlocks.trim()) {
-      alert("يرجى إدخال الكود الأصلي وكتل التعديل أولاً.");
-      return;
-    }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* 🔍 شريط البحث */}
+      <div style={{ background: themeStyles.card || "#1e1e1e", padding: "16px", borderRadius: "14px", border: `1px solid ${themeStyles.border || "#333"}` }}>
+        <label style={{ display: "block", fontSize: "14px", fontWeight: "700", marginBottom: "8px", color: themeStyles.text || "#fff" }}>
+          🔍 البحث عن عميل أو رقم العقد:
+        </label>
+        <div style={{ position: "relative" }}>
+          <Search size={18} style={{ position: "absolute", right: "12px", top: "14px", color: "#888" }} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="اكتب اسم العميل، رقم الهاتف، أو رقم العقد..."
+            style={{
+              width: "100%", paddingRight: "40px", paddingLeft: "12px", paddingTop: "12px", paddingBottom: "12px",
+              borderRadius: "8px", border: `1px solid ${themeStyles.border || "#444"}`,
+              backgroundColor: themeStyles.inputBg || "#121212", color: themeStyles.text || "#fff", outline: "none",
+              fontSize: "14px", boxSizing: "border-box"
+            }}
+          />
+        </div>
 
-    // دعم صيغ الكتل المتنوعة (SEARCH/REPLACE العادية والمعكوسة) مع معالجة مرنة للأسطر
-    const blockRegex = /(?:<<<<<<< SEARCH|SEARCH >>>>>>>)[\r\n]+([\s\S]*?)[\r\n]+(?:=======|======)[\r\n]+([\s\S]*?)[\r\n]+(?:>>>>>>> REPLACE|REPLACE <<<<<<<)/g;
+        {/* قائمة نتائج البحث */}
+        {searchQuery && !selectedCustomer && (
+          <div style={{ marginTop: "8px", backgroundColor: themeStyles.card || "#222", border: `1px solid ${themeStyles.border || "#444"}`, borderRadius: "8px", overflow: "hidden" }}>
+            {customersList
+              .filter(c => c.name.includes(searchQuery) || c.phone.includes(searchQuery) || c.contractId.includes(searchQuery))
+              .map(customer => (
+                <button
+                  key={customer.id}
+                  onClick={() => { onSelectCustomer(customer); setSearchQuery(''); }}
+                  style={{
+                    width: "100%", textAlign: "right", padding: "12px 16px", background: "transparent",
+                    border: "none", borderBottom: `1px solid ${themeStyles.border || "#333"}`, color: themeStyles.text || "#fff",
+                    display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer"
+                  }}
+                >
+                  <div>
+                    <span style={{ fontWeight: "700", display: "block" }}>{customer.name}</span>
+                    <span style={{ fontSize: "12px", color: "#aaa" }}>عقد: {customer.contractId} | هاتف: {customer.phone}</span>
+                  </div>
+                  <span style={{ fontSize: "12px", padding: "4px 8px", background: "#d4af37", color: "#000", borderRadius: "4px", fontWeight: "700" }}>اختيار</span>
+                </button>
+              ))}
+          </div>
+        )}
+      </div>
 
-    let currentCode = originalCode;
-    let appliedCount = 0;
-    let failedBlocks = [];
-    let match;
-    let index = 0;
+      {/* 📊 بطاقات الملخص المالي الأفقية */}
+      {selectedCustomer && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+          <div style={cardStyle}>
+            <CreditCard size={28} color="#3b82f6" />
+            <div>
+              <span style={{ fontSize: "12px", color: "#aaa", display: "block" }}>إجمالي المستحق</span>
+              <span style={{ fontSize: "18px", fontWeight: "800", color: themeStyles.text || "#fff" }}>{selectedCustomer.totalAmount.toLocaleString()} ج.م</span>
+            </div>
+          </div>
 
-    while ((match = blockRegex.exec(patchBlocks)) !== null) {
-      index++;
-      const searchStr = match[1];
-      const replaceStr = match[2];
+          <div style={cardStyle}>
+            <CheckCircle size={28} color="#10b981" />
+            <div>
+              <span style={{ fontSize: "12px", color: "#aaa", display: "block" }}>إجمالي المدفوع</span>
+              <span style={{ fontSize: "18px", fontWeight: "800", color: "#10b981" }}>{selectedCustomer.paidAmount.toLocaleString()} ج.م</span>
+            </div>
+          </div>
 
-      const res = applyFuzzyReplace(currentCode, searchStr, replaceStr);
+          <div style={cardStyle}>
+            <Clock size={28} color="#f59e0b" />
+            <div>
+              <span style={{ fontSize: "12px", color: "#aaa", display: "block" }}>المتبقي عليه</span>
+              <span style={{ fontSize: "18px", fontWeight: "800", color: "#f59e0b" }}>{selectedCustomer.remainingAmount.toLocaleString()} ج.م</span>
+            </div>
+          </div>
 
-      if (res.success) {
-        currentCode = res.text;
-        appliedCount++;
-      } else {
-        failedBlocks.push({
-          blockNum: index,
-          snippet: searchStr.trim().slice(0, 40) + "..."
-        });
-      }
-    }
-
-    setResultCode(currentCode);
-    setStats({
-      total: index,
-      applied: appliedCount,
-      failed: failedBlocks
-    });
-    setCopied(false);
-  };
-
-  const handleCopy = () => {
-    if (!resultCode) return;
-    navigator.clipboard.writeText(resultCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleReset = () => {
-    setOriginalCode("");
-    setPatchBlocks("");
-    setResultCode("");
-    setStats(null);
-    setCopied(false);
-  };
-
-  return (
-    <div style={{
-      maxWidth: 1100,
-      margin: "0 auto",
-      padding: 20,
-      fontFamily: "'Cairo', 'Tajawal', sans-serif",
-      color: themeStyles.text || "#ffffff"
-    }}>
-      {/* 1. الشريط العلوي للأداة */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        background: themeStyles.card || "#1e1e1e",
-        border: `1px solid ${themeStyles.border || "#333333"}`,
-        borderRadius: 16,
-        padding: "16px 24px",
-        marginBottom: 20
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Sparkles size={24} style={{ color: themeStyles.accentGold || "#d4af37" }} />
-          <div>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: themeStyles.accentGold || "#d4af37" }}>
-              أداة التعديل الجراحي للأكواد (Code Patcher)
-            </h2>
-            <span style={{ fontSize: 12, color: themeStyles.subText || "#aaaaaa" }}>
-              تعديل أسطر محددة فقط مع تجميد وحماية باقي الملف 100%
-            </span>
-          </div>
-        </div>
-
-        <button
-          onClick={handleReset}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            background: "transparent", border: `1px solid ${themeStyles.border || "#333"}`,
-            color: themeStyles.subText || "#aaa", padding: "8px 14px",
-            borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700
-          }}
-        >
-          <RefreshCw size={14} /> تفريغ الخانات
-        </button>
-      </div>
-
-      {/* 2. مربعات الإدخال */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-        {/* المربع 1: الكود الأصلي */}
-        <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 14, padding: 16 }}>
-          <label style={{ display: "block", fontSize: 13, fontWeight: 800, marginBottom: 8, color: themeStyles.accentGold || "#d4af37" }}>
-            1. الكود الأصلي للملف بالكامل:
-          </label>
-          <textarea
-            value={originalCode}
-            onChange={(e) => setOriginalCode(e.target.value)}
-            placeholder="الصق كود الملف الأصلي هنا..."
-            rows={12}
-            style={{
-              width: "100%",
-              background: themeStyles.inputBg || "#141414",
-              border: `1px solid ${themeStyles.border || "#333"}`,
-              borderRadius: 10,
-              padding: 12,
-              color: "#e0e0e0",
-              fontFamily: "monospace",
-              fontSize: 12,
-              resize: "vertical",
-              boxSizing: "border-box",
-              outline: "none"
-            }}
-          />
-        </div>
-
-        {/* المربع 2: كتل التعديل */}
-        <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 14, padding: 16 }}>
-          <label style={{ display: "block", fontSize: 13, fontWeight: 800, marginBottom: 8, color: "#e07a5f" }}>
-            2. كتل التعديل (SEARCH / REPLACE):
-          </label>
-          <textarea
-            value={patchBlocks}
-            onChange={(e) => setPatchBlocks(e.target.value)}
-            placeholder={`<<<<<<< SEARCH\nالسطر المراد تغييره بالظبط\n=======\nالسطر الجديد البديل\n>>>>>>> REPLACE`}
-            rows={12}
-            style={{
-              width: "100%",
-              background: themeStyles.inputBg || "#141414",
-              border: `1px solid ${themeStyles.border || "#333"}`,
-              borderRadius: 10,
-              padding: 12,
-              color: "#e0e0e0",
-              fontFamily: "monospace",
-              fontSize: 12,
-              resize: "vertical",
-              boxSizing: "border-box",
-              outline: "none"
-            }}
-          />
-        </div>
-      </div>
-
-      {/* 3. زر التشغيل */}
-      <button
-        onClick={handleApplyPatch}
-        style={{
-          width: "100%",
-          padding: 16,
-          background: "linear-gradient(135deg, #d4af37 0%, #b06a35 100%)",
-          border: "none",
-          borderRadius: 12,
-          color: "#111",
-          fontSize: 15,
-          fontWeight: 800,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          boxShadow: "0 4px 15px rgba(212, 175, 55, 0.2)",
-          marginBottom: 20
-        }}
-      >
-        <Code size={18} /> تطبيق التعديل الجراحي على الكود
-      </button>
-
-      {/* 4. النتيجة والإحصائيات */}
-      {stats && (
-        <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 16, padding: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#22c55e", fontWeight: 700, fontSize: 13 }}>
-                <CheckCircle size={16} /> تم تطبيق {stats.applied} من أصل {stats.total} كتل بنجاح
-              </div>
-
-              {stats.failed.length > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#ef4444", fontWeight: 700, fontSize: 13 }}>
-                  <AlertTriangle size={16} /> فشل مطابقة {stats.failed.length} كتل
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={handleCopy}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: copied ? "#22c55e" : themeStyles.accentGold || "#d4af37",
-                border: "none", color: "#111", padding: "8px 16px",
-                borderRadius: 8, cursor: "pointer", fontWeight: 800, fontSize: 13
-              }}
-            >
-              {copied ? <CheckCircle size={16} /> : <Copy size={16} />}
-              {copied ? "تم النسخ!" : "نسخ الكود النهائي"}
-            </button>
-          </div>
-
-          {stats.failed.length > 0 && (
-            <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid #ef4444", borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 12, color: "#f87171" }}>
-              <strong>تنبيه: الكتل التالية لم يتم العثور على نصها الأصلي بالكود:</strong>
-              <ul style={{ margin: "6px 0 0 0", paddingRight: 20 }}>
-                {stats.failed.map((f, i) => (
-                  <li key={i}>كتلة رقم {f.blockNum}: "{f.snippet}"</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <textarea
-            readOnly
-            value={resultCode}
-            rows={14}
-            style={{
-              width: "100%",
-              background: themeStyles.inputBg || "#141414",
-              border: `1px solid ${themeStyles.border || "#333"}`,
-              borderRadius: 10,
-              padding: 12,
-              color: "#22c55e",
-              fontFamily: "monospace",
-              fontSize: 12,
-              resize: "vertical",
-              boxSizing: "border-box",
-              outline: "none"
-            }}
-          />
-        </div>
-      )}
-    </div>
-  );
+          <div style={cardStyle}>
+            <AlertCircle size={28} color="#ef4444" />
+            <div>
+              <span style={{ fontSize: "12px", color: "#aaa", display: "block" }}>أقساط متأخرة</span>
+              <span style={{ fontSize: "18px", fontWeight: "800", color: "#ef4444" }}>{selectedCustomer.overdueCount} أقساط</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
-
-export default CodePatcher;
