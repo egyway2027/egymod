@@ -54,78 +54,76 @@ export default function CustomerSearchHeader({
       </div>
 
       {selected && (
-        <form onSubmit={onSubmitPayment} style={{ marginTop: 10 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 16 }}>
-            <Field label={t.paymentDate || (isEN ? "Payment Date" : "تاريخ السداد")} styles={styles}>
-              <DateInput 
-                value={payDate} 
-                onChange={(e) => setPayDate(e.target.value)} 
-                required 
-                themeStyles={themeStyles} 
-                t={t} 
-                lang={isEN ? "en" : "ar"} 
-              />
-            </Field>
+        <form onSubmit={onSubmitPayment} style={{ marginTop: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+            <Field label={t.paidAmount || (isEN ? "Amount Paid (EGP) *" : "المبلغ المدفوع (ج.م) *")} styles={styles}>
+              <input
+                type="number"
+                step="1"
+                style={{ 
+                  width: "100%", background: themeStyles.inputBg || "#1b1b1d", border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}`, 
+                  borderRadius: themeStyles.borderRadius || 10, padding: "12px 14px", fontFamily: "inherit", outline: "none",
+                  fontSize: 16, fontWeight: 800, color: themeStyles.accentGold || "#d4af37", boxSizing: "border-box" 
+                }}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                required
+              />
+            </Field>
 
-            <Field label={t.paidAmount || (isEN ? "Amount Paid (EGP) *" : "المبلغ المدفوع (ج.م) *")} styles={styles}>
-              <div style={{ position: "relative" }}>
-                <input
-                  type="number"
-                  step="1"
-                  style={{ 
-                    width: "100%", background: themeStyles.inputBg, border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border}`, 
-                    borderRadius: themeStyles.borderRadius || 10, padding: "12px 14px", fontFamily: "inherit", outline: "none",
-                    fontSize: 18, fontWeight: 800, color: themeStyles.accentGold || "#d4af37" 
-                  }}
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0"
-                  required
-                />
+            <Field label={t.paymentDate || (isEN ? "Payment Date" : "تاريخ السداد")} styles={styles}>
+              <DateInput 
+                value={payDate} 
+                onChange={(e) => setPayDate(e.target.value)} 
+                required 
+                themeStyles={themeStyles} 
+                t={t} 
+                lang={isEN ? "en" : "ar"} 
+              />
+            </Field>
+          </div>
 
-                {/* أزرار الإدخال السريع للمبلغ */}
-                <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap", justifyContent: "flex-start" }}>
-                  <button
-                    type="button"
-                    onClick={() => setAmount(String(Math.round(selected.monthly || 0)))}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 7,
-                      background: "rgba(212, 175, 55, 0.08)",
-                      border: `1px solid ${themeStyles.accentGold || "rgba(212, 175, 55, 0.35)"}`,
-                      color: themeStyles.accentGold || "#d4af37",
-                      padding: "7px 16px", borderRadius: themeStyles.borderRadius || 20,
-                      fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
-                    }}
-                  >
-                    <Banknote size={16} />
-                    <span>{t.fullInstallmentBtn || (isEN ? "Full Installment" : "قسط كامل")}:</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800 }}>
-                      {fmtCleanInt(selected.monthly)} {t.currency || (isEN ? "EGP" : "ج.م")}
-                    </span>
-                  </button>
+          {/* أزرار الإدخال السريع للمبلغ */}
+          <div style={{ display: "flex", gap: 10, marginTop: 12, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              type="button"
+              onClick={() => setAmount(String(Math.round(selected.monthly || 0)))}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 7,
+                background: "rgba(212, 175, 55, 0.08)",
+                border: `1px solid ${themeStyles.accentGold || "rgba(212, 175, 55, 0.35)"}`,
+                color: themeStyles.accentGold || "#d4af37",
+                padding: "8px 16px", borderRadius: themeStyles.borderRadius || 20,
+                fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
+              }}
+            >
+              <Banknote size={16} />
+              <span>{t.fullInstallmentBtn || (isEN ? "Full Installment" : "قسط كامل")}:</span>
+              <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800 }}>
+                {fmtCleanInt(selected.monthly)} {t.currency || (isEN ? "EGP" : "ج.م")}
+              </span>
+            </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setAmount(String(Math.round(selected.remaining || 0)))}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 7,
-                      background: "rgba(16, 185, 129, 0.08)",
-                      border: "1px solid rgba(16, 185, 129, 0.35)",
-                      color: "#10b981",
-                      padding: "7px 16px", borderRadius: themeStyles.borderRadius || 20,
-                      fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
-                    }}
-                  >
-                    <CheckCheck size={16} />
-                    <span>{t.settleContractBtn || (isEN ? "Settle Contract" : "تصفية العقد")}:</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800 }}>
-                      {fmtCleanInt(selected.remaining)} {t.currency || (isEN ? "EGP" : "ج.م")}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </Field>
-          </div>
+            <button
+              type="button"
+              onClick={() => setAmount(String(Math.round(selected.remaining || 0)))}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 7,
+                background: "rgba(16, 185, 129, 0.08)",
+                border: "1px solid rgba(16, 185, 129, 0.35)",
+                color: "#10b981",
+                padding: "8px 16px", borderRadius: themeStyles.borderRadius || 20,
+                fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
+              }}
+            >
+              <CheckCheck size={16} />
+              <span>{t.settleContractBtn || (isEN ? "Settle Contract" : "تصفية العقد")}:</span>
+              <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800 }}>
+                {fmtCleanInt(selected.remaining)} {t.currency || (isEN ? "EGP" : "ج.م")}
+              </span>
+            </button>
+          </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 16 }}>
             <Field label={t.paymentMethod || (isEN ? "Payment Method" : "طريقة الدفع")} styles={styles}>
