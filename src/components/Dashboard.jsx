@@ -43,6 +43,9 @@ export function Dashboard({
         supabase.from("installments").select("*")
       ]);
 
+      if (contractsRes.error) console.error("Contracts error:", contractsRes.error);
+      if (installmentsRes.error) console.error("Installments error:", installmentsRes.error);
+
       const contracts = contractsRes.data || [];
       const installments = installmentsRes.data || [];
 
@@ -51,13 +54,13 @@ export function Dashboard({
       let calcMonthlyDues = 0;
 
       contracts.forEach((c) => {
-        const salePrice = Number(c.sale_price || c.sale || 0);
-        const costPrice = Number(c.cost_price || c.cost || 0);
-        const downPayment = Number(c.down_payment || c.down || 0);
-        const monthly = Number(c.monthly_installment || c.monthly || 0);
+        const salePrice = Number(c.sale_price || c.salePrice || c.sale || c.total || 0);
+        const costPrice = Number(c.cost_price || c.costPrice || c.cost || 0);
+        const downPayment = Number(c.down_payment || c.downPayment || c.down || 0);
+        const monthly = Number(c.monthly_installment || c.monthlyInstallment || c.monthly || 0);
 
         const matchedPaid = installments
-          .filter((i) => String(i.contract_id) === String(c.id) && (i.is_paid || Number(i.amount) > 0))
+          .filter((i) => String(i.contract_id) === String(c.id) && (i.is_paid || i.status === "paid" || Number(i.amount) > 0))
           .reduce((sum, i) => sum + Number(i.amount || 0), 0);
 
         const totalPaid = downPayment + matchedPaid;
@@ -68,13 +71,12 @@ export function Dashboard({
           calcMonthlyDues += monthly;
         }
 
-        const contractProfit = salePrice - costPrice;
-        calcProfit += contractProfit;
+        calcProfit += (salePrice - costPrice);
       });
 
       setLiveTotals({
         totalPortfolio: calcPortfolio,
-        totalDebt: calcMonthlyDues > 0 ? calcMonthlyDues : calcPortfolio,
+        totalDebt: calcMonthlyDues,
         netProfit: calcProfit
       });
     } catch (err) {
@@ -84,7 +86,12 @@ export function Dashboard({
 
   useEffect(() => {
     fetchDashTotals();
-  }, [fetchDashTotals]);
+    
+    // إعادة تحديث الأرقام فوراً عند التركيز على الشاشة أو العودة إليها
+    const onFocus = () => fetchDashTotals();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchDashTotals, totals]);
 
   const safeNetProfit = useMemo(() => {
     const net = liveTotals?.netProfit ?? totals.netProfit ?? totals.totalProfit ?? 0;
