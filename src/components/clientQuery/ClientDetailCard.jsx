@@ -60,9 +60,27 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
   const salePrice = Number(contract.sale ?? contract.sale_price ?? contract.salePrice ?? 0);
   const downPayment = Number(contract.down ?? contract.down_payment ?? contract.downPayment ?? 0);
 
-  const paidInstallmentsSum = (contract.installments || [])
-    .filter((inst) => inst.is_paid || inst.status === "paid")
-    .reduce((sum, inst) => sum + Number(inst.amount || contract.monthly || contract.monthly_installment || 0), 0);
+  // جمع الأقساط المسددة بمرونة تشمل جميع حقول سجلات السداد بجدول الاقساط
+  const paidInstallmentsSum = React.useMemo(() => {
+    const list = contract.installments || contract.payments || [];
+    if (!Array.isArray(list) || list.length === 0) return 0;
+
+    return list.reduce((sum, inst) => {
+      if (inst.is_paid === false || inst.status === "unpaid" || inst.status === "cancelled") {
+        return sum;
+      }
+      const amt = Number(
+        inst.amount ??
+        inst.amount_paid ??
+        inst.paid_amount ??
+        inst.payment_amount ??
+        contract.monthly ??
+        contract.monthly_installment ??
+        0
+      );
+      return sum + (isNaN(amt) ? 0 : amt);
+    }, 0);
+  }, [contract]);
 
   const totalCollected = downPayment + paidInstallmentsSum;
   const remainingPortfolio = Math.max(0, salePrice - totalCollected);
