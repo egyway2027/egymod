@@ -45,25 +45,11 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
     return () => { isMounted = false; };
   }, []);
 
-  // 💾 دالة حفظ تعديلات العقد المباشرة بسحابة Supabase وحساب الأقساط تلقائياً
+  // 💾 دالة حفظ تعديلات العقد المباشرة بسحابة Supabase
   const handleSaveInlineContract = async (updatedData) => {
     try {
       const contractId = updatedData.id || selectedContract?.id;
       if (!contractId) return;
-
-      const contractDateVal = updatedData.contract_date || updatedData.contractDate || updatedData.created_at || selectedContract?.contractDate;
-      let calculatedFirstInst = updatedData.first_installment_date || updatedData.firstInstallmentDate;
-
-      if (!calculatedFirstInst && contractDateVal) {
-        const d = new Date(contractDateVal);
-        if (!isNaN(d.getTime())) {
-          d.setMonth(d.getMonth() + 1);
-          calculatedFirstInst = d.toISOString().split("T")[0];
-        }
-      }
-
-      const gName = updatedData.guarantor_name || updatedData.guarantorName || updatedData.guarantor || "";
-      const gPhone = updatedData.guarantor_phone || updatedData.guarantorPhone || "";
 
       const payload = {
         client_name: updatedData.client_name || updatedData.clientName || updatedData.name,
@@ -73,10 +59,8 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
         cost_price: Number(updatedData.cost_price ?? updatedData.costPrice ?? updatedData.cost ?? 0),
         down_payment: Number(updatedData.down_payment ?? updatedData.downPayment ?? updatedData.down ?? 0),
         monthly_installment: Number(updatedData.monthly_installment ?? updatedData.monthlyInstallment ?? updatedData.monthly ?? 0),
-        guarantor_name: gName,
-        guarantor_phone: gPhone,
-        contract_date: contractDateVal,
-        first_installment_date: calculatedFirstInst || "",
+        guarantor_name: updatedData.guarantor_name || updatedData.guarantorName || "",
+        guarantor_phone: updatedData.guarantor_phone || updatedData.guarantorPhone || "",
         notes: updatedData.notes || ""
       };
 
@@ -87,24 +71,14 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
 
       if (error) throw error;
 
+      // 🔄 إعادة جلب البيانات لتثبيت التعديل بالسحابة
       const data = await fetchAllClientsContracts();
       setFetchedContracts(data || []);
 
       const refreshed = (data || []).find((c) => String(c.id) === String(contractId));
-      const mergedContract = {
-        ...(refreshed || updatedData),
-        ...payload,
-        guarantorName: gName,
-        guarantor_name: gName,
-        guarantorPhone: gPhone,
-        guarantor_phone: gPhone,
-        firstInstallmentDate: calculatedFirstInst,
-        first_installment_date: calculatedFirstInst
-      };
+      setSelectedContract(refreshed || updatedData);
 
-      setSelectedContract(mergedContract);
-
-      if (onUpdateContract) onUpdateContract(mergedContract);
+      if (onUpdateContract) onUpdateContract(refreshed || updatedData);
     } catch (err) {
       console.error("❌ خطأ في حفظ التعديلات سحابياً:", err);
       alert("حدث خطأ أثناء حفظ التعديلات بالسحابة");
@@ -118,37 +92,15 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   // تطبيع وتوحيد شكل البيانات للعمل مع الجداول المفصولة والقديمة
   const normalizedContracts = useMemo(() => {
     const listToUse = fetchedContracts.length > 0 ? fetchedContracts : contracts;
-    return (listToUse || []).map((c) => {
-      const contractDate = c.contractDate || c.contract_date || c.created_at || "";
-      let firstInst = c.first_installment_date || c.firstInstallmentDate || "";
-      if (!firstInst && contractDate) {
-        const d = new Date(contractDate);
-        if (!isNaN(d.getTime())) {
-          d.setMonth(d.getMonth() + 1);
-          firstInst = d.toISOString().split("T")[0];
-        }
-      }
-
-      const gName = c.guarantor_name || c.guarantorName || c.guarantor || "";
-      const gPhone = c.guarantor_phone || c.guarantorPhone || "";
-
-      return {
-        ...c,
-        id: c.id,
-        name: c.clientName || c.client_name || c.name || "عميل بدون اسم",
-        phone: c.clientPhone || c.client_phone || c.phone || "",
-        item: c.itemName || c.item_name || c.item || "",
-        contractDate,
-        contract_date: contractDate,
-        guarantorName: gName,
-        guarantor_name: gName,
-        guarantorPhone: gPhone,
-        guarantor_phone: gPhone,
-        firstInstallmentDate: firstInst,
-        first_installment_date: firstInst,
-        status: c.status || (c.is_deleted ? "archived" : "active")
-      };
-    });
+    return (listToUse || []).map((c) => ({
+      ...c,
+      id: c.id,
+      name: c.clientName || c.client_name || c.name || "عميل بدون اسم",
+      phone: c.clientPhone || c.client_phone || c.phone || "",
+      item: c.itemName || c.item_name || c.item || "",
+      contractDate: c.contractDate || c.contract_date || c.created_at || "",
+      status: c.status || (c.is_deleted ? "archived" : "active")
+    }));
   }, [fetchedContracts, contracts]);
 
   // إحصاءات الأعداد للتبويبات
