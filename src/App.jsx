@@ -29,7 +29,7 @@ import { useThemeAndLang } from "./hooks/useThemeAndLang";
 
 export function App() {
   const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
-  
+  const clientsList = [];
 
   // 🌐🎨 محرك اللغات الـ 15 والثيمات الـ 100
   const {
@@ -319,10 +319,10 @@ export function App() {
                 })}
               </section>
             </div>
-)}
-</>
+          )}
+        </>
 
-      {/* 📱 مركز الواتساب الذكي */}
+        {/* 📱 مركز الواتساب الذكي */}
       <WhatsAppHubModal
         isOpen={showWhatsAppModal}
         onClose={() => setShowWhatsAppModal(false)}
