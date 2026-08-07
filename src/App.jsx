@@ -59,7 +59,6 @@ export function App() {
         console.error("❌ خطأ أثناء جلب بيانات الصفحة الرئيسية:", err);
       }
     }
-    }
     loadDashboardData();
     return () => {
       isMounted = false;
