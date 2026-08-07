@@ -11,6 +11,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { ArrowRight, X, FileSpreadsheet, FileText, FolderArchive, Layers, Loader2 } from "lucide-react";
 import { filterContracts, findContractsByPhone } from "../../services/clientQueryService";
 import { fetchAllClientsContracts } from "../../services/clientFetchService";
+import { supabase } from "../../supabaseClient";
 import { AllClientsRegisterModal } from "./AllClientsRegisterModal";
 import { ArchivedContractsView } from "./ArchivedContractsView";
 import { ClientDetailCard } from "./ClientDetailCard";
