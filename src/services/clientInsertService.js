@@ -13,14 +13,15 @@ export async function insertClientContract(formData) {
         client_phone: formData.phone || formData.clientPhone,
         national_id: formData.nationalId || formData.national_id || null,
         address: formData.address || null,
-        guarantor_name: formData.guarantor || null,
-        guarantor_phone: formData.guarantorPhone || null,
+        guarantor_name: formData.guarantor || formData.guarantorName || null,
+        guarantor_phone: formData.guarantorPhone || formData.guarantor_phone || null,
         item_name: formData.item || formData.itemName,
         cost_price: Number(formData.cost || 0),
         sale_price: Number(formData.sale || 0),
         down_payment: Number(formData.down || 0),
         monthly_installment: Number(formData.monthly || 0),
         contract_date: formData.contractDate,
+        first_installment_date: formData.firstPayDate || formData.firstInstallmentDate || formData.first_installment_date || null,
         notes: formData.notes || "",
         status: "active"
       }
