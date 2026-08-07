@@ -1,24 +1,107 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Wallet, Users, CalendarClock, Search, Phone, MessageCircle, ArrowRight, Loader2 } from "lucide-react";
+import { supabase } from "../../supabaseClient";
 import { fetchOverdueDataFromCloud } from "../../services/overdueService";
 
 const fmtInt = (v) => Math.round(Number(v) || 0).toLocaleString();
 
-export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {}, t = {} }) {
+export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {}, t = {}, contracts = [], clientsList = [] }) {
   const [overdueRows, setOverdueRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all"); // 'all' | 'simple' | 'medium' | 'critical'
 
-  // جلب البيانات من السحابة
+  // 🔄 جلب وحساب المتأخرات ديناميكياً من السحابة
   const loadData = useCallback(async () => {
     setLoading(true);
-    const result = await fetchOverdueDataFromCloud();
-    if (result.success) {
-      setOverdueRows(result.data || []);
+    try {
+      let rawContracts = (contracts && contracts.length > 0) ? contracts : (clientsList && clientsList.length > 0) ? clientsList : null;
+
+      if (!rawContracts) {
+        const [contractsRes, installmentsRes] = await Promise.all([
+          supabase.from("contracts").select("*"),
+          supabase.from("installments").select("*")
+        ]);
+        const cData = contractsRes.data || [];
+        const iData = installmentsRes.data || [];
+        rawContracts = cData.map((c) => ({
+          ...c,
+          installments: iData.filter((i) => String(i.contract_id) === String(c.id))
+        }));
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const curYear = today.getFullYear();
+      const curMonth = today.getMonth();
+
+      const rows = [];
+      (rawContracts || []).forEach((c) => {
+        if (Boolean(c.is_deleted) || c.status === "archived") return;
+
+        const sale = Number(c.sale_price || c.salePrice || c.sale || c.total || 0);
+        const down = Number(c.down_payment || c.downPayment || c.down || 0);
+        const monthly = Number(c.monthly_installment || c.monthlyInstallment || c.monthly || 0);
+
+        const instArr = Array.isArray(c.installments) ? c.installments : (Array.isArray(c.payments) ? c.payments : []);
+        const paidFromInst = instArr
+          .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
+          .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+
+        const totalPaid = paidFromInst > 0 ? paidFromInst : Number(c.totalPaid || c.total_paid || 0);
+        const remainingDebt = Math.max(0, sale - down - totalPaid);
+
+        if (remainingDebt <= 0 || monthly <= 0) return;
+
+        let dueDate = null;
+        const unpaidInst = instArr.find((i) => !i.is_paid && i.status !== "paid" && Number(i.amount || 0) === 0 && (i.due_date || i.date));
+
+        if (unpaidInst) {
+          dueDate = new Date(unpaidInst.due_date || unpaidInst.date);
+        } else {
+          const startDate = c.start_date || c.created_at || c.contract_date;
+          const d = startDate ? new Date(startDate) : new Date();
+          const dayOfMonth = d.getDate() || 1;
+          dueDate = new Date(curYear, curMonth, dayOfMonth);
+        }
+        dueDate.setHours(0, 0, 0, 0);
+
+        const diffMs = today.getTime() - dueDate.getTime();
+        const daysLate = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        const paidThisMonth = instArr
+          .filter((i) => {
+            if (!i.is_paid && i.status !== "paid" && !(Number(i.amount) > 0)) return false;
+            const dateVal = i.paid_at || i.due_date || i.date || i.created_at;
+            if (!dateVal) return false;
+            const d = new Date(dateVal);
+            return d.getFullYear() === curYear && d.getMonth() === curMonth;
+          })
+          .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+
+        const isUnpaidThisMonth = paidThisMonth < Math.min(monthly, remainingDebt);
+
+        if (daysLate > 0 && isUnpaidThisMonth) {
+          rows.push({
+            id: c.id,
+            clientName: c.client_name || c.clientName || c.name || "عميل بدون اسم",
+            phone: c.client_phone || c.clientPhone || c.phone || "",
+            item: c.item_name || c.itemName || c.item || "سلعة بدون اسم",
+            guarantorName: c.guarantor_name || c.guarantorName || "",
+            guarantorPhone: c.guarantor_phone || c.guarantorPhone || "",
+            overdueAmount: Math.min(monthly, remainingDebt),
+            daysLate: daysLate
+          });
+        }
+      });
+
+      setOverdueRows(rows);
+    } catch (err) {
+      console.error("❌ خطأ في حساب المتأخرات:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, []);
+  }, [contracts, clientsList]);
 
   useEffect(() => {
     loadData();
