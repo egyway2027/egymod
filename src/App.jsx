@@ -126,6 +126,10 @@ export function App() {
   }, [clientsList]);
 
   const monthlyDues = useMemo(() => {
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth();
+
     return (clientsList || []).reduce((acc, curr) => {
       if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
 
@@ -134,15 +138,30 @@ export function App() {
       const monthly = Number(curr.monthly_installment || curr.monthlyInstallment || curr.monthly || 0);
 
       const instArr = Array.isArray(curr.installments) ? curr.installments : (Array.isArray(curr.payments) ? curr.payments : []);
+
       const paidFromInst = instArr
         .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
         .reduce((sum, i) => sum + Number(i.amount || 0), 0);
       const totalPaid = paidFromInst > 0 ? paidFromInst : Number(curr.totalPaid || curr.total_paid || 0);
 
       const remaining = Math.max(0, sale - down - totalPaid);
-
       if (remaining <= 0 || monthly <= 0) return acc;
-      return acc + Math.min(monthly, remaining);
+
+      // 🗓️ تجميع المبالغ المسددة خلال الشهر الحالي فقط
+      const paidThisMonth = instArr
+        .filter((i) => {
+          if (!i.is_paid && i.status !== "paid" && !(Number(i.amount) > 0)) return false;
+          const dateVal = i.paid_at || i.due_date || i.date || i.payDate || i.created_at;
+          if (!dateVal) return false;
+          const d = new Date(dateVal);
+          return d.getFullYear() === curYear && d.getMonth() === curMonth;
+        })
+        .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+
+      const requiredThisMonth = Math.min(monthly, remaining);
+      const netDueThisMonth = Math.max(0, requiredThisMonth - paidThisMonth);
+
+      return acc + netDueThisMonth;
     }, 0);
   }, [clientsList]);
 
