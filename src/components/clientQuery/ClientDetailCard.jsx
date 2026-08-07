@@ -44,16 +44,19 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
     color: themeStyles.subText || "#aaaaaa"
   };
 
-  const handleContractDateChange = (e) => {
-    const cDate = e.target.value;
+  const handleContractDateChange = (valOrEvent) => {
+    const cDate = typeof valOrEvent === "string" ? valOrEvent : valOrEvent?.target?.value || "";
     if (!cDate) {
-      setEditForm((prev) => ({ ...prev, contractDate: "", firstPayDate: "" }));
+      setEditForm((prev) => ({ ...prev, contractDate: "", contract_date: "", firstPayDate: "", first_installment_date: "" }));
       return;
     }
     const d = new Date(cDate);
-    d.setMonth(d.getMonth() + 1);
-    const firstPay = d.toISOString().split("T")[0];
-    setEditForm((prev) => ({ ...prev, contractDate: cDate, firstPayDate: firstPay }));
+    let firstPay = "";
+    if (!isNaN(d.getTime())) {
+      d.setMonth(d.getMonth() + 1);
+      firstPay = d.toISOString().split("T")[0];
+    }
+    setEditForm((prev) => ({ ...prev, contractDate: cDate, contract_date: cDate, firstPayDate: firstPay, first_installment_date: firstPay }));
   };
 
   // حساب المبالغ والماليات المحصلة والمتبقية بدقة محاسبية
@@ -119,14 +122,19 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
       }
 
       // 2. تحديث جدول العقود بالسحابة (contracts)
+      const gNameVal = editForm.guarantor || editForm.guarantor_name || editForm.guarantorName || "";
+      const gPhoneVal = editForm.guarantorPhone || editForm.guarantor_phone || "";
+      const cDateVal = editForm.contractDate || editForm.contract_date || "";
+      const fPayVal = editForm.firstPayDate || editForm.first_installment_date || "";
+
       if (contractId) {
         await supabase
           .from("contracts")
           .update({
             client_name: editForm.name,
             client_phone: editForm.phone,
-            guarantor_name: editForm.guarantor,
-            guarantor_phone: editForm.guarantorPhone,
+            guarantor_name: gNameVal,
+            guarantor_phone: gPhoneVal,
             item_name: editForm.item,
             item: editForm.item,
             cost: Number(editForm.cost || 0),
@@ -138,9 +146,9 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
             down_payment: Number(editForm.down || 0),
             monthly: Number(editForm.monthly || 0),
             monthly_installment: Number(editForm.monthly || 0),
-            contract_date: editForm.contractDate,
-            first_installment_date: editForm.firstPayDate,
-            start_date: editForm.contractDate,
+            contract_date: cDateVal,
+            first_installment_date: fPayVal,
+            start_date: cDateVal,
             notes: editForm.notes
           })
           .eq("id", contractId);
@@ -154,15 +162,21 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
         clientName: editForm.name,
         phone: editForm.phone,
         clientPhone: editForm.phone,
-        guarantor: editForm.guarantor,
-        guarantorPhone: editForm.guarantorPhone,
+        guarantor: gNameVal,
+        guarantor_name: gNameVal,
+        guarantorName: gNameVal,
+        guarantorPhone: gPhoneVal,
+        guarantor_phone: gPhoneVal,
         item: editForm.item,
         itemName: editForm.item,
         cost: Number(editForm.cost || 0),
         sale: Number(editForm.sale || 0),
         down: Number(editForm.down || 0),
         monthly: Number(editForm.monthly || 0),
-        contractDate: editForm.contractDate,
+        contractDate: cDateVal,
+        contract_date: cDateVal,
+        firstPayDate: fPayVal,
+        first_installment_date: fPayVal,
         notes: editForm.notes
       };
 
@@ -192,19 +206,36 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
           <button 
             type="button" 
             onClick={() => {
+              const gName = contract.guarantor || contract.guarantor_name || contract.guarantorName || contract.clients?.guarantor_name || "";
+              const gPhone = contract.guarantorPhone || contract.guarantor_phone || contract.clients?.guarantor_phone || "";
+              const cDate = contract.contractDate || contract.contract_date || contract.start_date || "";
+              let fPay = contract.firstPayDate || contract.first_installment_date || contract.firstInstallmentDate || "";
+              if (!fPay && cDate) {
+                const d = new Date(cDate);
+                if (!isNaN(d.getTime())) {
+                  d.setMonth(d.getMonth() + 1);
+                  fPay = d.toISOString().split("T")[0];
+                }
+              }
+
               setEditForm({
                 ...contract,
                 name: contract.name || contract.clientName || contract.client_name || "",
                 phone: contract.phone || contract.clientPhone || contract.client_phone || "",
-                guarantor: contract.guarantor || contract.guarantor_name || contract.clients?.guarantor_name || "",
-                guarantorPhone: contract.guarantorPhone || contract.guarantor_phone || contract.clients?.guarantor_phone || "",
+                guarantor: gName,
+                guarantor_name: gName,
+                guarantorName: gName,
+                guarantorPhone: gPhone,
+                guarantor_phone: gPhone,
                 item: contract.item || contract.itemName || contract.item_name || "",
                 cost: contract.cost ?? contract.cost_price ?? 0,
                 sale: contract.sale ?? contract.sale_price ?? contract.total ?? 0,
                 down: contract.down ?? contract.down_payment ?? 0,
                 monthly: contract.monthly ?? contract.monthly_installment ?? 0,
-                contractDate: contract.contractDate || contract.contract_date || contract.start_date || "",
-                firstPayDate: contract.firstPayDate || contract.first_pay_date || "",
+                contractDate: cDate,
+                contract_date: cDate,
+                firstPayDate: fPay,
+                first_installment_date: fPay,
                 notes: contract.notes || ""
               });
               setIsEditing(true);
@@ -235,7 +266,7 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
         </label>
         <label style={labelStyle}>
           <span>{t.guarantorNameLabel || (isEN ? "Guarantor Name" : "اسم الضامن")}</span>
-          <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.guarantor : (contract.guarantor || "-")} onChange={(e) => setEditForm({ ...editForm, guarantor: e.target.value })} />
+          <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.guarantor : (contract.guarantor || contract.guarantor_name || contract.guarantorName || "-")} onChange={(e) => setEditForm({ ...editForm, guarantor: e.target.value, guarantor_name: e.target.value, guarantorName: e.target.value })} />
         </label>
         <label style={labelStyle}>
           <span>{t.guarantorPhoneLabel || (isEN ? "Guarantor Phone" : "تليفون الضامن")}</span>
