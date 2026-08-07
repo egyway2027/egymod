@@ -7,9 +7,10 @@
  * =========================================================
  */
 
-import React, { useState, useMemo } from "react";
-import { ArrowRight, X, FileSpreadsheet, FileText, FolderArchive, Layers } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { ArrowRight, X, FileSpreadsheet, FileText, FolderArchive, Layers, Loader2 } from "lucide-react";
 import { filterContracts, findContractsByPhone } from "../../services/clientQueryService";
+import { fetchAllClientsContracts } from "../../services/clientFetchService";
 import { AllClientsRegisterModal } from "./AllClientsRegisterModal";
 import { ArchivedContractsView } from "./ArchivedContractsView";
 import { ClientDetailCard } from "./ClientDetailCard";
@@ -22,13 +23,35 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedContract, setSelectedContract] = useState(null);
 
+  // 🔄 الجلب المباشر والتخزين الداخلي
+  const [fetchedContracts, setFetchedContracts] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        setLoadingData(true);
+        const data = await fetchAllClientsContracts();
+        if (isMounted) setFetchedContracts(data || []);
+      } catch (err) {
+        console.error("❌ خطأ أثناء جلب عقود الاستعلام:", err);
+      } finally {
+        if (isMounted) setLoadingData(false);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, []);
+
   // التحكم في نافذة العقود المتعددة
   const [multiContractList, setMultiContractList] = useState([]);
   const [isMultiModalOpen, setIsMultiModalOpen] = useState(false);
 
   // تطبيع وتوحيد شكل البيانات للعمل مع الجداول المفصولة والقديمة
   const normalizedContracts = useMemo(() => {
-    return (contracts || []).map((c) => ({
+    const listToUse = fetchedContracts.length > 0 ? fetchedContracts : contracts;
+    return (listToUse || []).map((c) => ({
       ...c,
       id: c.id,
       name: c.clientName || c.client_name || c.name || "عميل بدون اسم",
@@ -197,6 +220,13 @@ const handleSelectSearchItem = (contract) => {
   }}
 />
           </div>
+
+          {/* LOADER INDICATOR */}
+          {loadingData && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px", color: themeStyles.accentGold || "#e8cd9c", fontSize: "13px", fontWeight: 700 }}>
+              <Loader2 size={18} className="animate-spin" /> جاري جلب العقود من السحابة...
+            </div>
+          )}
 
           {/* SUGGESTIONS LIST */}
           {searchQuery && !selectedContract && (
