@@ -110,12 +110,12 @@ export function DeleteClientScreen({
       if (actionType === "soft_delete") {
         await supabase
           .from("contracts")
-          .update({ status: "deleted", is_deleted: true })
+          .update({ status: "deleted" })
           .eq("id", contractId);
       } else if (actionType === "restore") {
         await supabase
           .from("contracts")
-          .update({ status: "active", is_deleted: false })
+          .update({ status: "active" })
           .eq("id", contractId);
       } else if (actionType === "permanent_delete") {
         // 1) حذف كافة الأقساط المرتبطة بالعقد أولاً لتفادي تعارض القيود (Foreign Key Constraints)
