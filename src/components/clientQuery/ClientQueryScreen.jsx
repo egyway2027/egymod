@@ -44,6 +44,46 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
     return () => { isMounted = false; };
   }, []);
 
+  // 💾 دالة حفظ تعديلات العقد المباشرة بسحابة Supabase
+  const handleSaveInlineContract = async (updatedData) => {
+    try {
+      const contractId = updatedData.id || selectedContract?.id;
+      if (!contractId) return;
+
+      const payload = {
+        client_name: updatedData.client_name || updatedData.clientName || updatedData.name,
+        client_phone: updatedData.client_phone || updatedData.clientPhone || updatedData.phone,
+        item_name: updatedData.item_name || updatedData.itemName || updatedData.item,
+        sale_price: Number(updatedData.sale_price ?? updatedData.salePrice ?? updatedData.sale ?? 0),
+        cost_price: Number(updatedData.cost_price ?? updatedData.costPrice ?? updatedData.cost ?? 0),
+        down_payment: Number(updatedData.down_payment ?? updatedData.downPayment ?? updatedData.down ?? 0),
+        monthly_installment: Number(updatedData.monthly_installment ?? updatedData.monthlyInstallment ?? updatedData.monthly ?? 0),
+        guarantor_name: updatedData.guarantor_name || updatedData.guarantorName || "",
+        guarantor_phone: updatedData.guarantor_phone || updatedData.guarantorPhone || "",
+        notes: updatedData.notes || ""
+      };
+
+      const { error } = await supabase
+        .from("contracts")
+        .update(payload)
+        .eq("id", contractId);
+
+      if (error) throw error;
+
+      // 🔄 إعادة جلب البيانات لتثبيت التعديل بالسحابة
+      const data = await fetchAllClientsContracts();
+      setFetchedContracts(data || []);
+
+      const refreshed = (data || []).find((c) => String(c.id) === String(contractId));
+      setSelectedContract(refreshed || updatedData);
+
+      if (onUpdateContract) onUpdateContract(refreshed || updatedData);
+    } catch (err) {
+      console.error("❌ خطأ في حفظ التعديلات سحابياً:", err);
+      alert("حدث خطأ أثناء حفظ التعديلات بالسحابة");
+    }
+  };
+
   // التحكم في نافذة العقود المتعددة
   const [multiContractList, setMultiContractList] = useState([]);
   const [isMultiModalOpen, setIsMultiModalOpen] = useState(false);
@@ -60,7 +100,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
       contractDate: c.contractDate || c.contract_date || c.created_at || "",
       status: c.status || (c.is_deleted ? "archived" : "active")
     }));
-  }, [contracts]);
+  }, [fetchedContracts, contracts]);
 
   // إحصاءات الأعداد للتبويبات
   const activeCount = useMemo(() => filterContracts(normalizedContracts, "", false).length, [normalizedContracts]);
@@ -257,10 +297,7 @@ const handleSelectSearchItem = (contract) => {
           {selectedContract && (
             <ClientDetailCard
               contract={selectedContract}
-              onSaveUpdate={(updated) => {
-                if (onUpdateContract) onUpdateContract(updated);
-                setSelectedContract(updated);
-              }}
+              onSaveUpdate={handleSaveInlineContract}
               t={t}
               themeStyles={themeStyles}
             />
