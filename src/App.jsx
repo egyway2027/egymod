@@ -103,31 +103,7 @@ export function App() {
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
 
-      {/* 1. شاشة إضافة عميل */}
-      {currentScreen === "addClient" && (
-        <AddClientScreen
-          onSuccess={() => {
-            setSuccessModal({
-              open: true,
-              title: "تمت العملية بنجاح",
-              msg: "تم حفظ بيانات العقد بنجاح بالسحابة!"
-            });
-            handleBack();
-          }}
-          onBack={handleBack}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {/* 2. شاشة الاستعلام عن عميل */}
-      {currentScreen === "clientQuery" && (
-        <ClientQueryScreen
-          onBack={handleBack}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
+      
 
       {/* 3. شاشة سداد الأقساط */}
       {currentScreen === "pay" && (
