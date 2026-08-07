@@ -28,53 +28,43 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   const [fetchedContracts, setFetchedContracts] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // 📝 حالة نافذة التعديل والحفظ السحابي
-  const [editClient, setEditClient] = useState(null);
-  const [loadingSave, setLoadingSave] = useState(false);
-
-  // 💾 دالة حفظ تعديلات العقد سحابياً
-  const handleSaveEdit = async (e) => {
-    e.preventDefault();
-    if (!editClient) return;
-    setLoadingSave(true);
+  // 💾 دالة حفظ تعديلات البطاقة الأساسية مباشرة بداخل سحابة Supabase
+  const handleSaveInlineContract = async (updatedData) => {
     try {
+      const contractId = updatedData.id || selectedContract?.id;
+      if (!contractId) return;
+
+      const payload = {
+        client_name: updatedData.client_name || updatedData.clientName || updatedData.name,
+        client_phone: updatedData.client_phone || updatedData.clientPhone || updatedData.phone,
+        item_name: updatedData.item_name || updatedData.itemName || updatedData.item,
+        sale_price: Number(updatedData.sale_price ?? updatedData.salePrice ?? updatedData.sale ?? 0),
+        cost_price: Number(updatedData.cost_price ?? updatedData.costPrice ?? updatedData.cost ?? 0),
+        down_payment: Number(updatedData.down_payment ?? updatedData.downPayment ?? updatedData.down ?? 0),
+        monthly_installment: Number(updatedData.monthly_installment ?? updatedData.monthlyInstallment ?? updatedData.monthly ?? 0),
+        guarantor_name: updatedData.guarantor_name || updatedData.guarantorName || "",
+        guarantor_phone: updatedData.guarantor_phone || updatedData.guarantorPhone || "",
+        notes: updatedData.notes || ""
+      };
+
       const { error } = await supabase
         .from("contracts")
-        .update({
-          client_name: editClient.client_name,
-          client_phone: editClient.client_phone,
-          item_name: editClient.item_name,
-          sale_price: Number(editClient.sale_price || 0),
-          cost_price: Number(editClient.cost_price || 0),
-          down_payment: Number(editClient.down_payment || 0),
-          monthly_installment: Number(editClient.monthly_installment || 0),
-          guarantor_name: editClient.guarantor_name || "",
-          guarantor_phone: editClient.guarantor_phone || ""
-        })
-        .eq("id", editClient.id);
+        .update(payload)
+        .eq("id", contractId);
 
       if (error) throw error;
 
+      // 🔄 إعادة جلب العقود سحابياً لتثبيت البيانات المعدلة
       const data = await fetchAllClientsContracts();
       setFetchedContracts(data || []);
 
-      if (selectedContract && selectedContract.id === editClient.id) {
-        setSelectedContract((prev) => ({
-          ...prev,
-          ...editClient,
-          name: editClient.client_name,
-          phone: editClient.client_phone,
-          item: editClient.item_name
-        }));
-      }
+      const refreshed = (data || []).find((c) => String(c.id) === String(contractId));
+      setSelectedContract(refreshed || updatedData);
 
-      if (onUpdateContract) onUpdateContract(editClient);
-      setEditClient(null);
+      if (onUpdateContract) onUpdateContract(refreshed || updatedData);
     } catch (err) {
-      console.error("❌ خطأ في حفظ التعديلات:", err);
-      alert("حدث خطأ أثناء حفظ التعديلات سحابياً");
-    } finally {
-      setLoadingSave(false);
+      console.error("❌ خطأ في حفظ التعديلات سحابياً:", err);
+      alert("حدث خطأ أثناء حفظ التعديلات بالسحابة");
     }
   };
 
