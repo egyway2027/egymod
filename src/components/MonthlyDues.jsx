@@ -37,38 +37,52 @@ export function MonthlyDuesScreen({
   const dataRows = rows && rows.length > 0 ? rows : clientsList;
 
   const processedRows = useMemo(() => {
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth();
+
     return (dataRows || [])
       .map((r) => {
-        const sale = Number(r.total ?? r.sale ?? r.salePrice ?? r.sale_price ?? 0);
-        const down = Number(r.down_payment ?? r.down ?? r.downPayment ?? 0);
-        const totalPaid = Number(r.totalPaid ?? r.total_paid ?? r.paidAmount ?? r.paid_amount ?? 0);
+        const sale = Number(r.sale_price || r.salePrice || r.sale || r.total || 0);
+        const down = Number(r.down_payment || r.downPayment || r.down || 0);
 
-        const name = r.name || r.clientName || r.client_name || "عميل بدون اسم";
-        const item = r.item || r.itemName || r.item_name || "سلعة بدون اسم";
-        const phone = r.phone || r.clientPhone || r.client_phone || "";
+        const instArr = Array.isArray(r.installments) ? r.installments : (Array.isArray(r.payments) ? r.payments : []);
+        const paidFromInst = instArr
+          .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
+          .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+        const totalPaid = paidFromInst > 0 ? paidFromInst : Number(r.totalPaid || r.total_paid || r.paidAmount || 0);
 
-        const remainingCalculated = Math.max(0, sale - down - totalPaid);
-        const remaining = Number(r.remaining ?? r.remainingAmount ?? r.remaining_amount ?? remainingCalculated);
-        const monthly = Number(r.monthly_installment ?? r.monthlyInstallment ?? r.monthly ?? 0);
+        const name = r.client_name || r.clientName || r.name || "عميل بدون اسم";
+        const item = r.item_name || r.itemName || r.item || "سلعة بدون اسم";
+        const phone = r.client_phone || r.clientPhone || r.phone || "";
 
-        return { ...r, name, item, phone, remaining, monthly, sale, down, totalPaid };
+        const remaining = Math.max(0, sale - down - totalPaid);
+        const monthly = Number(r.monthly_installment || r.monthlyInstallment || r.monthly || 0);
+
+        return { ...r, name, item, phone, remaining, monthly, sale, down, totalPaid, instArr };
       })
       .filter((r) => (r.status === "active" || !r.status) && !Boolean(r.is_deleted) && r.remaining > 0 && r.monthly > 0)
       .map((r) => {
         const monthlyReq = Math.round(Math.min(r.monthly, r.remaining));
-        const debt = r.debtAmount !== undefined && Number(r.debtAmount) > 0 ? Math.round(Number(r.debtAmount)) : monthlyReq;
-        let status = "unpaid";
-        let paidThisMonth = 0;
 
-        if (debt <= 0) {
+        // 🗓️ حساب التحصيلات الفعلية المسددة لهذا العقد بداخل الشهر والسنة الحاليين
+        const paidThisMonth = (r.instArr || [])
+          .filter((i) => {
+            if (!i.is_paid && i.status !== "paid" && !(Number(i.amount) > 0)) return false;
+            const dateVal = i.paid_at || i.due_date || i.date || i.payDate || i.created_at;
+            if (!dateVal) return false;
+            const d = new Date(dateVal);
+            return d.getFullYear() === curYear && d.getMonth() === curMonth;
+          })
+          .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+
+        let status = "unpaid";
+        if (paidThisMonth >= monthlyReq) {
           status = "paid";
-          paidThisMonth = monthlyReq;
-        } else if (debt < monthlyReq) {
+        } else if (paidThisMonth > 0) {
           status = "partial";
-          paidThisMonth = monthlyReq - debt;
         } else {
           status = "unpaid";
-          paidThisMonth = 0;
         }
 
         return {
