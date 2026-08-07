@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { CustomDatePicker } from "./CustomDatePicker";
-
+import { insertClientContract } from "../services/clientInsertService";
 const emptyForm = {
   name: "",
   phone: "",
@@ -24,7 +24,7 @@ const fmtCleanInt = (val) => {
   return String(num);
 };
 
-export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
+export function AddClientScreen({ onSuccess, onBack, t, themeStyles }) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
 
@@ -70,27 +70,31 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
     }
     setError("");
 
-    if (onSave) {
+    try {
       const costNum = Math.round(parseFloat(form.cost) || 0);
       const saleNum = Math.round(parseFloat(form.sale) || 0);
       const downNum = Math.round(parseFloat(form.down) || 0);
       const monthlyNum = Math.round(parseFloat(form.monthly) || 0);
 
-      onSave({
-        ...form,
-        clientName: form.name,
-        clientPhone: form.phone,
-        national_id: form.nationalId,
+      await insertClientContract({
+        name: form.name,
+        phone: form.phone,
+        nationalId: form.nationalId,
         address: form.address,
-        itemName: form.item,
+        guarantor: form.guarantor,
+        guarantorPhone: form.guarantorPhone,
+        item: form.item,
         cost: costNum,
         sale: saleNum,
-        total: saleNum,
         down: downNum,
-        downPayment: downNum,
         monthly: monthlyNum,
-        monthlyInstallment: monthlyNum
+        contractDate: form.contractDate,
+        notes: form.notes
       });
+
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      setError("حدث خطأ أثناء حفظ البيانات بالسحابة: " + err.message);
     }
   }
 
