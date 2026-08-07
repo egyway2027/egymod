@@ -24,37 +24,37 @@ export default function InstallmentsScreen({
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
-  // 🔄 جلب العقود والأقساط بشكل منفصل ودمجهما برمجياً لضمان تحديث السجلات لحظياً
+  // 🔄 جلب الجداول الثلاثة بشكل مستقل كلياً لتفادي أخطاء الربط بالسحابة ودمجها برمجياً
   const fetchLocalContracts = useCallback(async () => {
     setLoading(true);
     try {
-      // 1️⃣ جلب العقود مع بيانات العملاء
-      const { data: contractsData, error: contractsErr } = await supabase
-        .from("contracts")
-        .select("*, clients(*)")
-        .order("created_at", { ascending: false });
+      const [contractsRes, clientsRes, installmentsRes] = await Promise.all([
+        supabase.from("contracts").select("*").order("created_at", { ascending: false }),
+        supabase.from("clients").select("*"),
+        supabase.from("installments").select("*").order("created_at", { ascending: true })
+      ]);
 
-      // 2️⃣ جلب جميع عمليات السداد المحدثة مباشرة من جدول الأقساط
-      const { data: installmentsData } = await supabase
-        .from("installments")
-        .select("*")
-        .order("created_at", { ascending: true });
+      const contractsData = contractsRes.data || [];
+      const clientsData = clientsRes.data || [];
+      const installmentsData = installmentsRes.data || [];
 
-      if (!contractsErr && contractsData) {
-        // 3️⃣ دمج الأقساط داخل كل عقد بحسب contract_id
-        const mergedContracts = contractsData.map((contract) => {
-          const matchedInstallments = (installmentsData || []).filter(
-            (inst) => String(inst.contract_id) === String(contract.id)
-          );
-          return {
-            ...contract,
-            installments: matchedInstallments
-          };
-        });
-        setLocalContracts(mergedContracts);
-      } else if (propContracts.length > 0) {
-        setLocalContracts(propContracts);
-      }
+      const mergedContracts = contractsData.map((contract) => {
+        const matchedClient = clientsData.find(
+          (cl) => String(cl.id) === String(contract.client_id)
+        ) || contract.clients || {};
+
+        const matchedInstallments = installmentsData.filter(
+          (inst) => String(inst.contract_id) === String(contract.id)
+        );
+
+        return {
+          ...contract,
+          clients: matchedClient,
+          installments: matchedInstallments
+        };
+      });
+
+      setLocalContracts(mergedContracts);
     } catch (err) {
       console.error("❌ خطأ في جلب بيانات سداد الأقساط:", err);
       if (propContracts.length > 0) setLocalContracts(propContracts);
