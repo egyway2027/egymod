@@ -25,7 +25,7 @@ const fmtCleanInt = (val) => {
   return String(num);
 };
 
-export function AddClientScreen({ onSuccess, onBack, t, themeStyles }) {
+export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} }) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
 
@@ -99,17 +99,19 @@ export function AddClientScreen({ onSuccess, onBack, t, themeStyles }) {
     }
   }
 
+  const safeTheme = themeStyles || {};
+
   const inputStyle = {
     width: "100%",
-    background: themeStyles.inputBg || "#1b1b1d",
-    border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}`,
-    borderRadius: themeStyles.borderRadius || "10px",
+    background: safeTheme.inputBg || "#1b1b1d",
+    border: `${safeTheme.borderWidth || "1px"} solid ${safeTheme.border || "#333333"}`,
+    borderRadius: safeTheme.borderRadius || "10px",
     padding: "12px 14px",
-    color: themeStyles.text || "#ffffff",
+    color: safeTheme.text || "#ffffff",
     fontSize: "14px",
     outline: "none",
     fontFamily: "inherit",
-    boxShadow: themeStyles.inputShadow || "none",
+    boxShadow: safeTheme.inputShadow || "none",
     transition: "all 0.25s ease",
     boxSizing: "border-box"
   };
@@ -120,17 +122,17 @@ export function AddClientScreen({ onSuccess, onBack, t, themeStyles }) {
     gap: "6px",
     fontSize: "13px",
     fontWeight: 700,
-    color: themeStyles.subText || "#aaaaaa",
+    color: safeTheme.subText || "#aaaaaa",
     boxSizing: "border-box"
   };
 
   const sectionLabelStyle = {
     fontSize: "13.5px",
     fontWeight: 800,
-    color: themeStyles.accentGold || "#e07a5f",
+    color: safeTheme.accentGold || "#e07a5f",
     marginTop: "16px",
     marginBottom: "12px",
-    borderBottom: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}`,
+    borderBottom: `${safeTheme.borderWidth || "1px"} solid ${safeTheme.border || "#333333"}`,
     paddingBottom: "8px"
   };
 
@@ -243,10 +245,11 @@ export function AddClientScreen({ onSuccess, onBack, t, themeStyles }) {
               <span>{t.firstDueDateLabel || (isEN ? "First Due Date (Auto +1 Mo)" : "تاريخ أول قسط (تلقائي + شهر)")}</span>
               <CustomDatePicker
                 value={form.firstPayDate}
+                onChange={() => {}}
                 isEN={isEN}
                 placeholder={isEN ? "YYYY-MM-DD" : "سنة - شهر - يوم"}
-                themeStyles={themeStyles}
-                inputStyle={{ ...inputStyle, color: themeStyles.subText || "#888888" }}
+                themeStyles={safeTheme}
+                inputStyle={{ ...inputStyle, color: safeTheme.subText || "#888888" }}
                 disabled
               />
             </label>
