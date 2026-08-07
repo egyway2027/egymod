@@ -463,6 +463,60 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
           </button>
         </div>
       </div>
+
+      {/* 📜 نافذة جميع سجلات السحوبات والسلف */}
+      {showAllWithdrawalsModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: 20, padding: 24, width: "100%", maxWidth: 700, maxHeight: "85vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <span style={{ fontWeight: 800, fontSize: 18, color: themeStyles.accentGold || "#d69a5f" }}>سجل جميع السحوبات والسلف للشركاء</span>
+              <X style={{ cursor: "pointer", color: themeStyles.subText || "#888888" }} onClick={() => setShowAllWithdrawalsModal(false)} />
+            </div>
+
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text || "#ffffff", textAlign: "right", fontSize: "13px" }}>
+                <thead>
+                  <tr style={{ background: themeStyles.inputBg || "#1a1a1a", color: themeStyles.accentGold || "#d69a5f", borderBottom: `1px solid ${themeStyles.border || "#333333"}` }}>
+                    <th style={{ padding: "10px" }}>التاريخ</th>
+                    <th style={{ padding: "10px" }}>الشريك</th>
+                    <th style={{ padding: "10px" }}>المبلغ</th>
+                    <th style={{ padding: "10px" }}>البيان / السبب</th>
+                    <th style={{ padding: "10px", textAlign: "center" }}>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {withdrawalsLog.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ padding: "20px", textAlign: "center", color: themeStyles.subText || "#888888" }}>لا توجد سجلات سحوبات مسجلة.</td>
+                    </tr>
+                  ) : (
+                    withdrawalsLog.map((w) => (
+                      <tr key={w.id} style={{ borderBottom: `1px solid ${themeStyles.border || "#262626"}` }}>
+                        <td style={{ padding: "10px" }}>{w.date}</td>
+                        <td style={{ padding: "10px", fontWeight: 800 }}>{w.partner_name}</td>
+                        <td style={{ padding: "10px", fontWeight: 800, color: "#f87171" }}>{Number(w.amount).toLocaleString()} ج.م</td>
+                        <td style={{ padding: "10px", color: themeStyles.subText || "#888888" }}>{w.notes || "—"}</td>
+                        <td style={{ padding: "10px", textAlign: "center" }}>
+                          <span style={{
+                            padding: "3px 8px",
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            background: w.is_settled ? "#143820" : "#3e1c24",
+                            color: w.is_settled ? "#4ade80" : "#f87171"
+                          }}>
+                            {w.is_settled ? "تمت التسوية" : "سلفة قائمة"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
