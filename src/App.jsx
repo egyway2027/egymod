@@ -11,7 +11,7 @@ import {
   UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, Power, TrendingUp, Calculator, Globe, Palette, X, MessageSquare, FolderKanban, CheckCircle2
 } from "lucide-react";
 import { fetchAllClientsContracts } from "./services/clientFetchService";
-
+import { supabase } from "./supabaseClient";
 import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
@@ -34,13 +34,31 @@ export function App() {
     let isMounted = true;
     async function loadDashboardData() {
       try {
-        const data = await fetchAllClientsContracts();
+        const [contractsRes, installmentsRes] = await Promise.all([
+          supabase.from("contracts").select("*").order("created_at", { ascending: false }),
+          supabase.from("installments").select("*").order("created_at", { ascending: true })
+        ]);
+
+        const contractsData = contractsRes.data || [];
+        const installmentsData = installmentsRes.data || [];
+
+        const merged = contractsData.map((contract) => {
+          const matchedInst = installmentsData.filter(
+            (inst) => String(inst.contract_id) === String(contract.id)
+          );
+          return {
+            ...contract,
+            installments: matchedInst
+          };
+        });
+
         if (isMounted) {
-          setClientsList(data || []);
+          setClientsList(merged);
         }
       } catch (err) {
         console.error("❌ خطأ أثناء جلب بيانات الصفحة الرئيسية:", err);
       }
+    }
     }
     loadDashboardData();
     return () => {
@@ -94,12 +112,17 @@ export function App() {
 
   const netProfit = useMemo(() => {
     return (clientsList || []).reduce((acc, curr) => {
-      const sale = Number(curr.sale ?? curr.salePrice ?? curr.sale_price ?? 0);
-      const cost = Number(curr.cost ?? curr.costPrice ?? curr.cost_price ?? 0);
-      const down = Number(curr.down ?? curr.downPayment ?? curr.down_payment ?? 0);
-      const totalPaid = Number(curr.totalPaid ?? curr.total_paid ?? 0);
+      const sale = Number(curr.sale_price ?? curr.salePrice ?? curr.sale ?? 0);
+      const cost = Number(curr.cost_price ?? curr.costPrice ?? curr.cost ?? 0);
+      const down = Number(curr.down_payment ?? curr.downPayment ?? curr.down ?? 0);
+
+      const instArr = Array.isArray(curr.installments) ? curr.installments : (Array.isArray(curr.payments) ? curr.payments : []);
+      const totalPaidInst = instArr
+        .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
+        .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+
       if (sale <= 0) return acc;
-      return acc + Math.round((down + totalPaid) * ((sale - cost) / sale));
+      return acc + Math.round((down + totalPaidInst) * ((sale - cost) / sale));
     }, 0);
   }, [clientsList]);
 
@@ -279,9 +302,8 @@ export function App() {
                   const paidFromInst = instArr
                     .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
                     .reduce((sum, i) => sum + Number(i.amount || 0), 0);
-                  const totalPaid = paidFromInst > 0 ? paidFromInst : Number(curr.totalPaid || curr.total_paid || 0);
 
-                  return acc + Math.max(0, sale - down - totalPaid);
+                  return acc + Math.max(0, sale - down - paidFromInst);
                 }, 0).toLocaleString()} {t.currency}
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
