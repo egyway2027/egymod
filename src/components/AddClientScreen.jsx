@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { CustomDatePicker } from "./CustomDatePicker";
 import { insertClientContract } from "../services/clientInsertService";
+
 const emptyForm = {
   name: "",
   phone: "",
@@ -62,7 +63,7 @@ export function AddClientScreen({ onSuccess, onBack, t, themeStyles }) {
     setForm((prev) => ({ ...prev, contractDate: cDate, firstPayDate: firstPay }));
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     if (!form.name || !form.item || !form.cost || !form.sale || !form.contractDate) {
       setError(t.fillRequiredFieldsError || (isEN ? "Please fill all required fields and contract date!" : "يرجى ملء الحقول الأساسية وتاريخ التعاقد!"));
@@ -173,7 +174,7 @@ export function AddClientScreen({ onSuccess, onBack, t, themeStyles }) {
               <span>{t.clientPhoneLabel || (isEN ? "Client Phone *" : "تليفون العميل *")}</span>
               <input style={inputStyle} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="01xxxxxxxxx" required />
             </label>
-         <label style={labelStyle}>
+            <label style={labelStyle}>
               <span>{t.nationalIdLabel || (isEN ? "National ID" : "الرقم القومي")}</span>
               <input style={inputStyle} value={form.nationalId} onChange={(e) => setForm({ ...form, nationalId: e.target.value })} placeholder={t.nationalIdPlaceholder || (isEN ? "National ID (optional)..." : "الرقم القومي (اختياري)...")} />
             </label>
