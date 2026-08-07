@@ -120,7 +120,7 @@ export function App() {
   const currentLangObj = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
 
   const netProfit = useMemo(() => {
-    return (clientsList || []).reduce((acc, curr) => {
+    const totalCollectedProfits = (clientsList || []).reduce((acc, curr) => {
       const sale = Number(curr.sale_price ?? curr.salePrice ?? curr.sale ?? 0);
       const cost = Number(curr.cost_price ?? curr.costPrice ?? curr.cost ?? 0);
       const down = Number(curr.down_payment ?? curr.downPayment ?? curr.down ?? 0);
@@ -133,6 +133,11 @@ export function App() {
       if (sale <= 0) return acc;
       return acc + Math.round((down + totalPaidInst) * ((sale - cost) / sale));
     }, 0);
+
+    const allDistributions = clientsList?.[0]?.distributions || [];
+    const totalDistributedSoFar = allDistributions.reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+    return Math.max(0, totalCollectedProfits - totalDistributedSoFar);
   }, [clientsList]);
 
   const monthlyDues = useMemo(() => {
