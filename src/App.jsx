@@ -223,9 +223,11 @@ export function App() {
         />
       )}
 
-      {/* 📌 شاشة المتأخرين عن السداد */}
+      {/* 📌 شاشة المتأخرين عن السداد المربوطة بالبيانات */}
       {currentScreen === "overdue" && (
         <OverdueScreen
+          contracts={clientsList}
+          clientsList={clientsList}
           onBack={handleBack}
           t={t}
           themeStyles={themeStyles}
