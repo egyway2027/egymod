@@ -6,7 +6,7 @@ import { supabase } from "../supabaseClient";
 export async function fetchAllClientsContracts() {
   const { data, error } = await supabase
     .from("contracts")
-    .select("*")
+    .select("*, installments(*)")
     .order("id", { ascending: false });
 
   if (error) {
@@ -29,6 +29,7 @@ export async function fetchAllClientsContracts() {
     monthly: Number(row.monthly_installment || 0),
     contractDate: row.contract_date,
     notes: row.notes || "",
-    status: row.status
+    status: row.status,
+    installments: row.installments || []
   }));
 }
