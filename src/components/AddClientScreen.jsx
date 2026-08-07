@@ -5,6 +5,8 @@ import { CustomDatePicker } from "./CustomDatePicker";
 const emptyForm = {
   name: "",
   phone: "",
+  nationalId: "",
+  address: "",
   guarantor: "",
   guarantorPhone: "",
   item: "",
@@ -78,6 +80,8 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
         ...form,
         clientName: form.name,
         clientPhone: form.phone,
+        national_id: form.nationalId,
+        address: form.address,
         itemName: form.item,
         cost: costNum,
         sale: saleNum,
@@ -164,6 +168,14 @@ export function AddClientScreen({ onSave, onBack, t = {}, themeStyles = {} }) {
             <label style={labelStyle}>
               <span>{t.clientPhoneLabel || (isEN ? "Client Phone *" : "تليفون العميل *")}</span>
               <input style={inputStyle} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="01xxxxxxxxx" required />
+            </label>
+         <label style={labelStyle}>
+              <span>{t.nationalIdLabel || (isEN ? "National ID" : "الرقم القومي")}</span>
+              <input style={inputStyle} value={form.nationalId} onChange={(e) => setForm({ ...form, nationalId: e.target.value })} placeholder={t.nationalIdPlaceholder || (isEN ? "National ID (optional)..." : "الرقم القومي (اختياري)...")} />
+            </label>
+            <label style={labelStyle}>
+              <span>{t.addressLabel || (isEN ? "Address" : "العنوان")}</span>
+              <input style={inputStyle} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder={t.addressPlaceholder || (isEN ? "Client address (optional)..." : "عنوان العميل (اختياري)...")} />
             </label>
             <label style={labelStyle}>
               <span>{t.guarantorNameLabel || (isEN ? "Guarantor Name" : "اسم الضامن")}</span>
