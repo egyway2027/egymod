@@ -41,13 +41,15 @@ export function App() {
     let isMounted = true;
     async function loadDashboardData() {
       try {
-        const [contractsRes, installmentsRes] = await Promise.all([
+        const [contractsRes, installmentsRes, distRes] = await Promise.all([
           supabase.from("contracts").select("*").order("created_at", { ascending: false }),
-          supabase.from("installments").select("*").order("created_at", { ascending: true })
+          supabase.from("installments").select("*").order("created_at", { ascending: true }),
+          supabase.from("distributions_log").select("*")
         ]);
 
         const contractsData = contractsRes.data || [];
         const installmentsData = installmentsRes.data || [];
+        const distData = distRes.data || [];
 
         const merged = contractsData.map((contract) => {
           const matchedInst = installmentsData.filter(
@@ -55,7 +57,8 @@ export function App() {
           );
           return {
             ...contract,
-            installments: matchedInst
+            installments: matchedInst,
+            distributions: distData
           };
         });
 
