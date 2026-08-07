@@ -311,18 +311,17 @@ export function App() {
                       }}
                     >
                       <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
-                      <span style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Icon size={18} />
-                      </span>
-                    </button>
-                  );
-                })}
-              </section>
-            </div>
-          )}
-        </>
+                  <span style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon size={18} />
+                  </span>
+                </button>
+              );
+            })}
+          </section>
+        </div>
+      )}
 
-        {/* 📱 مركز الواتساب الذكي */}
+      {/* 📱 مركز الواتساب الذكي */}
       <WhatsAppHubModal
         isOpen={showWhatsAppModal}
         onClose={() => setShowWhatsAppModal(false)}
