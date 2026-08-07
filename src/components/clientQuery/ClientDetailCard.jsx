@@ -56,6 +56,31 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
     setEditForm((prev) => ({ ...prev, contractDate: cDate, firstPayDate: firstPay }));
   };
 
+  // حساب المبالغ والماليات المحصلة والمتبقية بدقة محاسبية
+  const salePrice = Number(contract.sale ?? contract.sale_price ?? contract.salePrice ?? 0);
+  const downPayment = Number(contract.down ?? contract.down_payment ?? contract.downPayment ?? 0);
+
+  const paidInstallmentsSum = (contract.installments || [])
+    .filter((inst) => inst.is_paid || inst.status === "paid")
+    .reduce((sum, inst) => sum + Number(inst.amount || contract.monthly || contract.monthly_installment || 0), 0);
+
+  const totalCollected = downPayment + paidInstallmentsSum;
+  const remainingPortfolio = Math.max(0, salePrice - totalCollected);
+
+  // حساب وقراءة تاريخ أول قسط
+  const contractDateVal = contract.contractDate || contract.contract_date || contract.start_date || "";
+  const displayFirstPayDate = React.useMemo(() => {
+    if (contract.firstPayDate && contract.firstPayDate !== "NULL") return contract.firstPayDate;
+    if (contract.first_installment_date && contract.first_installment_date !== "NULL") return contract.first_installment_date;
+    if (contract.firstInstallmentDate && contract.firstInstallmentDate !== "NULL") return contract.firstInstallmentDate;
+
+    if (!contractDateVal || contractDateVal === "-") return "-";
+    const d = new Date(contractDateVal);
+    if (isNaN(d.getTime())) return "-";
+    d.setMonth(d.getMonth() + 1);
+    return d.toISOString().split("T")[0];
+  }, [contract, contractDateVal]);
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -80,6 +105,10 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
         await supabase
           .from("contracts")
           .update({
+            client_name: editForm.name,
+            client_phone: editForm.phone,
+            guarantor_name: editForm.guarantor,
+            guarantor_phone: editForm.guarantorPhone,
             item_name: editForm.item,
             item: editForm.item,
             cost: Number(editForm.cost || 0),
@@ -92,6 +121,7 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
             monthly: Number(editForm.monthly || 0),
             monthly_installment: Number(editForm.monthly || 0),
             contract_date: editForm.contractDate,
+            first_installment_date: editForm.firstPayDate,
             start_date: editForm.contractDate,
             notes: editForm.notes
           })
@@ -236,7 +266,7 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
                 {t.totalCollectedLabel || (isEN ? "Total Collected" : "إجمالي المحصل")}
               </div>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#4caf50", marginTop: "4px" }}>
-                {contract.paidAmount || (Number(contract.sale) - Number(contract.remainingAmount || 0))} {t.currency || (isEN ? "EGP" : "ج.م")}
+                {totalCollected} {t.currency || (isEN ? "EGP" : "ج.م")}
               </div>
             </div>
             <div style={{ background: themeStyles.inputBg || "#121214", padding: "10px", borderRadius: "10px", textAlign: "center" }}>
@@ -244,7 +274,7 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
                 {t.remainingInstallmentsLabel || (isEN ? "Total Remaining" : "إجمالي الأقساط المتبقية")}
               </div>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#e07a5f", marginTop: "4px" }}>
-                {contract.remainingAmount ?? (Number(contract.sale) - Number(contract.down))} {t.currency || (isEN ? "EGP" : "ج.م")}
+                {remainingPortfolio} {t.currency || (isEN ? "EGP" : "ج.م")}
               </div>
             </div>
             <div style={{ background: status.bg, border: `1px solid ${status.border}`, padding: "10px", borderRadius: "10px", textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center" }}>
@@ -272,7 +302,7 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
         </label>
         <label style={labelStyle}>
           <span>{t.firstPayDateLabel || (isEN ? "First Pay Date (Auto +1 Month)" : "تاريخ أول قسط (تلقائي + شهر)")}</span>
-          <input style={inputStyle} disabled value={isEditing ? editForm.firstPayDate : (contract.firstPayDate || "-")} />
+          <input style={inputStyle} disabled value={isEditing ? editForm.firstPayDate : displayFirstPayDate} />
         </label>
       </div>
       <div>
