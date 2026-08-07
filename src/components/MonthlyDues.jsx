@@ -65,8 +65,7 @@ export function MonthlyDuesScreen({
       .map((r) => {
         const monthlyReq = Math.round(Math.min(r.monthly, r.remaining));
 
-        // 🗓️ حساب التحصيلات الفعلية المسددة لهذا العقد بداخل الشهر والسنة الحاليين
-        const paidThisMonth = (r.instArr || [])
+        const actualPaidThisMonth = (r.instArr || [])
           .filter((i) => {
             if (!i.is_paid && i.status !== "paid" && !(Number(i.amount) > 0)) return false;
             const dateVal = i.paid_at || i.due_date || i.date || i.payDate || i.created_at;
@@ -76,10 +75,12 @@ export function MonthlyDuesScreen({
           })
           .reduce((sum, i) => sum + Number(i.amount || 0), 0);
 
+        const paidThisMonth = Math.min(monthlyReq, actualPaidThisMonth);
+
         let status = "unpaid";
-        if (paidThisMonth >= monthlyReq) {
+        if (actualPaidThisMonth >= monthlyReq) {
           status = "paid";
-        } else if (paidThisMonth > 0) {
+        } else if (actualPaidThisMonth > 0) {
           status = "partial";
         } else {
           status = "unpaid";
@@ -89,6 +90,7 @@ export function MonthlyDuesScreen({
           ...r,
           dueThisMonth: monthlyReq,
           paidThisMonth,
+          actualPaidThisMonth,
           remainingThisMonth: Math.max(0, monthlyReq - paidThisMonth),
           monthStatus: status
         };
