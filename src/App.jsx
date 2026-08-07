@@ -6,10 +6,11 @@
  * =========================================================
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, Power, TrendingUp, Calculator, Globe, Palette, X, MessageSquare, FolderKanban, CheckCircle2
 } from "lucide-react";
+import { fetchAllClientsContracts } from "./services/clientFetchService";
 
 import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
@@ -27,7 +28,25 @@ import { useThemeAndLang } from "./hooks/useThemeAndLang";
 
 export function App() {
   const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
-  const clientsList = [];
+  const [clientsList, setClientsList] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadDashboardData() {
+      try {
+        const data = await fetchAllClientsContracts();
+        if (isMounted) {
+          setClientsList(data || []);
+        }
+      } catch (err) {
+        console.error("❌ خطأ أثناء جلب بيانات الصفحة الرئيسية:", err);
+      }
+    }
+    loadDashboardData();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentScreen]);
 
   // 🌐🎨 محرك اللغات الـ 15 والثيمات الـ 100
   const {
