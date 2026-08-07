@@ -45,7 +45,10 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
   };
 
   const handleContractDateChange = (valOrEvent) => {
-    const cDate = typeof valOrEvent === "string" ? valOrEvent : valOrEvent?.target?.value || "";
+    const cDate = typeof valOrEvent === "string" 
+      ? valOrEvent 
+      : valOrEvent?.target?.value || valOrEvent?.value || "";
+
     if (!cDate) {
       setEditForm((prev) => ({ ...prev, contractDate: "", contract_date: "", firstPayDate: "", first_installment_date: "" }));
       return;
@@ -344,14 +347,27 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
         <label style={labelStyle}>
           <span>{t.contractDateLabel || (isEN ? "Contract Date *" : "تاريخ التعاقد *")}</span>
           {isEditing ? (
-            <CustomDatePicker value={editForm.contractDate} onChange={handleContractDateChange} isEN={isEN} themeStyles={themeStyles} inputStyle={inputStyle} />
+            <CustomDatePicker value={editForm.contractDate || editForm.contract_date} onChange={handleContractDateChange} isEN={isEN} themeStyles={themeStyles} inputStyle={inputStyle} />
           ) : (
-            <input style={inputStyle} disabled value={contract.contractDate || "-"} />
+            <input style={inputStyle} disabled value={contractDateVal || "-"} />
           )}
         </label>
         <label style={labelStyle}>
           <span>{t.firstPayDateLabel || (isEN ? "First Pay Date (Auto +1 Month)" : "تاريخ أول قسط (تلقائي + شهر)")}</span>
-          <input style={inputStyle} disabled value={isEditing ? editForm.firstPayDate : displayFirstPayDate} />
+          {isEditing ? (
+            <CustomDatePicker
+              value={editForm.firstPayDate || editForm.first_installment_date}
+              onChange={(valOrEvent) => {
+                const val = typeof valOrEvent === "string" ? valOrEvent : valOrEvent?.target?.value || valOrEvent?.value || "";
+                setEditForm((prev) => ({ ...prev, firstPayDate: val, first_installment_date: val }));
+              }}
+              isEN={isEN}
+              themeStyles={themeStyles}
+              inputStyle={inputStyle}
+            />
+          ) : (
+            <input style={inputStyle} disabled value={displayFirstPayDate || "-"} />
+          )}
         </label>
       </div>
       <div>
