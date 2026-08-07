@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, UploadCloud, Power, TrendingUp, Calculator, Globe, Palette, X, Check
 } from "lucide-react";
+import { supabase } from "../supabaseClient";
 import { LANGUAGES } from "../i18n";
 import { THEMES_LIST } from "../themes";
 import { KPI, DashButton } from "./CommonUI";
@@ -28,16 +29,75 @@ export function Dashboard({
 }) {
   const [showLangModal, setShowLangModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [liveTotals, setLiveTotals] = useState(null);
 
   const isEN = useMemo(() => {
     return currentLang === "en" || t?.lang === "en" || document.documentElement.lang === "en";
   }, [currentLang, t]);
 
-  // قراءة صافي الربح النهائي المباشر القادم من useCalculations
+  // 🔄 حساب إحصائيات الشاشة الرئيسية سحابياً وديناميكياً من جدول العقود والأقساط
+  const fetchDashTotals = useCallback(async () => {
+    try {
+      const [contractsRes, installmentsRes] = await Promise.all([
+        supabase.from("contracts").select("*"),
+        supabase.from("installments").select("*")
+      ]);
+
+      const contracts = contractsRes.data || [];
+      const installments = installmentsRes.data || [];
+
+      let calcPortfolio = 0;
+      let calcProfit = 0;
+      let calcMonthlyDues = 0;
+
+      contracts.forEach((c) => {
+        const salePrice = Number(c.sale_price || c.sale || 0);
+        const costPrice = Number(c.cost_price || c.cost || 0);
+        const downPayment = Number(c.down_payment || c.down || 0);
+        const monthly = Number(c.monthly_installment || c.monthly || 0);
+
+        const matchedPaid = installments
+          .filter((i) => String(i.contract_id) === String(c.id) && (i.is_paid || Number(i.amount) > 0))
+          .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+
+        const totalPaid = downPayment + matchedPaid;
+        const remainingDebt = Math.max(0, salePrice - totalPaid);
+
+        calcPortfolio += remainingDebt;
+        if (remainingDebt > 0) {
+          calcMonthlyDues += monthly;
+        }
+
+        const contractProfit = salePrice - costPrice;
+        calcProfit += contractProfit;
+      });
+
+      setLiveTotals({
+        totalPortfolio: calcPortfolio,
+        totalDebt: calcMonthlyDues > 0 ? calcMonthlyDues : calcPortfolio,
+        netProfit: calcProfit
+      });
+    } catch (err) {
+      console.error("❌ خطأ في جلب إحصائيات الشاشة الرئيسية:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDashTotals();
+  }, [fetchDashTotals]);
+
   const safeNetProfit = useMemo(() => {
-    const net = Number(totals.netProfit ?? totals.totalProfit ?? 0);
+    const net = liveTotals?.netProfit ?? totals.netProfit ?? totals.totalProfit ?? 0;
     return isNaN(net) ? 0 : Math.round(net);
-  }, [totals]);
+  }, [liveTotals, totals]);
+
+  const safePortfolio = useMemo(() => {
+    return liveTotals?.totalPortfolio ?? totals.totalPortfolio ?? 0;
+  }, [liveTotals, totals]);
+
+  const safeMonthlyDues = useMemo(() => {
+    return liveTotals?.totalDebt ?? totals.totalDebt ?? 0;
+  }, [liveTotals, totals]);
 
   const activeLangObj = useMemo(() => {
     return LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
@@ -159,7 +219,7 @@ export function Dashboard({
           icon={CalendarClock}
           label={t.monthlyDues || (isEN ? "Current Month Dues" : "مستحقات هذا الشهر")}
           sub={t.monthlyDuesSub || (isEN ? "Total amount to collect currently" : "المطلوب تحصيله حالياً")}
-          value={`${fmtCleanInt(totals.totalDebt || 0)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
+          value={`${fmtCleanInt(safeMonthlyDues)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
           styles={styles}
           themeStyles={themeStyles}
         />
@@ -167,7 +227,7 @@ export function Dashboard({
           icon={Wallet}
           label={t.totalPortfolio || (isEN ? "Total Remaining Portfolio" : "إجمالي الأقساط المتبقية")}
           sub={t.totalPortfolioSub || (isEN ? "Remaining client balances" : "المبالغ المتبقية في ذمة العملاء")}
-          value={`${fmtCleanInt(totals.totalPortfolio || 0)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
+          value={`${fmtCleanInt(safePortfolio)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
           styles={styles}
           themeStyles={themeStyles}
         />
