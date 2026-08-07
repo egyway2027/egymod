@@ -8,10 +8,9 @@
  */
 
 import React, { useState, useMemo, useEffect } from "react";
-import { ArrowRight, X, FileSpreadsheet, FileText, FolderArchive, Layers, Loader2, Edit, Save } from "lucide-react";
+import { ArrowRight, X, FileSpreadsheet, FileText, FolderArchive, Layers, Loader2 } from "lucide-react";
 import { filterContracts, findContractsByPhone } from "../../services/clientQueryService";
 import { fetchAllClientsContracts } from "../../services/clientFetchService";
-import { supabase } from "../../supabaseClient";
 import { AllClientsRegisterModal } from "./AllClientsRegisterModal";
 import { ArchivedContractsView } from "./ArchivedContractsView";
 import { ClientDetailCard } from "./ClientDetailCard";
@@ -27,46 +26,6 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   // 🔄 الجلب المباشر والتخزين الداخلي
   const [fetchedContracts, setFetchedContracts] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
-
-  // 💾 دالة حفظ تعديلات البطاقة الأساسية مباشرة بداخل سحابة Supabase
-  const handleSaveInlineContract = async (updatedData) => {
-    try {
-      const contractId = updatedData.id || selectedContract?.id;
-      if (!contractId) return;
-
-      const payload = {
-        client_name: updatedData.client_name || updatedData.clientName || updatedData.name,
-        client_phone: updatedData.client_phone || updatedData.clientPhone || updatedData.phone,
-        item_name: updatedData.item_name || updatedData.itemName || updatedData.item,
-        sale_price: Number(updatedData.sale_price ?? updatedData.salePrice ?? updatedData.sale ?? 0),
-        cost_price: Number(updatedData.cost_price ?? updatedData.costPrice ?? updatedData.cost ?? 0),
-        down_payment: Number(updatedData.down_payment ?? updatedData.downPayment ?? updatedData.down ?? 0),
-        monthly_installment: Number(updatedData.monthly_installment ?? updatedData.monthlyInstallment ?? updatedData.monthly ?? 0),
-        guarantor_name: updatedData.guarantor_name || updatedData.guarantorName || "",
-        guarantor_phone: updatedData.guarantor_phone || updatedData.guarantorPhone || "",
-        notes: updatedData.notes || ""
-      };
-
-      const { error } = await supabase
-        .from("contracts")
-        .update(payload)
-        .eq("id", contractId);
-
-      if (error) throw error;
-
-      // 🔄 إعادة جلب العقود سحابياً لتثبيت البيانات المعدلة
-      const data = await fetchAllClientsContracts();
-      setFetchedContracts(data || []);
-
-      const refreshed = (data || []).find((c) => String(c.id) === String(contractId));
-      setSelectedContract(refreshed || updatedData);
-
-      if (onUpdateContract) onUpdateContract(refreshed || updatedData);
-    } catch (err) {
-      console.error("❌ خطأ في حفظ التعديلات سحابياً:", err);
-      alert("حدث خطأ أثناء حفظ التعديلات بالسحابة");
-    }
-  };
 
   useEffect(() => {
     let isMounted = true;
@@ -296,49 +255,15 @@ const handleSelectSearchItem = (contract) => {
 
           {/* SELECTED CONTRACT DETAIL */}
           {selectedContract && (
-            <div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
-                <button
-                  type="button"
-                  onClick={() => setEditClient({
-                    id: selectedContract.id,
-                    client_name: selectedContract.client_name || selectedContract.clientName || selectedContract.name || "",
-                    client_phone: selectedContract.client_phone || selectedContract.clientPhone || selectedContract.phone || "",
-                    item_name: selectedContract.item_name || selectedContract.itemName || selectedContract.item || "",
-                    sale_price: selectedContract.sale_price || selectedContract.salePrice || selectedContract.sale || 0,
-                    cost_price: selectedContract.cost_price || selectedContract.costPrice || selectedContract.cost || 0,
-                    down_payment: selectedContract.down_payment || selectedContract.downPayment || selectedContract.down || 0,
-                    monthly_installment: selectedContract.monthly_installment || selectedContract.monthlyInstallment || selectedContract.monthly || 0,
-                    guarantor_name: selectedContract.guarantor_name || selectedContract.guarantorName || "",
-                    guarantor_phone: selectedContract.guarantor_phone || selectedContract.guarantorPhone || ""
-                  })}
-                  style={{
-                    background: "linear-gradient(135deg, #d69a5f, #b06a35)",
-                    color: "#111111",
-                    border: "none",
-                    padding: "8px 16px",
-                    borderRadius: "8px",
-                    fontWeight: 800,
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px"
-                  }}
-                >
-                  <Edit size={16} /> تعديل بيانات العقد
-                </button>
-              </div>
-              <ClientDetailCard
-                contract={selectedContract}
-                onSaveUpdate={(updated) => {
-                  if (onUpdateContract) onUpdateContract(updated);
-                  setSelectedContract(updated);
-                }}
-                t={t}
-                themeStyles={themeStyles}
-              />
-            </div>
+            <ClientDetailCard
+              contract={selectedContract}
+              onSaveUpdate={(updated) => {
+                if (onUpdateContract) onUpdateContract(updated);
+                setSelectedContract(updated);
+              }}
+              t={t}
+              themeStyles={themeStyles}
+            />
           )}
         </div>
       )}
@@ -406,79 +331,6 @@ const handleSelectSearchItem = (contract) => {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-      {/* MODAL 3: EDIT CONTRACT DATA */}
-      {editClient && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: 16 }}>
-          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: 18, padding: 24, width: "100%", maxWidth: 550, maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, borderBottom: `1px solid ${themeStyles.border || "#333333"}`, paddingBottom: 12 }}>
-              <h3 style={{ margin: 0, color: themeStyles.accentGold || "#d4af37", fontSize: 18, fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
-                <Edit size={20} /> تعديل بيانات العقد والعميل
-              </h3>
-              <X style={{ cursor: "pointer", color: "#aaa" }} onClick={() => setEditClient(null)} />
-            </div>
-
-            <form onSubmit={handleSaveEdit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: 12, color: "#aaa", fontWeight: 700, display: "block", marginBottom: 4 }}>اسم العميل</label>
-                  <input type="text" value={editClient.client_name} onChange={(e) => setEditClient({ ...editClient, client_name: e.target.value })} required style={{ width: "100%", padding: "8px 12px", background: "#141414", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 13 }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: "#aaa", fontWeight: 700, display: "block", marginBottom: 4 }}>رقم الهاتف</label>
-                  <input type="text" value={editClient.client_phone} onChange={(e) => setEditClient({ ...editClient, client_phone: e.target.value })} required style={{ width: "100%", padding: "8px 12px", background: "#141414", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 13 }} />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, color: "#aaa", fontWeight: 700, display: "block", marginBottom: 4 }}>اسم السلعة / المباع</label>
-                <input type="text" value={editClient.item_name} onChange={(e) => setEditClient({ ...editClient, item_name: e.target.value })} required style={{ width: "100%", padding: "8px 12px", background: "#141414", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 13 }} />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: 12, color: "#aaa", fontWeight: 700, display: "block", marginBottom: 4 }}>سعر البيع (إجمالي العقد)</label>
-                  <input type="number" value={editClient.sale_price} onChange={(e) => setEditClient({ ...editClient, sale_price: e.target.value })} required style={{ width: "100%", padding: "8px 12px", background: "#141414", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 13 }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: "#aaa", fontWeight: 700, display: "block", marginBottom: 4 }}>سعر التكلفة الأصلي</label>
-                  <input type="number" value={editClient.cost_price} onChange={(e) => setEditClient({ ...editClient, cost_price: e.target.value })} required style={{ width: "100%", padding: "8px 12px", background: "#141414", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 13 }} />
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: 12, color: "#aaa", fontWeight: 700, display: "block", marginBottom: 4 }}>المبلغ المقدم</label>
-                  <input type="number" value={editClient.down_payment} onChange={(e) => setEditClient({ ...editClient, down_payment: e.target.value })} required style={{ width: "100%", padding: "8px 12px", background: "#141414", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 13 }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: "#aaa", fontWeight: 700, display: "block", marginBottom: 4 }}>القسط الشهري</label>
-                  <input type="number" value={editClient.monthly_installment} onChange={(e) => setEditClient({ ...editClient, monthly_installment: e.target.value })} required style={{ width: "100%", padding: "8px 12px", background: "#141414", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 13 }} />
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: 12, color: "#aaa", fontWeight: 700, display: "block", marginBottom: 4 }}>اسم الضامن</label>
-                  <input type="text" value={editClient.guarantor_name} onChange={(e) => setEditClient({ ...editClient, guarantor_name: e.target.value })} style={{ width: "100%", padding: "8px 12px", background: "#141414", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 13 }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: "#aaa", fontWeight: 700, display: "block", marginBottom: 4 }}>هاتف الضامن</label>
-                  <input type="text" value={editClient.guarantor_phone} onChange={(e) => setEditClient({ ...editClient, guarantor_phone: e.target.value })} style={{ width: "100%", padding: "8px 12px", background: "#141414", border: "1px solid #333", borderRadius: 8, color: "#fff", fontSize: 13 }} />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-                <button type="submit" disabled={loadingSave} style={{ flex: 1, background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#111", border: "none", borderRadius: 10, padding: "12px", fontWeight: 800, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <Save size={16} /> {loadingSave ? "جاري الحفظ..." : "حفظ التعديلات سحابياً"}
-                </button>
-                <button type="button" onClick={() => setEditClient(null)} style={{ background: "#222", border: "1px solid #444", color: "#fff", borderRadius: 10, padding: "12px 18px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                  إلغاء
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
