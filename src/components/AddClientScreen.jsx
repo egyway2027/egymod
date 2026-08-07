@@ -83,6 +83,7 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
         nationalId: form.nationalId,
         address: form.address,
         guarantor: form.guarantor,
+        guarantorName: form.guarantor,
         guarantorPhone: form.guarantorPhone,
         item: form.item,
         cost: costNum,
@@ -90,6 +91,8 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
         down: downNum,
         monthly: monthlyNum,
         contractDate: form.contractDate,
+        firstPayDate: form.firstPayDate,
+        firstInstallmentDate: form.firstPayDate,
         notes: form.notes
       });
 
