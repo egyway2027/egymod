@@ -28,53 +28,43 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   const [fetchedContracts, setFetchedContracts] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // 📝 حالة نافذة التعديل والحفظ السحابي
-  const [editClient, setEditClient] = useState(null);
-  const [loadingSave, setLoadingSave] = useState(false);
-
-  // 💾 دالة حفظ تعديلات العقد سحابياً
-  const handleSaveEdit = async (e) => {
-    e.preventDefault();
-    if (!editClient) return;
-    setLoadingSave(true);
+  // 💾 دالة حفظ تعديلات البطاقة الأساسية مباشرة في سحابة Supabase
+  const handleSaveInlineContract = async (updatedData) => {
     try {
+      const contractId = updatedData.id || selectedContract?.id;
+      if (!contractId) return;
+
+      const payload = {
+        client_name: updatedData.client_name || updatedData.clientName || updatedData.name,
+        client_phone: updatedData.client_phone || updatedData.clientPhone || updatedData.phone,
+        item_name: updatedData.item_name || updatedData.itemName || updatedData.item,
+        sale_price: Number(updatedData.sale_price ?? updatedData.salePrice ?? updatedData.sale ?? 0),
+        cost_price: Number(updatedData.cost_price ?? updatedData.costPrice ?? updatedData.cost ?? 0),
+        down_payment: Number(updatedData.down_payment ?? updatedData.downPayment ?? updatedData.down ?? 0),
+        monthly_installment: Number(updatedData.monthly_installment ?? updatedData.monthlyInstallment ?? updatedData.monthly ?? 0),
+        guarantor_name: updatedData.guarantor_name || updatedData.guarantorName || "",
+        guarantor_phone: updatedData.guarantor_phone || updatedData.guarantorPhone || "",
+        notes: updatedData.notes || ""
+      };
+
       const { error } = await supabase
         .from("contracts")
-        .update({
-          client_name: editClient.client_name,
-          client_phone: editClient.client_phone,
-          item_name: editClient.item_name,
-          sale_price: Number(editClient.sale_price || 0),
-          cost_price: Number(editClient.cost_price || 0),
-          down_payment: Number(editClient.down_payment || 0),
-          monthly_installment: Number(editClient.monthly_installment || 0),
-          guarantor_name: editClient.guarantor_name || "",
-          guarantor_phone: editClient.guarantor_phone || ""
-        })
-        .eq("id", editClient.id);
+        .update(payload)
+        .eq("id", contractId);
 
       if (error) throw error;
 
+      // إعادة جلب البيانات ليثبت التعديل فوراً
       const data = await fetchAllClientsContracts();
       setFetchedContracts(data || []);
 
-      if (selectedContract && selectedContract.id === editClient.id) {
-        setSelectedContract((prev) => ({
-          ...prev,
-          ...editClient,
-          name: editClient.client_name,
-          phone: editClient.client_phone,
-          item: editClient.item_name
-        }));
-      }
+      const refreshed = (data || []).find((c) => String(c.id) === String(contractId));
+      setSelectedContract(refreshed || updatedData);
 
-      if (onUpdateContract) onUpdateContract(editClient);
-      setEditClient(null);
+      if (onUpdateContract) onUpdateContract(refreshed || updatedData);
     } catch (err) {
-      console.error("❌ خطأ في حفظ التعديلات:", err);
-      alert("حدث خطأ أثناء حفظ التعديلات سحابياً");
-    } finally {
-      setLoadingSave(false);
+      console.error("❌ خطأ في حفظ التعديلات سحابياً:", err);
+      alert("حدث خطأ أثناء حفظ التعديلات بالسحابة");
     }
   };
 
@@ -306,49 +296,12 @@ const handleSelectSearchItem = (contract) => {
 
           {/* SELECTED CONTRACT DETAIL */}
           {selectedContract && (
-            <div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
-                <button
-                  type="button"
-                  onClick={() => setEditClient({
-                    id: selectedContract.id,
-                    client_name: selectedContract.client_name || selectedContract.clientName || selectedContract.name || "",
-                    client_phone: selectedContract.client_phone || selectedContract.clientPhone || selectedContract.phone || "",
-                    item_name: selectedContract.item_name || selectedContract.itemName || selectedContract.item || "",
-                    sale_price: selectedContract.sale_price || selectedContract.salePrice || selectedContract.sale || 0,
-                    cost_price: selectedContract.cost_price || selectedContract.costPrice || selectedContract.cost || 0,
-                    down_payment: selectedContract.down_payment || selectedContract.downPayment || selectedContract.down || 0,
-                    monthly_installment: selectedContract.monthly_installment || selectedContract.monthlyInstallment || selectedContract.monthly || 0,
-                    guarantor_name: selectedContract.guarantor_name || selectedContract.guarantorName || "",
-                    guarantor_phone: selectedContract.guarantor_phone || selectedContract.guarantorPhone || ""
-                  })}
-                  style={{
-                    background: "linear-gradient(135deg, #d69a5f, #b06a35)",
-                    color: "#111111",
-                    border: "none",
-                    padding: "8px 16px",
-                    borderRadius: "8px",
-                    fontWeight: 800,
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px"
-                  }}
-                >
-                  <Edit size={16} /> تعديل بيانات العقد
-                </button>
-              </div>
-              <ClientDetailCard
-                contract={selectedContract}
-                onSaveUpdate={(updated) => {
-                  if (onUpdateContract) onUpdateContract(updated);
-                  setSelectedContract(updated);
-                }}
-                t={t}
-                themeStyles={themeStyles}
-              />
-            </div>
+            <ClientDetailCard
+              contract={selectedContract}
+              onSaveUpdate={handleSaveInlineContract}
+              t={t}
+              themeStyles={themeStyles}
+            />
           )}
         </div>
       )}
