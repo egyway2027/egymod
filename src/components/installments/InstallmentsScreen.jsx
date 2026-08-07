@@ -24,32 +24,25 @@ export default function InstallmentsScreen({
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
-  // 🔄 جلب الجداول الثلاثة بشكل مستقل كلياً لتفادي أخطاء الربط بالسحابة ودمجها برمجياً
+  // 🔄 جلب العقود والأقساط مباشرة وفق الهيكلة الموحدة الجديدة بالسحابة
   const fetchLocalContracts = useCallback(async () => {
     setLoading(true);
     try {
-      const [contractsRes, clientsRes, installmentsRes] = await Promise.all([
+      const [contractsRes, installmentsRes] = await Promise.all([
         supabase.from("contracts").select("*").order("created_at", { ascending: false }),
-        supabase.from("clients").select("*"),
         supabase.from("installments").select("*").order("created_at", { ascending: true })
       ]);
 
       const contractsData = contractsRes.data || [];
-      const clientsData = clientsRes.data || [];
       const installmentsData = installmentsRes.data || [];
 
       const mergedContracts = contractsData.map((contract) => {
-        const matchedClient = clientsData.find(
-          (cl) => String(cl.id) === String(contract.client_id)
-        ) || contract.clients || {};
-
         const matchedInstallments = installmentsData.filter(
           (inst) => String(inst.contract_id) === String(contract.id)
         );
 
         return {
           ...contract,
-          clients: matchedClient,
           installments: matchedInstallments
         };
       });
@@ -67,16 +60,18 @@ export default function InstallmentsScreen({
     fetchLocalContracts();
   }, [fetchLocalContracts]);
 
-  // 📊 تطبيع البيانات وتجهيز السجلات الكاملة
+  // 📊 تطبيع البيانات مع مسميات الجدول الموحد (client_name, sale_price, item_name)
   const rows = useMemo(() => {
     const sourceData = localContracts.length > 0 ? localContracts : propContracts;
     return (sourceData || []).map((c) => {
-      const clientObj = c.clients || {};
       const instArr = Array.isArray(c.installments) ? c.installments : (Array.isArray(c.payments) ? c.payments : []);
 
-      const sale = Number(c.sale || c.total || 0);
+      const sale = Number(c.sale_price || c.sale || c.total || 0);
       const down = Number(c.down_payment || c.down || 0);
       const monthly = Number(c.monthly_installment || c.monthly || 0);
+      const resolvedClientName = c.client_name || c.clientName || c.name || "عميل بدون اسم";
+      const resolvedItemName = c.item_name || c.itemName || c.item || "";
+      const resolvedPhone = c.client_phone || c.phone || "";
 
       let runningPaid = down;
       const enrichedPayments = instArr
@@ -91,8 +86,8 @@ export default function InstallmentsScreen({
             ...i,
             id: i.id,
             contractId: c.id,
-            clientName: clientObj.name || c.clientName || c.name || "عميل بدون اسم",
-            itemName: c.item_name || c.itemName || c.item || "",
+            clientName: resolvedClientName,
+            itemName: resolvedItemName,
             amount: amt,
             payDate: pDate,
             date: pDate,
@@ -108,11 +103,11 @@ export default function InstallmentsScreen({
       return {
         ...c,
         id: c.id,
-        name: clientObj.name || c.clientName || c.name || "عميل بدون اسم",
-        clientName: clientObj.name || c.clientName || c.name || "عميل بدون اسم",
-        phone: clientObj.phone || c.clientPhone || c.phone || "",
-        item: c.item_name || c.itemName || c.item || "",
-        itemName: c.item_name || c.itemName || c.item || "",
+        name: resolvedClientName,
+        clientName: resolvedClientName,
+        phone: resolvedPhone,
+        item: resolvedItemName,
+        itemName: resolvedItemName,
         sale,
         down,
         monthly,
