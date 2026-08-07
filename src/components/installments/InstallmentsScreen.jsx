@@ -24,17 +24,34 @@ export default function InstallmentsScreen({
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
-  // 🔄 جلب عقود هذه الشاشة مباشرة من قواعد البيانات سحابياً وبشكل مستقل
+  // 🔄 جلب العقود والأقساط بشكل منفصل ودمجهما برمجياً لضمان تحديث السجلات لحظياً
   const fetchLocalContracts = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // 1️⃣ جلب العقود مع بيانات العملاء
+      const { data: contractsData, error: contractsErr } = await supabase
         .from("contracts")
-        .select("*, clients(*), installments(*)")
+        .select("*, clients(*)")
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
-        setLocalContracts(data);
+      // 2️⃣ جلب جميع عمليات السداد المحدثة مباشرة من جدول الأقساط
+      const { data: installmentsData } = await supabase
+        .from("installments")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (!contractsErr && contractsData) {
+        // 3️⃣ دمج الأقساط داخل كل عقد بحسب contract_id
+        const mergedContracts = contractsData.map((contract) => {
+          const matchedInstallments = (installmentsData || []).filter(
+            (inst) => String(inst.contract_id) === String(contract.id)
+          );
+          return {
+            ...contract,
+            installments: matchedInstallments
+          };
+        });
+        setLocalContracts(mergedContracts);
       } else if (propContracts.length > 0) {
         setLocalContracts(propContracts);
       }
@@ -296,7 +313,11 @@ export default function InstallmentsScreen({
             <CustomerSearchHeader
               rows={rows}
               selected={activeSelectedRow}
-              setSelected={(val) => setSelectedId(val ? val.id : "")}
+              setSelected={(val) => {
+                if (!val) setSelectedId("");
+                else if (typeof val === "object") setSelectedId(val.id || "");
+                else setSelectedId(val);
+              }}
               amount={amount}
               setAmount={setAmount}
               payDate={payDate}
