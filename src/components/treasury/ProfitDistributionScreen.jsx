@@ -12,6 +12,7 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
   const [partners, setPartners] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [salaryLog, setSalaryLog] = useState([]);
+  const [contracts, setContracts] = useState([]);
   const [installments, setInstallments] = useState([]);
   const [distributionsLog, setDistributionsLog] = useState([]);
   const [withdrawalsLog, setWithdrawalsLog] = useState([]);
@@ -33,6 +34,7 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
         { data: pData },
         { data: eData },
         { data: sData },
+        { data: cData },
         { data: iData },
         { data: dData },
         { data: wData }
@@ -40,7 +42,8 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
         supabase.from("partners").select("*").order("id", { ascending: true }),
         supabase.from("expenses").select("*").order("date", { ascending: false }),
         supabase.from("salary_log").select("*").order("date", { ascending: false }),
-        supabase.from("installments").select("profit_share, is_paid, paid_amount"),
+        supabase.from("contracts").select("*"),
+        supabase.from("installments").select("*"),
         supabase.from("distributions_log").select("*").order("date", { ascending: false }),
         supabase.from("withdrawals_log").select("*").order("date", { ascending: false })
       ]);
@@ -48,6 +51,7 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
       setPartners(pData || []);
       setExpenses(eData || []);
       setSalaryLog(sData || []);
+      setContracts(cData || []);
       setInstallments(iData || []);
       setDistributionsLog(dData || []);
       setWithdrawalsLog(wData || []);
@@ -83,7 +87,7 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
     }
   };
 
-  // الحسابات المالية الدقيقة للفترة
+  // الحسابات المالية الدقيقة المطابقة تماماً للشاشة الرئيسية
   const filteredPeriodData = useMemo(() => {
     const cleanFrom = fromDate || "";
     const cleanTo = toDate || "";
@@ -97,8 +101,23 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
       .filter((s) => !s.is_settled && (!cleanFrom || s.date >= cleanFrom) && (!cleanTo || s.date <= cleanTo))
       .reduce((sum, s) => sum + Number(s.amount || 0), 0);
 
-    // إجمالي الأرباح المحصلة
-    const totalProfitPool = installments.reduce((sum, inst) => sum + Number(inst.profit_share || 0), 0);
+    // إجمالي أرباح العقود والتحصيلات (نفس معادلة الشاشة الرئيسية المطابقة تماماً)
+    const totalProfitPool = (contracts || []).reduce((acc, curr) => {
+      const sale = Number(curr.sale_price ?? curr.salePrice ?? curr.sale ?? 0);
+      const cost = Number(curr.cost_price ?? curr.costPrice ?? curr.cost ?? 0);
+      const down = Number(curr.down_payment ?? curr.downPayment ?? curr.down ?? 0);
+
+      const instArr = Array.isArray(installments) 
+        ? installments.filter((i) => String(i.contract_id) === String(curr.id))
+        : [];
+      
+      const totalPaidInst = instArr
+        .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
+        .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+
+      if (sale <= 0) return acc;
+      return acc + Math.round((down + totalPaidInst) * ((sale - cost) / sale));
+    }, 0);
 
     // إجمالي التوزيعات السابقة
     const totalDistributedSoFar = distributionsLog.reduce((sum, d) => sum + Number(d.amount || 0), 0);
@@ -112,7 +131,7 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
       netPeriodProfit: Math.round(netPeriodProfit),
       totalProfitPool: Math.round(totalProfitPool)
     };
-  }, [expenses, salaryLog, installments, distributionsLog, fromDate, toDate]);
+  }, [contracts, installments, expenses, salaryLog, distributionsLog, fromDate, toDate]);
 
   const autoAmount = customDistributeAmount !== "" ? Math.round(parseFloat(customDistributeAmount) || 0) : filteredPeriodData.netPeriodProfit;
 
