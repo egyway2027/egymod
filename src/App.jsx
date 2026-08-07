@@ -3,13 +3,12 @@
  * 📌 الملف: الشاشة الرئيسية للنظام (Main App Container)
  * 📁 المسار: src/App.jsx
  * 📝 الوظيفة: الموزع الرئيسي للشاشات المربوط بـ 15 لغة و 100 ثيم
- *              مع المزامنة السحابية والحفظ التلقائي للواجهة.
  * =========================================================
  */
 
 import React, { useState, useMemo } from "react";
 import {
-  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, Power, TrendingUp, Calculator, Globe, Palette, X, Loader2, MessageSquare, FolderKanban, CheckCircle2
+  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, Power, TrendingUp, Calculator, Globe, Palette, X, MessageSquare, FolderKanban, CheckCircle2
 } from "lucide-react";
 
 import { AddClientScreen } from "./components/AddClientScreen";
@@ -24,7 +23,6 @@ import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
 import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
 import DeleteClientScreen from "./components/DeleteClientScreen";
 import { useNavigation } from "./hooks/useNavigation";
-
 import { useThemeAndLang } from "./hooks/useThemeAndLang";
 
 export function App() {
@@ -54,10 +52,8 @@ export function App() {
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
   const [showCentralRecordsModal, setShowCentralRecordsModal] = useState(false);
 
-  // 🌟 نافذة التنبيه المخصصة بوسط الشاشة (بديل alert)
+  // 🌟 نافذة التنبيه المخصصة بوسط الشاشة
   const [successModal, setSuccessModal] = useState({ open: false, title: "", msg: "" });
-
-  
 
   // أزرار شبكة التحكم الرئيسية
   const buttons = [
@@ -107,210 +103,197 @@ export function App() {
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
 
-      {isLoading ? (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80vh", gap: "12px" }}>
-          <Loader2 size={36} className="animate-spin" style={{ color: themeStyles.accentGold || "#d4af37" }} />
-          <span style={{ fontWeight: 700, fontSize: "14px", color: themeStyles.subText || "#aaaaaa" }}>{t.loadingCloud}</span>
-        </div>
-      ) : (
-        <>
-          {/* 1. شاشة إضافة عميل */}
-          {currentScreen === "addClient" && (
-            <AddClientScreen
-              onSuccess={() => {
-                setSuccessModal({
-                  open: true,
-                  title: "تمت العملية بنجاح",
-                  msg: "تم حفظ بيانات العقد بنجاح بالسحابة!"
-                });
-                handleBack();
-              }}
-              onBack={handleBack}
-              t={t}
-              themeStyles={themeStyles}
-            />
-          )}
+      {/* 1. شاشة إضافة عميل */}
+      {currentScreen === "addClient" && (
+        <AddClientScreen
+          onSuccess={() => {
+            setSuccessModal({
+              open: true,
+              title: "تمت العملية بنجاح",
+              msg: "تم حفظ بيانات العقد بنجاح بالسحابة!"
+            });
+            handleBack();
+          }}
+          onBack={handleBack}
+          t={t}
+          themeStyles={themeStyles}
+        />
+      )}
 
-          {/* 2. شاشة الاستعلام عن عميل */}
-          {currentScreen === "clientQuery" && (
-            <ClientQueryScreen
-              onBack={handleBack}
-              t={t}
-              themeStyles={themeStyles}
-            />
-          )}
+      {/* 2. شاشة الاستعلام عن عميل */}
+      {currentScreen === "clientQuery" && (
+        <ClientQueryScreen
+          onBack={handleBack}
+          t={t}
+          themeStyles={themeStyles}
+        />
+      )}
 
-          {/* 3. شاشة سداد الأقساط */}
-          {currentScreen === "pay" && (
-            <InstallmentsScreen
-              contracts={clientsList}
-              onPay={addPayment}
-              onUpdateContract={onUpdateContractSubmit}
-              onBack={handleBack}
-              t={t}
-              themeStyles={themeStyles}
-            />
-          )}
+      {/* 3. شاشة سداد الأقساط */}
+      {currentScreen === "pay" && (
+        <InstallmentsScreen
+          contracts={clientsList}
+          onBack={handleBack}
+          t={t}
+          themeStyles={themeStyles}
+        />
+      )}
 
-          {/* 📌 شاشة مستحقات هذا الشهر */}
-          {currentScreen === "monthlyDues" && (
-            <MonthlyDues
-              clientsList={clientsList}
-              onPay={addPayment}
-              onOpenPaymentModal={() => navigateTo("pay")}
-              onBack={handleBack}
-            />
-          )}
+      {/* 📌 شاشة مستحقات هذا الشهر */}
+      {currentScreen === "monthlyDues" && (
+        <MonthlyDues
+          clientsList={clientsList}
+          onOpenPaymentModal={() => navigateTo("pay")}
+          onBack={handleBack}
+        />
+      )}
 
-          {/* 📌 شاشة إدارة وحذف حسابات العملاء */}
-          {currentScreen === "deleteClient" && (
-            <DeleteClientScreen
-              clientsList={clientsList}
-              onUpdateContract={async (updatedClient) => {
-                await onUpdateContractSubmit(updatedClient);
-              }}
-              onBack={handleBack}
-              t={t}
-              themeStyles={themeStyles}
-            />
-          )}
+      {/* 📌 شاشة إدارة وحذف حسابات العملاء */}
+      {currentScreen === "deleteClient" && (
+        <DeleteClientScreen
+          clientsList={clientsList}
+          onBack={handleBack}
+          t={t}
+          themeStyles={themeStyles}
+        />
+      )}
 
-          {/* 📌 شاشة المتأخرين عن السداد */}
-          {currentScreen === "overdue" && (
-            <OverdueScreen
-              onBack={handleBack}
-              t={t}
-              themeStyles={themeStyles}
-            />
-          )}
+      {/* 📌 شاشة المتأخرين عن السداد */}
+      {currentScreen === "overdue" && (
+        <OverdueScreen
+          onBack={handleBack}
+          t={t}
+          themeStyles={themeStyles}
+        />
+      )}
 
-          {/* 4. شاشة الإعدادات الشاملة */}
-          {currentScreen === "settings" && (
-            <SettingsScreen
-              currentLang={currentLang}
-              changeLang={changeLang}
-              currentThemeId={currentThemeId}
-              changeTheme={changeTheme}
-              t={t}
-              themeStyles={themeStyles}
-              isRTL={isRTL}
-              LANGUAGES={LANGUAGES}
-              THEMES_LIST={THEMES_LIST}
-              THEME_CATEGORIES={THEME_CATEGORIES}
-              onBack={handleBack}
-            />
-          )}
+      {/* 4. شاشة الإعدادات الشاملة */}
+      {currentScreen === "settings" && (
+        <SettingsScreen
+          currentLang={currentLang}
+          changeLang={changeLang}
+          currentThemeId={currentThemeId}
+          changeTheme={changeTheme}
+          t={t}
+          themeStyles={themeStyles}
+          isRTL={isRTL}
+          LANGUAGES={LANGUAGES}
+          THEMES_LIST={THEMES_LIST}
+          THEME_CATEGORIES={THEME_CATEGORIES}
+          onBack={handleBack}
+        />
+      )}
 
-          {/* 5. لوحة التحكم الرئيسية */}
-          {currentScreen === "dashboard" && (
-            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-              <header style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
-                borderRadius: 18, padding: "18px 24px", marginBottom: 20, color: "#fff"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>
-                    {t.welcome} {t.generalSupervisor}
-                  </div>
+      {/* 5. لوحة التحكم الرئيسية */}
+      {currentScreen === "dashboard" && (
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <header style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
+            borderRadius: 18, padding: "18px 24px", marginBottom: 20, color: "#fff"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>
+                {t.welcome} {t.generalSupervisor}
+              </div>
 
-                  <button onClick={() => setShowLangModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                    <Globe size={15} /> <span>{currentLangObj.flag} {currentLangObj.name}</span>
-                  </button>
+              <button onClick={() => setShowLangModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <Globe size={15} /> <span>{currentLangObj.flag} {currentLangObj.name}</span>
+              </button>
 
-                  <button onClick={() => navigateTo("settings")} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                    <Palette size={15} /> <span>{t.appThemes} (100)</span>
-                  </button>
+              <button onClick={() => navigateTo("settings")} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <Palette size={15} /> <span>{t.appThemes} (100)</span>
+              </button>
 
-                  <button onClick={() => setShowGlobalSearchModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                    <Search size={15} /> <span>البحث الشامل</span>
-                  </button>
+              <button onClick={() => setShowGlobalSearchModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <Search size={15} /> <span>البحث الشامل</span>
+              </button>
 
-                  <button onClick={() => setShowCentralRecordsModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                    <FolderKanban size={15} /> <span>مركز السجلات</span>
-                  </button>
+              <button onClick={() => setShowCentralRecordsModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <FolderKanban size={15} /> <span>مركز السجلات</span>
+              </button>
 
-                  <button onClick={() => setShowRecycleBinModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(239,68,68,0.4)", color: "#fca5a5", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                    <Trash2 size={15} /> <span>سلة المهملات</span>
-                  </button>
-                </div>
+              <button onClick={() => setShowRecycleBinModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(239,68,68,0.4)", color: "#fca5a5", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <Trash2 size={15} /> <span>سلة المهملات</span>
+              </button>
+            </div>
 
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 20, fontWeight: 800 }}>{t.appName}</div>
-                  <div style={{ fontSize: 11, opacity: 0.8 }}>Cloud Enterprise Active</div>
-                </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 800 }}>{t.appName}</div>
+              <div style={{ fontSize: 11, opacity: 0.8 }}>Cloud Enterprise Active</div>
+            </div>
 
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Calculator size={22} />
-                </div>
-              </header>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Calculator size={22} />
+            </div>
+          </header>
 
-              <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
-                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-                  <TrendingUp size={24} color={themeStyles.accentGold} />
-                  <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{netProfit.toLocaleString()} {t.currency}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.netProfit}</div>
-                  <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.netProfitSub}</div>
-                </div>
+          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
+            <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+              <TrendingUp size={24} color={themeStyles.accentGold} />
+              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{netProfit.toLocaleString()} {t.currency}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.netProfit}</div>
+              <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.netProfitSub}</div>
+            </div>
 
-                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-                  <CalendarClock size={24} color={themeStyles.accentGold} />
-                  <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{monthlyDues.toLocaleString()} {t.currency}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.monthlyDues}</div>
-                  <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.monthlyDuesSub}</div>
-                </div>
+            <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+              <CalendarClock size={24} color={themeStyles.accentGold} />
+              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{monthlyDues.toLocaleString()} {t.currency}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.monthlyDues}</div>
+              <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.monthlyDuesSub}</div>
+            </div>
 
-                <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-                  <Wallet size={24} color={themeStyles.accentGold} />
-                  <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
-                    {(clientsList || []).reduce((acc, curr) => {
-                      if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
-                      const total = Number(curr.total ?? curr.sale ?? 0);
-                      const down = Number(curr.downPayment ?? curr.down ?? 0);
-                      const totalPaid = Number(curr.totalPaid ?? 0);
-                      const remCalculated = Math.max(0, total - down - totalPaid);
-                      const rem = Number(curr.remaining) > 0 ? Number(curr.remaining) : remCalculated;
-                      return acc + rem;
-                    }, 0).toLocaleString()} {t.currency}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
-                  <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
-                </div>
-              </section>
+            <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+              <Wallet size={24} color={themeStyles.accentGold} />
+              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
+                {(clientsList || []).reduce((acc, curr) => {
+                  if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
+                  const total = Number(curr.total ?? curr.sale ?? 0);
+                  const down = Number(curr.downPayment ?? curr.down ?? 0);
+                  const totalPaid = Number(curr.totalPaid ?? 0);
+                  const remCalculated = Math.max(0, total - down - totalPaid);
+                  const rem = Number(curr.remaining) > 0 ? Number(curr.remaining) : remCalculated;
+                  return acc + rem;
+                }, 0).toLocaleString()} {t.currency}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
+              <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
+            </div>
+          </section>
 
-              <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-                {buttons.map((b) => {
-                  const Icon = b.icon;
-                  return (
-                    <button
-                      key={b.key}
-                      onClick={() => {
-                        if (b.key === "addClient") {
-                          navigateTo("addClient");
-                        } else if (b.key === "pay") {
-                          navigateTo("pay");
-                        } else if (b.key === "monthlyDues") {
-                          navigateTo("monthlyDues");
-                        } else if (b.key === "search") {
-                          navigateTo("clientQuery");
-                        } else if (b.key === "settings") {
-                          navigateTo("settings");
-                        } else if (b.key === "whatsapp") {
-                          setShowWhatsAppModal(true);
-                        } else if (b.key === "deleteClient") {
-                          navigateTo("deleteClient");
-                        } else if (b.key === "lateClients") {
-                          navigateTo("overdue");
-                        }
-                      }}
-                      style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : themeStyles.card,
-                        color: b.tone === "silver" || b.tone === "rose" ? "#111" : "#fff",
-                        border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.buttonRadius || 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
-                      }}
-                    >
-                      <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
+          <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+            {buttons.map((b) => {
+              const Icon = b.icon;
+              return (
+                <button
+                  key={b.key}
+                  onClick={() => {
+                    if (b.key === "addClient") {
+                      navigateTo("addClient");
+                    } else if (b.key === "pay") {
+                      navigateTo("pay");
+                    } else if (b.key === "monthlyDues") {
+                      navigateTo("monthlyDues");
+                    } else if (b.key === "search") {
+                      navigateTo("clientQuery");
+                    } else if (b.key === "settings") {
+                      navigateTo("settings");
+                    } else if (b.key === "whatsapp") {
+                      setShowWhatsAppModal(true);
+                    } else if (b.key === "deleteClient") {
+                      navigateTo("deleteClient");
+                    } else if (b.key === "lateClients") {
+                      navigateTo("overdue");
+                    }
+                  }}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : themeStyles.card,
+                    color: b.tone === "silver" || b.tone === "rose" ? "#111" : "#fff",
+                    border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.buttonRadius || 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
+                  }}
+                >
+                  <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
                   <span style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Icon size={18} />
                   </span>
@@ -362,7 +345,7 @@ export function App() {
         themeStyles={themeStyles}
       />
 
-      {/* 🌟 نافذة التنبيه المخصصة بمنتصف الشاشة (بديل alert) */}
+      {/* 🌟 نافذة التنبيه المخصصة بمنتصف الشاشة */}
       {successModal.open && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: 16 }}>
           <div style={{ background: themeStyles.card || "#1a1a1a", border: `1px solid ${themeStyles.accentGold || "#d4af37"}`, borderRadius: 20, padding: 28, width: "100%", maxWidth: 400, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
