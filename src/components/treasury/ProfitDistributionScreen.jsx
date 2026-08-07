@@ -241,6 +241,19 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
         } else {
           const newWithdrawn = p.previousWithdrawals + p.netPartnerProfit;
           await supabase.from("partners").update({ total_withdrawn_profits: newWithdrawn }).eq("id", p.id);
+
+          // 💡 حفظ عملية السحب بالسجل السحابي لتظهر في النافذة
+          if (p.netPartnerProfit > 0) {
+            await supabase.from("withdrawals_log").insert([{
+              partner_id: p.id,
+              partner_name: p.name,
+              amount: p.netPartnerProfit,
+              date: distDate,
+              notes: "سحب أرباح دورية (من التوزيع)",
+              is_settled: true,
+              settled_amount: p.netPartnerProfit
+            }]);
+          }
         }
 
         partnerResults.push({
