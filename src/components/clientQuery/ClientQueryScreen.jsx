@@ -59,8 +59,10 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
         cost_price: Number(updatedData.cost_price ?? updatedData.costPrice ?? updatedData.cost ?? 0),
         down_payment: Number(updatedData.down_payment ?? updatedData.downPayment ?? updatedData.down ?? 0),
         monthly_installment: Number(updatedData.monthly_installment ?? updatedData.monthlyInstallment ?? updatedData.monthly ?? 0),
-        guarantor_name: updatedData.guarantor_name || updatedData.guarantorName || "",
+        guarantor_name: updatedData.guarantor_name || updatedData.guarantorName || updatedData.guarantor || "",
         guarantor_phone: updatedData.guarantor_phone || updatedData.guarantorPhone || "",
+        contract_date: updatedData.contract_date || updatedData.contractDate || "",
+        first_installment_date: updatedData.first_installment_date || updatedData.firstPayDate || updatedData.firstInstallmentDate || "",
         notes: updatedData.notes || ""
       };
 
@@ -89,18 +91,34 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   const [multiContractList, setMultiContractList] = useState([]);
   const [isMultiModalOpen, setIsMultiModalOpen] = useState(false);
 
-  // تطبيع وتوحيد شكل البيانات للعمل مع الجداول المفصولة والقديمة
+  // تطبيع وتوحيد شكل البيانات ومعالجة كافة التواريخ والضامن
   const normalizedContracts = useMemo(() => {
     const listToUse = fetchedContracts.length > 0 ? fetchedContracts : contracts;
-    return (listToUse || []).map((c) => ({
-      ...c,
-      id: c.id,
-      name: c.clientName || c.client_name || c.name || "عميل بدون اسم",
-      phone: c.clientPhone || c.client_phone || c.phone || "",
-      item: c.itemName || c.item_name || c.item || "",
-      contractDate: c.contractDate || c.contract_date || c.created_at || "",
-      status: c.status || (c.is_deleted ? "archived" : "active")
-    }));
+    return (listToUse || []).map((c) => {
+      const cDate = c.contractDate || c.contract_date || c.created_at || "";
+      const fInst = c.first_installment_date || c.firstPayDate || c.firstInstallmentDate || "";
+      const gName = c.guarantor_name || c.guarantorName || c.guarantor || "";
+      const gPhone = c.guarantor_phone || c.guarantorPhone || "";
+
+      return {
+        ...c,
+        id: c.id,
+        name: c.clientName || c.client_name || c.name || "عميل بدون اسم",
+        phone: c.clientPhone || c.client_phone || c.phone || "",
+        item: c.itemName || c.item_name || c.item || "",
+        contractDate: cDate,
+        contract_date: cDate,
+        firstPayDate: fInst,
+        first_installment_date: fInst,
+        firstInstallmentDate: fInst,
+        guarantor: gName,
+        guarantor_name: gName,
+        guarantorName: gName,
+        guarantorPhone: gPhone,
+        guarantor_phone: gPhone,
+        status: c.status || (c.is_deleted ? "archived" : "active")
+      };
+    });
   }, [fetchedContracts, contracts]);
 
   // إحصاءات الأعداد للتبويبات
