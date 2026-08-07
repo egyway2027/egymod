@@ -23,6 +23,13 @@ import { RecycleBinModal } from "./components/modals/RecycleBinModal";
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
 import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
 import DeleteClientScreen from "./components/DeleteClientScreen";
+import {
+  TreasuryMainScreen,
+  PartnersScreen,
+  ExpensesScreen,
+  EmployeesMergedScreen,
+  ProfitDistributionScreen
+} from "./components/treasury";
 import { useNavigation } from "./hooks/useNavigation";
 import { useThemeAndLang } from "./hooks/useThemeAndLang";
 
@@ -233,7 +240,26 @@ export function App() {
           themeStyles={themeStyles}
         />
       )}
+{/* 💰 شاشات الخزينة والشركاء والرواتب والمصروفات */}
+{currentScreen === "treasury" && (
+  <TreasuryMainScreen onNavigate={navigateTo} onBack={handleBack} t={t} themeStyles={themeStyles} />
+)}
 
+{currentScreen === "treasuryPartners" && (
+  <PartnersScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />
+)}
+
+{currentScreen === "treasuryEmployees" && (
+  <EmployeesMergedScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />
+)}
+
+{currentScreen === "treasuryExpenses" && (
+  <ExpensesScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />
+)}
+
+{currentScreen === "treasuryDistribute" && (
+  <ProfitDistributionScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />
+)}
       {/* 4. شاشة الإعدادات الشاملة */}
       {currentScreen === "settings" && (
         <SettingsScreen
@@ -338,24 +364,18 @@ export function App() {
                 <button
                   key={b.key}
                   onClick={() => {
-                    if (b.key === "addClient") {
-                      navigateTo("addClient");
-                    } else if (b.key === "pay") {
-                      navigateTo("pay");
-                    } else if (b.key === "monthlyDues") {
-                      navigateTo("monthlyDues");
-                    } else if (b.key === "search") {
-                      navigateTo("clientQuery");
-                    } else if (b.key === "settings") {
-                      navigateTo("settings");
-                    } else if (b.key === "whatsapp") {
-                      setShowWhatsAppModal(true);
-                    } else if (b.key === "deleteClient") {
-                      navigateTo("deleteClient");
-                    } else if (b.key === "lateClients") {
-                      navigateTo("overdue");
-                    }
-                  }}
+  if (b.key === "whatsapp") {
+    setShowWhatsAppModal(true);
+  } else if (b.key === "search") {
+    navigateTo("clientQuery");
+  } else if (b.key === "lateClients") {
+    navigateTo("overdue");
+  } else if (b.key === "exit") {
+    // إجراء الخروج
+  } else {
+    navigateTo(b.key);
+  }
+}}
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : themeStyles.card,
