@@ -28,6 +28,10 @@ export async function fetchAllClientsContracts() {
     down: Number(row.down_payment || 0),
     monthly: Number(row.monthly_installment || 0),
     contractDate: row.contract_date,
+    contract_date: row.contract_date,
+    firstPayDate: row.first_installment_date || "",
+    first_installment_date: row.first_installment_date || "",
+    firstInstallmentDate: row.first_installment_date || "",
     notes: row.notes || "",
     status: row.status,
     installments: row.installments || []
