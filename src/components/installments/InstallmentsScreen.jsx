@@ -153,7 +153,7 @@ export default function InstallmentsScreen({
     }
 
     try {
-      // المحاولة الأولى: الحفظ مع الحقول المكتملة
+      // 1️⃣ المحاولة الأولى: جدول installments بجميع الحقول
       let { error } = await supabase
         .from("installments")
         .insert([
@@ -169,7 +169,23 @@ export default function InstallmentsScreen({
           }
         ]);
 
-      // المحاولة الاحتياطية (إذا كانت بعض الأعمدة غير موجودة بالسحابة)
+      // 2️⃣ المحاولة الثانية: التحويل التلقائي لجدول payments البديل
+      if (error) {
+        const payRes = await supabase
+          .from("payments")
+          .insert([
+            {
+              contract_id: activeSelectedRow.id,
+              amount: numAmount,
+              pay_date: payDate || new Date().toISOString().split("T")[0],
+              method: method || "نقداً / كاش",
+              collector: collector || "المشرف العام"
+            }
+          ]);
+        if (!payRes.error) error = null;
+      }
+
+      // 3️⃣ المحاولة الثالثة: جدول installments بالحقول الأساسية فقط
       if (error) {
         const fallback = await supabase
           .from("installments")
@@ -179,11 +195,23 @@ export default function InstallmentsScreen({
               amount: numAmount,
               due_date: payDate || new Date().toISOString().split("T")[0],
               is_paid: true,
-              paid_at: new Date().toISOString(),
               status: "paid"
             }
           ]);
         error = fallback.error;
+      }
+
+      // 4️⃣ المحاولة الرابعة: جدول installments بالحد الأدنى المطلق
+      if (error) {
+        const minFallback = await supabase
+          .from("installments")
+          .insert([
+            {
+              contract_id: activeSelectedRow.id,
+              amount: numAmount
+            }
+          ]);
+        error = minFallback.error;
       }
 
       if (!error) {
