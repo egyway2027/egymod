@@ -9,6 +9,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { Trash2, RotateCcw, Search, UserX, AlertTriangle, ArrowRight, X } from "lucide-react";
+import { supabase } from "../supabaseClient";
 
 export function DeleteClientScreen({
   clientsList = [],
@@ -102,13 +103,40 @@ export function DeleteClientScreen({
       return prev.map((c) => (String(c.id) === String(targetClient.id) ? clientToUpdate : c));
     });
 
-    // 2. إرسال الاستعلام للسحابة
+    // 2. التنفيذ المباشر بالسحابة (Supabase)
     try {
+      const contractId = targetClient.id;
+
+      if (actionType === "soft_delete") {
+        await supabase
+          .from("contracts")
+          .update({ status: "deleted", is_deleted: true })
+          .eq("id", contractId);
+      } else if (actionType === "restore") {
+        await supabase
+          .from("contracts")
+          .update({ status: "active", is_deleted: false })
+          .eq("id", contractId);
+      } else if (actionType === "permanent_delete") {
+        // 1) حذف كافة الأقساط المرتبطة بالعقد أولاً لتفادي تعارض القيود (Foreign Key Constraints)
+        await supabase
+          .from("installments")
+          .delete()
+          .eq("contract_id", contractId);
+
+        // 2) حذف العقد نهائياً من قاعدة البيانات
+        await supabase
+          .from("contracts")
+          .delete()
+          .eq("id", contractId);
+      }
+
       if (onUpdateContract) {
         await onUpdateContract(clientToUpdate);
       }
     } catch (err) {
-      console.error("❌ خطأ أثناء تحديث حالة العميل بالسحابة:", err);
+      console.error("❌ خطأ أثناء تنفيذ إجراء الحذف/الاستعادة بالسحابة:", err);
+      alert("حدث خطأ أثناء الاتصال بالسحابة لتنفيذ العملية.");
     } finally {
       setIsProcessing(false);
       setTargetClient(null);
