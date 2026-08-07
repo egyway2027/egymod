@@ -24,12 +24,12 @@ import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
 import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
 import DeleteClientScreen from "./components/DeleteClientScreen";
 import { useNavigation } from "./hooks/useNavigation";
-import { useCloudData } from "./hooks/useCloudData";
+
 import { useThemeAndLang } from "./hooks/useThemeAndLang";
 
 export function App() {
   const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
-  const { clientsList, isLoading, handleSaveClient, handleUpdateContract, handleDeleteContract, fetchContracts, addPayment } = useCloudData();
+  
 
   // 🌐🎨 محرك اللغات الـ 15 والثيمات الـ 100
   const {
@@ -57,49 +57,7 @@ export function App() {
   // 🌟 نافذة التنبيه المخصصة بوسط الشاشة (بديل alert)
   const [successModal, setSuccessModal] = useState({ open: false, title: "", msg: "" });
 
-  // ☁️ حفظ عميل جديد
-  const onSaveClientSubmit = async (newClientData) => {
-    const res = await handleSaveClient(newClientData);
-    if (res?.success) {
-      setSuccessModal({
-        open: true,
-        title: "تمت العملية بنجاح",
-        msg: t.saveSuccess || "تم حفظ بيانات العقد بنجاح بالسحابة!"
-      });
-      handleBack();
-    } else {
-      setSuccessModal({
-        open: true,
-        title: "تنبيه",
-        msg: "حدث خطأ أثناء حفظ العقد بالسحابة."
-      });
-    }
-  };
-
-  // ☁️ تحديث بيانات عقد
-  const onUpdateContractSubmit = async (updatedContract) => {
-    let res;
-
-    if (updatedContract.is_permanently_deleted && typeof handleDeleteContract === "function") {
-      res = await handleDeleteContract(updatedContract.id);
-    } else {
-      res = await handleUpdateContract(updatedContract);
-    }
-
-    if (res?.success || res?.status === 200 || !res?.error) {
-      if (typeof fetchContracts === "function") {
-        await fetchContracts();
-      }
-      return { success: true };
-    } else {
-      setSuccessModal({
-        open: true,
-        title: "تنبيه",
-        msg: "حدث خطأ أثناء تحديث البيانات بالسحابة."
-      });
-      return { success: false };
-    }
-  };
+  
 
   // أزرار شبكة التحكم الرئيسية
   const buttons = [
@@ -159,7 +117,14 @@ export function App() {
           {/* 1. شاشة إضافة عميل */}
           {currentScreen === "addClient" && (
             <AddClientScreen
-              onSave={onSaveClientSubmit}
+              onSuccess={() => {
+                setSuccessModal({
+                  open: true,
+                  title: "تمت العملية بنجاح",
+                  msg: "تم حفظ بيانات العقد بنجاح بالسحابة!"
+                });
+                handleBack();
+              }}
               onBack={handleBack}
               t={t}
               themeStyles={themeStyles}
@@ -169,8 +134,6 @@ export function App() {
           {/* 2. شاشة الاستعلام عن عميل */}
           {currentScreen === "clientQuery" && (
             <ClientQueryScreen
-              contracts={clientsList}
-              onUpdateContract={onUpdateContractSubmit}
               onBack={handleBack}
               t={t}
               themeStyles={themeStyles}
@@ -356,9 +319,8 @@ export function App() {
                 })}
               </section>
             </div>
-          )}
-        </>
-      )}
+)}
+</>
 
       {/* 📱 مركز الواتساب الذكي */}
       <WhatsAppHubModal
