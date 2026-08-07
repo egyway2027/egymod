@@ -23,13 +23,6 @@ import { RecycleBinModal } from "./components/modals/RecycleBinModal";
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
 import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
 import DeleteClientScreen from "./components/DeleteClientScreen";
-import {
-  TreasuryMainScreen,
-  PartnersScreen,
-  ExpensesScreen,
-  EmployeesMergedScreen,
-  ProfitDistributionScreen
-} from "./components/treasury";
 import { useNavigation } from "./hooks/useNavigation";
 import { useThemeAndLang } from "./hooks/useThemeAndLang";
 
@@ -236,48 +229,6 @@ export function App() {
           contracts={clientsList}
           clientsList={clientsList}
           onBack={handleBack}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {/* 💰 شاشات الخزينة والشركاء والرواتب والمصروفات */}
-      {currentScreen === "treasury" && (
-        <TreasuryMainScreen
-          onNavigate={navigateTo}
-          onBack={handleBack}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {currentScreen === "treasuryPartners" && (
-        <PartnersScreen
-          onBack={() => navigateTo("treasury")}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {currentScreen === "treasuryEmployees" && (
-        <EmployeesMergedScreen
-          onBack={() => navigateTo("treasury")}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {currentScreen === "treasuryExpenses" && (
-        <ExpensesScreen
-          onBack={() => navigateTo("treasury")}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {currentScreen === "treasuryDistribute" && (
-        <ProfitDistributionScreen
-          onBack={() => navigateTo("treasury")}
           t={t}
           themeStyles={themeStyles}
         />
