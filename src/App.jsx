@@ -272,12 +272,16 @@ export function App() {
               <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
                 {(clientsList || []).reduce((acc, curr) => {
                   if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
-                  const total = Number(curr.total ?? curr.sale ?? 0);
-                  const down = Number(curr.downPayment ?? curr.down ?? 0);
-                  const totalPaid = Number(curr.totalPaid ?? 0);
-                  const remCalculated = Math.max(0, total - down - totalPaid);
-                  const rem = Number(curr.remaining) > 0 ? Number(curr.remaining) : remCalculated;
-                  return acc + rem;
+                  const sale = Number(curr.sale_price || curr.salePrice || curr.sale || curr.total || 0);
+                  const down = Number(curr.down_payment || curr.downPayment || curr.down || 0);
+
+                  const instArr = Array.isArray(curr.installments) ? curr.installments : (Array.isArray(curr.payments) ? curr.payments : []);
+                  const paidFromInst = instArr
+                    .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
+                    .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+                  const totalPaid = paidFromInst > 0 ? paidFromInst : Number(curr.totalPaid || curr.total_paid || 0);
+
+                  return acc + Math.max(0, sale - down - totalPaid);
                 }, 0).toLocaleString()} {t.currency}
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
