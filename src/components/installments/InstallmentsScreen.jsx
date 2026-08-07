@@ -88,6 +88,8 @@ export default function InstallmentsScreen({
             contractId: c.id,
             clientName: resolvedClientName,
             itemName: resolvedItemName,
+            item: resolvedItemName,
+            item_name: resolvedItemName,
             amount: amt,
             payDate: pDate,
             date: pDate,
