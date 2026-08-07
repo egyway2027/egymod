@@ -33,7 +33,8 @@ export async function fetchAllClientsContracts() {
     first_installment_date: row.first_installment_date || "",
     firstInstallmentDate: row.first_installment_date || "",
     notes: row.notes || "",
-    status: row.status,
+    status: row.status || "active",
+    is_deleted: row.status === "deleted",
     installments: row.installments || []
   }));
 }
