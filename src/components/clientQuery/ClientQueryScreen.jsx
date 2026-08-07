@@ -54,7 +54,6 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
 
       if (error) throw error;
 
-      // إعادة جلب البيانات ليثبت التعديل فوراً
       const data = await fetchAllClientsContracts();
       setFetchedContracts(data || []);
 
@@ -101,7 +100,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
       contractDate: c.contractDate || c.contract_date || c.created_at || "",
       status: c.status || (c.is_deleted ? "archived" : "active")
     }));
-  }, [contracts]);
+  }, [fetchedContracts, contracts]);
 
   // إحصاءات الأعداد للتبويبات
   const activeCount = useMemo(() => filterContracts(normalizedContracts, "", false).length, [normalizedContracts]);
