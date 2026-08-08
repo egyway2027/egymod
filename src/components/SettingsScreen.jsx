@@ -17,15 +17,26 @@ import { supabase } from "../supabaseClient";
 import { THEMES_LIST, THEME_CATEGORIES } from "../config/themes";
 import * as languagesModule from "../config/languages";
 
-const LANGUAGES = languagesModule.LANGUAGES || languagesModule.languages || languagesModule.default || [
-  { code: "ar", name: "العربية", dir: "rtl" },
-  { code: "en", name: "English", dir: "ltr" }
+const FALLBACK_LANGUAGES = [
+  { code: "ar", name: "العربية", flag: "🇪🇬", dir: "rtl" },
+  { code: "en", name: "English", flag: "🇺🇸", dir: "ltr" },
+  { code: "fr", name: "Français", flag: "🇫🇷", dir: "ltr" },
+  { code: "es", name: "Español", flag: "🇪🇸", dir: "ltr" },
+  { code: "de", name: "Deutsch", flag: "🇩🇪", dir: "ltr" },
+  { code: "it", name: "Italiano", flag: "🇮🇹", dir: "ltr" },
+  { code: "ru", name: "Русский", flag: "🇷🇺", dir: "ltr" },
+  { code: "zh", name: "中文", flag: "🇨🇳", dir: "ltr" },
+  { code: "tr", name: "Türkçe", flag: "🇹🇷", dir: "ltr" }
 ];
+
+const LANGUAGES = languagesModule.LANGUAGES || languagesModule.languages || languagesModule.default || FALLBACK_LANGUAGES;
 
 export function SettingsScreen({
   onBack,
   onSelectTheme,
   changeTheme,
+  currentLang,
+  changeLang,
   themes = [],
   THEMES_LIST = [],
   currentThemeId,
@@ -60,10 +71,8 @@ export function SettingsScreen({
   }, [allThemesList, selectedThemeCategory]);
 
   const availableLanguages = useMemo(() => {
-    return LANGUAGES || [
-      { code: "ar", name: "العربية", dir: "rtl" },
-      { code: "en", name: "English", dir: "ltr" }
-    ];
+    if (Array.isArray(LANGUAGES) && LANGUAGES.length > 0) return LANGUAGES;
+    return FALLBACK_LANGUAGES;
   }, []);
 
   // 1️⃣ حالة تغيير كلمة سر المشرف
@@ -782,35 +791,36 @@ export function SettingsScreen({
       {/* 🟢 MODAL 2: LANGUAGE SELECTOR */}
       {isLangModalOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: "20px", width: "100%", maxWidth: "620px", maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column", padding: "20px" }}>
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: "20px", width: "100%", maxWidth: "580px", maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column", padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: "12px" }}>
               <h3 style={{ margin: 0, color: themeStyles.accentGold || "#e8cd9c", fontSize: "16px", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}>
                 <Globe size={18} /> {isEN ? "Select Language" : "اختر لغة النظام"}
               </h3>
-              <button onClick={() => setIsLangModalOpen(false)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", padding: "4px" }}><X size={22} /></button>
+              <button type="button" onClick={() => setIsLangModalOpen(false)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", padding: "4px" }}><X size={22} /></button>
             </div>
 
             <div style={{ overflowY: "auto", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "10px", paddingRight: "4px" }}>
-              {availableLanguages.map((lang) => {
-                const isSelected = (currentLang === lang.code) || (t?.lang === lang.code) || (isEN && lang.code === "en") || (!isEN && lang.code === "ar");
+              {(availableLanguages || []).map((lang) => {
+                if (!lang) return null;
+                const langCode = lang.code || lang.id || "ar";
+                const isSelected = (currentLang === langCode) || (t?.lang === langCode) || (isEN && langCode === "en") || (!isEN && langCode === "ar");
                 return (
                   <button
-                    key={lang.code || lang.id}
+                    key={langCode}
                     type="button"
                     onClick={() => {
                       if (typeof changeLang === "function") {
-                        changeLang(lang.code);
+                        changeLang(langCode);
                       } else {
-                        document.documentElement.lang = lang.code;
-                        document.documentElement.dir = lang.dir || (lang.code === "ar" ? "rtl" : "ltr");
-                        window.location.reload();
+                        document.documentElement.lang = langCode;
+                        document.documentElement.dir = lang.dir || (langCode === "ar" ? "rtl" : "ltr");
                       }
                       setIsLangModalOpen(false);
                     }}
                     style={{
                       background: isSelected ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.inputBg || "#121214"),
-                      color: isSelected ? "#111" : (themeStyles.text || "#fff"),
-                      border: `1px solid ${isSelected ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.border || "#333")}`,
+                      color: isSelected ? "#111111" : (themeStyles.text || "#ffffff"),
+                      border: `1px solid ${isSelected ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.border || "#333333")}`,
                       borderRadius: "12px",
                       padding: "12px 8px",
                       fontWeight: 800,
@@ -824,7 +834,7 @@ export function SettingsScreen({
                       textAlign: "center"
                     }}
                   >
-                    <span>{lang.flag || "🌐"} {lang.name || lang.label}</span>
+                    <span>{lang.flag || "🌐"} {lang.name || lang.label || langCode}</span>
                     {isSelected && <Check size={16} />}
                   </button>
                 );
