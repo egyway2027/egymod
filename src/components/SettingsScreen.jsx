@@ -14,28 +14,8 @@ import {
   Send, ExternalLink, Copy, CheckCircle2, AlertTriangle, X
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import * as themesModule from "../config/themes";
+import { THEMES_LIST, THEME_CATEGORIES } from "../config/themes";
 import * as languagesModule from "../config/languages";
-
-// ثيمات مدمجة احتياطية تمنع ظهور الشاشة فارغة نهائياً
-const FALLBACK_THEMES = [
-  { id: "dark_gold", name: "ذهبي ملكي فاخر", accentGold: "#d4af37", accent: "#e07a5f", card: "#1e1e1e" },
-  { id: "oled_dark", name: "الداكن والـ OLED", accentGold: "#e8cd9c", accent: "#3b82f6", card: "#121212" },
-  { id: "emerald", name: "زمرد أندلسي", accentGold: "#10b981", accent: "#059669", card: "#111827" },
-  { id: "royal_purple", name: "ياقوت سلطاني", accentGold: "#a855f7", accent: "#ec4899", card: "#1f192e" },
-  { id: "modern_glass", name: "الزجاجي الحديث", accentGold: "#38bdf8", accent: "#818cf8", card: "#182232" }
-];
-
-const getSafeThemesList = (propThemes) => {
-  if (Array.isArray(propThemes) && propThemes.length > 0) return propThemes;
-  const raw = themesModule.THEMES || themesModule.themes || themesModule.default || themesModule;
-  if (Array.isArray(raw) && raw.length > 0) return raw;
-  if (typeof raw === "object" && raw !== null) {
-    const vals = Object.values(raw).filter((item) => item && typeof item === "object" && (item.id || item.name));
-    if (vals.length > 0) return vals;
-  }
-  return FALLBACK_THEMES;
-};
 
 const LANGUAGES = languagesModule.LANGUAGES || languagesModule.languages || languagesModule.default || [
   { code: "ar", name: "العربية", dir: "rtl" },
@@ -61,11 +41,20 @@ export function SettingsScreen({
   // نافذتي الثيمات واللغات المنفصلتين
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isLangModalOpen, setIsLangModalOpen] = useState(false);
+  const [selectedThemeCategory, setSelectedThemeCategory] = useState("all");
 
-  // مصفوفات الثيمات واللغات الآمنة الضامنة لعدم الفراغ
-  const availableThemes = useMemo(() => {
-    return getSafeThemesList(themes);
+  // جلب الـ 100 ثيم بشكل مباشر وصحيح
+  const allThemesList = useMemo(() => {
+    if (Array.isArray(themes) && themes.length > 0) return themes;
+    if (Array.isArray(THEMES_LIST) && THEMES_LIST.length > 0) return THEMES_LIST;
+    return [];
   }, [themes]);
+
+  // فلترة الثيمات بحسب الفئة المختارة
+  const filteredThemes = useMemo(() => {
+    if (selectedThemeCategory === "all") return allThemesList;
+    return allThemesList.filter((th) => th.category === selectedThemeCategory);
+  }, [allThemesList, selectedThemeCategory]);
 
   const availableLanguages = useMemo(() => {
     return LANGUAGES || [
@@ -702,42 +691,83 @@ export function SettingsScreen({
               <button onClick={() => setIsThemeModalOpen(false)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer" }}><X size={20} /></button>
             </div>
 
-            {/* THEMES GRID */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "12px" }}>
-              {availableThemes.map((th) => (
-                <div
-                  key={th.id}
-                  onClick={() => {
-                    if (onSelectTheme) onSelectTheme(th.id);
-                    setIsThemeModalOpen(false);
-                  }}
+            {/* أزرار فئات الثيمات (جميع الثيمات، الملكي، الداكن، الزجاجي...) */}
+            <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "12px", marginBottom: "16px" }}>
+              {(THEME_CATEGORIES || []).map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedThemeCategory(cat.id)}
                   style={{
-                    background: th.card || "#111",
-                    border: `2px solid ${currentThemeId === th.id ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.border || "#333")}`,
-                    borderRadius: "12px",
-                    padding: "14px",
+                    background: selectedThemeCategory === cat.id ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.inputBg || "#121214"),
+                    color: selectedThemeCategory === cat.id ? "#111" : (themeStyles.text || "#fff"),
+                    border: `1px solid ${themeStyles.border || "#333"}`,
+                    borderRadius: "8px",
+                    padding: "6px 14px",
+                    fontSize: "12px",
+                    fontWeight: 700,
                     cursor: "pointer",
-                    textAlign: "center",
-                    display: "flex",
-                    flexDirection: "column",
-                    justify: "space-between",
-                    gap: "10px"
+                    whiteSpace: "nowrap"
                   }}
                 >
-                  <div style={{ fontWeight: 800, color: th.accentGold || "#fff", fontSize: "13.5px" }}>{th.name || th.label}</div>
-                  
-                  {/* معاينة ألوان الثيم */}
-                  <div style={{ display: "flex", justifyContent: "center", gap: "6px" }}>
-                    <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.accentGold || "#e8cd9c", border: "1px solid #fff" }} />
-                    <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.accent || "#e07a5f", border: "1px solid #fff" }} />
-                    <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.card || "#1e1e1e", border: "1px solid #fff" }} />
-                  </div>
-
-                  <button type="button" style={{ background: currentThemeId === th.id ? "#4caf50" : (th.accentGold || "#e8cd9c"), color: "#111", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "11.5px", fontWeight: 800 }}>
-                    {currentThemeId === th.id ? (isEN ? "Active Theme ✓" : "الثيم النشط الآن ✓") : (isEN ? "Apply Theme" : "معاينة وتطبيق")}
-                  </button>
-                </div>
+                  {cat.name}
+                </button>
               ))}
+            </div>
+
+            {/* THEMES GRID (عرض الـ 100 ثيم كاملة) */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "12px" }}>
+              {filteredThemes.map((th) => {
+                const isCurrent = currentThemeId === th.id;
+                return (
+                  <div
+                    key={th.id}
+                    onClick={() => {
+                      if (onSelectTheme) onSelectTheme(th.id || th);
+                      setIsThemeModalOpen(false);
+                    }}
+                    style={{
+                      background: th.card || "#111",
+                      border: `2px solid ${isCurrent ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.border || "#333")}`,
+                      borderRadius: th.cardRadius || "12px",
+                      padding: "14px",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      display: "flex",
+                      flexDirection: "column",
+                      justify: "space-between",
+                      gap: "10px",
+                      boxShadow: th.cardShadow || "none"
+                    }}
+                  >
+                    <div style={{ fontWeight: 800, color: th.accentGold || th.accent || "#fff", fontSize: "13.5px" }}>
+                      {th.name}
+                    </div>
+                    
+                    {/* معاينة درجات الألوان الحقيقية للثيم */}
+                    <div style={{ display: "flex", justifyContent: "center", gap: "6px" }}>
+                      <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.bg || "#111", border: "1px solid #555" }} title="خلفية الصفحة" />
+                      <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.card || "#222", border: "1px solid #555" }} title="الكروت" />
+                      <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.accentGold || th.accent || "#d4af37", border: "1px solid #fff" }} title="اللون الرئيسي" />
+                    </div>
+
+                    <button
+                      type="button"
+                      style={{
+                        background: isCurrent ? "#4caf50" : (th.accentGold || th.accent || "#e8cd9c"),
+                        color: "#111",
+                        border: "none",
+                        borderRadius: th.buttonRadius || "6px",
+                        padding: "6px 12px",
+                        fontSize: "11.5px",
+                        fontWeight: 800
+                      }}
+                    >
+                      {isCurrent ? (isEN ? "Active ✓" : "نشط الآن ✓") : (isEN ? "Apply Theme" : "تطبيق الثيم")}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
