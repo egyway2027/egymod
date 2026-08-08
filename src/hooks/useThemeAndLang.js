@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { THEMES_LIST, THEME_CATEGORIES, getThemeStyles } from "../config/themes";
-import { LANGUAGES } from "../config/languages";
+import { LANGUAGES, TRANSLATIONS } from "../config/languages";
 
 export function useThemeAndLang() {
   const [currentLang, setCurrentLang] = useState(() => localStorage.getItem("egymod_lang") || "ar");
@@ -9,6 +9,11 @@ export function useThemeAndLang() {
   const changeLang = (code) => {
     setCurrentLang(code);
     localStorage.setItem("egymod_lang", code);
+    const selectedLangObj = LANGUAGES.find((l) => l.code === code);
+    if (selectedLangObj) {
+      document.documentElement.lang = code;
+      document.documentElement.dir = selectedLangObj.dir || (code === "ar" || code === "fa" || code === "ur" ? "rtl" : "ltr");
+    }
   };
 
   const changeTheme = (themeId) => {
@@ -22,10 +27,10 @@ export function useThemeAndLang() {
   }, [currentThemeId]);
 
   const t = useMemo(() => {
-    return LANGUAGES.find((l) => l.code === currentLang)?.translations || {};
+    return TRANSLATIONS[currentLang] || TRANSLATIONS.en || TRANSLATIONS.ar;
   }, [currentLang]);
 
-  const isRTL = currentLang === "ar";
+  const isRTL = currentLang === "ar" || currentLang === "fa" || currentLang === "ur";
 
   return {
     currentLang,
