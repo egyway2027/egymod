@@ -268,6 +268,7 @@ const handleSelectSearchItem = (contract) => {
    <input
   type="text"
   value={searchQuery}
+  onClick={() => setIsExcelModalOpen(true)}
   onChange={(e) => {
     setSearchQuery(e.target.value);
     setSelectedContract(null); // 🎯 إعادة إظهار قائمة الاقتراحات عند التعديل
