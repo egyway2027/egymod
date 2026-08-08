@@ -294,16 +294,16 @@ export function App() {
             borderRadius: 18, padding: "18px 24px", marginBottom: 20, color: "#fff"
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#ffffff" }}>
-                {(t.welcome || "مرحباً،")} {(t.generalSupervisor || "المشرف العام")}
+              <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>
+                {t.welcome} {t.generalSupervisor}
               </div>
 
               <button onClick={() => setShowLangModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
                 <Globe size={15} /> <span>{currentLangObj.flag} {currentLangObj.name}</span>
               </button>
 
-              <button onClick={() => navigateTo("settings")} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                <Palette size={15} /> <span>{t.appThemes} (100)</span>
+              <button onClick={() => setShowThemeModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <Palette size={15} /> <span>ثيمات النظام</span>
               </button>
 
               <button onClick={() => setShowGlobalSearchModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
@@ -320,8 +320,8 @@ export function App() {
             </div>
 
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#ffffff" }}>{t.appName || "نظام إدارة الأقساط والمبيعات"}</div>
-              <div style={{ fontSize: 11, opacity: 0.8, color: "#ffffff" }}>Cloud Enterprise Active</div>
+              <div style={{ fontSize: 20, fontWeight: 800 }}>{t.appName}</div>
+              <div style={{ fontSize: 11, opacity: 0.8 }}>Cloud Enterprise Active</div>
             </div>
 
             <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -469,6 +469,67 @@ export function App() {
             >
               موافق
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🎨 نافذة اختيار الثيمات المباشرة بالصفحة الرئيسية */}
+      {showThemeModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 20, padding: 24, width: "100%", maxWidth: 850, maxHeight: "85vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: 12 }}>
+              <span style={{ fontWeight: 800, fontSize: 18, color: themeStyles.accentGold || "#d0b689", display: "flex", alignItems: "center", gap: 8 }}>
+                <Palette size={20} /> ثيمات النظام المتاحة
+              </span>
+              <X style={{ cursor: "pointer", color: "#aaa" }} onClick={() => setShowThemeModal(false)} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 12 }}>
+              {(THEMES_LIST || []).map((th) => {
+                const isCurrent = currentThemeId === th.id;
+                return (
+                  <div
+                    key={th.id}
+                    onClick={() => {
+                      changeTheme(th.id);
+                      setShowThemeModal(false);
+                    }}
+                    style={{
+                      background: th.card || "#111",
+                      border: `2px solid ${isCurrent ? (themeStyles.accentGold || "#d0b689") : (themeStyles.border || "#333")}`,
+                      borderRadius: "12px",
+                      padding: "14px",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      display: "flex",
+                      flexDirection: "column",
+                      justify: "space-between",
+                      gap: "10px"
+                    }}
+                  >
+                    <div style={{ fontWeight: 800, color: th.accentGold || "#fff", fontSize: "13.5px" }}>{th.name}</div>
+                    <div style={{ display: "flex", justifyContent: "center", gap: "6px" }}>
+                      <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.bg || "#111", border: "1px solid #555" }} />
+                      <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.card || "#222", border: "1px solid #555" }} />
+                      <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.accentGold || "#d0b689", border: "1px solid #fff" }} />
+                    </div>
+                    <button
+                      type="button"
+                      style={{
+                        background: isCurrent ? "#4caf50" : (th.accentGold || "#d0b689"),
+                        color: "#111",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "6px 12px",
+                        fontSize: "11.5px",
+                        fontWeight: 800
+                      }}
+                    >
+                      {isCurrent ? "نشط الآن ✓" : "تطبيق الثيم"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
