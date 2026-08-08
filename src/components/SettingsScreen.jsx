@@ -13,7 +13,7 @@ import {
   Palette, Lock, Key, Trash2, Check, RefreshCw, Globe, Headset,
   Send, ExternalLink, Copy, CheckCircle2, AlertTriangle, X
 } from "lucide-react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../supabaseClient";
 
 export default function SettingsScreen({
   onBack,
