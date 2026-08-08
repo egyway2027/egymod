@@ -10,7 +10,7 @@
 import React, { useState, useMemo } from "react";
 import {
   ArrowRight, Shield, Users, Database, CreditCard, Share2, Printer,
-  Palette, Lock, Key, Trash2, Check, RefreshCw, Globe, Headset,
+  Palette, Lock, Key, Trash2, Check, RefreshCw, Globe, Headphones,
   Send, ExternalLink, Copy, CheckCircle2, AlertTriangle, X
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
@@ -539,7 +539,7 @@ export default function SettingsScreen({
             {/* CUSTOMER SUPPORT */}
             <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: `1px solid ${themeStyles.border || "#333"}`, display: "flex", justifyContent: "space-around", fontSize: "13px" }}>
               <a href="https://wa.me/201000000000" target="_blank" rel="noreferrer" style={{ color: "#4caf50", textDecoration: "none", fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
-                <Headset size={16} /> {isEN ? "Customer Support (WhatsApp)" : "خدمة العملاء والدعم الفني"}
+                <Headphones size={16} /> {isEN ? "Customer Support (WhatsApp)" : "خدمة العملاء والدعم الفني"}
               </a>
             </div>
           </div>
