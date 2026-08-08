@@ -275,8 +275,6 @@ export function App() {
           changeLang={changeLang}
           currentThemeId={currentThemeId}
           changeTheme={changeTheme}
-          onSelectTheme={changeTheme}
-          themes={THEMES_LIST}
           t={t}
           themeStyles={themeStyles}
           isRTL={isRTL}
@@ -389,7 +387,7 @@ export function App() {
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : themeStyles.card,
-                    color: b.tone === "silver" || b.tone === "rose" ? "#111" : "#fff",
+                    color: (b.tone === "silver" || b.tone === "rose") ? "#111" : (b.tone === "gold" || b.tone === "copper" || b.tone === "roseDark") ? "#ffffff" : (themeStyles.text || "#111"),
                     border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.buttonRadius || 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
                   }}
                 >
