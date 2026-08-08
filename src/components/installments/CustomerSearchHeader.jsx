@@ -62,13 +62,19 @@ export default function CustomerSearchHeader({
         </span>
         <div style={{ width: "100%", minWidth: 0, boxSizing: "border-box" }}>
           <NameComboBox
-            items={rows}
-            getLabel={(r) => r.name || r.clientName}
-            getSecondary={(r) => `${t.remaining || (isEN ? "Remaining" : "متبقي")} ${fmtCleanInt(r.remaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
+            items={rows || []}
+            getLabel={(r) => (r ? (r.name || r.clientName || "عميل بدون اسم") : "")}
+            getSecondary={(r) => (r ? `${t.remaining || (isEN ? "Remaining" : "متبقي")} ${fmtCleanInt(r.remaining ?? r.remainingAmount)} ${t.currency || (isEN ? "EGP" : "ج.م")}` : "")}
             placeholder={t.searchClientPlaceholder || (isEN ? "Type client name..." : "اكتب اسم العميل...")}
-            onSelect={(item) => { setSelected(item); setAmount(""); }}
+            onSelect={(item) => {
+              if (typeof setSelected === "function") setSelected(item);
+              if (typeof setAmount === "function") setAmount("");
+            }}
             selectedLabel={selected ? (selected.name || selected.clientName) : null}
-            onClear={() => { setSelected(null); setAmount(""); }}
+            onClear={() => {
+              if (typeof setSelected === "function") setSelected(null);
+              if (typeof setAmount === "function") setAmount("");
+            }}
             styles={styles}
             t={t}
           />
@@ -84,7 +90,7 @@ export default function CustomerSearchHeader({
                 {t.clientName || (isEN ? "Client Name" : "اسم العميل")}
               </span>
               <strong style={{ fontSize: 14, color: themeStyles.text || "#ffffff" }}>
-                {selected.name || selected.clientName}
+                {selected.name || selected.clientName || "غير محدد"}
               </strong>
             </div>
 
@@ -93,7 +99,7 @@ export default function CustomerSearchHeader({
                 {t.itemLabel || (isEN ? "Item Purchased" : "السلعة المشتراة")}
               </span>
               <strong style={{ fontSize: 14, color: themeStyles.accentGold || "#d4af37" }}>
-                {selected.item || selected.itemName || "غير محدد"}
+                {selected.item || selected.itemName || selected.item_name || "غير محدد"}
               </strong>
             </div>
           </div>
@@ -149,7 +155,7 @@ export default function CustomerSearchHeader({
           <div style={{ display: "flex", gap: 10, marginTop: 12, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
             <button
               type="button"
-              onClick={() => setAmount(String(Math.round(selected.monthly || 0)))}
+              onClick={() => setAmount && setAmount(String(Math.round(selected.monthly || selected.monthly_installment || 0)))}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 7,
                 background: "rgba(212, 175, 55, 0.08)",
@@ -162,13 +168,13 @@ export default function CustomerSearchHeader({
               <Banknote size={16} />
               <span>{t.fullInstallmentBtn || (isEN ? "Full Installment" : "قسط كامل")}:</span>
               <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800 }}>
-                {fmtCleanInt(selected.monthly)} {t.currency || (isEN ? "EGP" : "ج.م")}
+                {fmtCleanInt(selected.monthly || selected.monthly_installment)} {t.currency || (isEN ? "EGP" : "ج.م")}
               </span>
             </button>
 
             <button
               type="button"
-              onClick={() => setAmount(String(Math.round(selected.remaining || 0)))}
+              onClick={() => setAmount && setAmount(String(Math.round(selected.remaining || selected.remainingAmount || 0)))}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 7,
                 background: "rgba(16, 185, 129, 0.08)",
@@ -181,7 +187,7 @@ export default function CustomerSearchHeader({
               <CheckCheck size={16} />
               <span>{t.settleContractBtn || (isEN ? "Settle Contract" : "تصفية العقد")}:</span>
               <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800 }}>
-                {fmtCleanInt(selected.remaining)} {t.currency || (isEN ? "EGP" : "ج.م")}
+                {fmtCleanInt(selected.remaining || selected.remainingAmount)} {t.currency || (isEN ? "EGP" : "ج.م")}
               </span>
             </button>
           </div>
@@ -229,9 +235,9 @@ export default function CustomerSearchHeader({
             </div>
           </div>
 
-          {/* شريط الإحصائيات الحية */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: themeStyles.highlightBg, border: `1px dashed ${themeStyles.accent}`, borderRadius: themeStyles.borderRadius || 12, padding: 14, margin: "6px 0" }}>
-            <LiveStat label={t.itemLabel || (isEN ? "Item" : "السلعة")} value={selected.item} themeStyles={themeStyles} />
+          {/* شريط الإحصائيات الحية */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: themeStyles.highlightBg || "rgba(212,175,55,0.08)", border: `1px dashed ${themeStyles.accent || "#d4af37"}`, borderRadius: themeStyles.borderRadius || 12, padding: 14, margin: "6px 0" }}>
+            <LiveStat label={t.itemLabel || (isEN ? "Item" : "السلعة")} value={selected.item || selected.itemName || selected.item_name || "غير محدد"} themeStyles={themeStyles} />
             <LiveStat label={t.currentRemaining || (isEN ? "Current Remaining" : "المتبقي الحالي")} value={`${fmtCleanInt(currentRemaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`} themeStyles={themeStyles} />
             <LiveStat label={t.remainingAfterPay || (isEN ? "Remaining After Payment" : "المتبقي بعد هذا السداد")} value={`${fmtCleanInt(remainingAfterPay)} ${t.currency || (isEN ? "EGP" : "ج.م")}`} themeStyles={themeStyles} />
           </div>
