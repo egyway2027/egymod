@@ -94,20 +94,20 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
 
     // 1. المصروفات والرواتب غير المسواة بداخل الفترة
     const periodExpenses = expenses
-      .filter((e) => !e.is_settled && (!cleanFrom || e.date >= cleanFrom) && (!cleanTo || e.date <= cleanTo))
+      .filter((e) => !Boolean(e.is_settled) && (!cleanFrom || e.date >= cleanFrom) && (!cleanTo || e.date <= cleanTo))
       .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
     const periodSalaries = salaryLog
-      .filter((s) => !s.is_settled && (!cleanFrom || s.date >= cleanFrom) && (!cleanTo || s.date <= cleanTo))
+      .filter((s) => !Boolean(s.is_settled) && (!cleanFrom || s.date >= cleanFrom) && (!cleanTo || s.date <= cleanTo))
       .reduce((sum, s) => sum + Number(s.amount || 0), 0);
 
     // 2. إجمالي المصروفات والرواتب التي تم تسويتها في توزيعات سابقة
     const settledExpenses = expenses
-      .filter((e) => e.is_settled)
+      .filter((e) => Boolean(e.is_settled))
       .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
     const settledSalaries = salaryLog
-      .filter((s) => s.is_settled)
+      .filter((s) => Boolean(s.is_settled))
       .reduce((sum, s) => sum + Number(s.amount || 0), 0);
 
     // 3. إجمالي أرباح العقود والتحصيلات الخام
