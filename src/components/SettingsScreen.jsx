@@ -14,6 +14,8 @@ import {
   Send, ExternalLink, Copy, CheckCircle2, AlertTriangle, X
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
+import { THEMES } from "../config/themes";
+import { LANGUAGES } from "../config/languages";
 
 export function SettingsScreen({
   onBack,
@@ -31,8 +33,21 @@ export function SettingsScreen({
   // التبويب النشط: "account" | "employees" | "reset" | "subscription" | "affiliate" | "branding"
   const [activeTab, setActiveTab] = useState("account");
 
-  // نافذة الثيمات واللغة المنبثقة
+  // نافذتي الثيمات واللغات المنفصلتين
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+  const [isLangModalOpen, setIsLangModalOpen] = useState(false);
+
+  // مصفوفات الثيمات واللغات الآمنة
+  const availableThemes = useMemo(() => {
+    return (themes && themes.length > 0) ? themes : (THEMES || []);
+  }, [themes]);
+
+  const availableLanguages = useMemo(() => {
+    return LANGUAGES || [
+      { code: "ar", name: "العربية", dir: "rtl" },
+      { code: "en", name: "English", dir: "ltr" }
+    ];
+  }, []);
 
   // 1️⃣ حالة تغيير كلمة سر المشرف
   const [masterPassForm, setMasterPassForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
@@ -186,27 +201,52 @@ export function SettingsScreen({
           {t.settingsAndPermissions || (isEN ? "Settings & Permissions" : "الإعدادات والصلاحيات")}
         </h2>
 
-        {/* زر فتح الثيمات واللغة المنبثق */}
-        <button
-          type="button"
-          onClick={() => setIsThemeModalOpen(true)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            background: "linear-gradient(135deg, #e07a5f, #d4af37)",
-            color: "#111",
-            border: "none",
-            padding: "8px 16px",
-            borderRadius: "10px",
-            fontWeight: 800,
-            cursor: "pointer",
-            fontSize: "13px"
-          }}
-        >
-          <Palette size={16} />
-          {t.changeThemeOrLang || (isEN ? "Appearance & Language" : "المظهر واللغة")}
-        </button>
+        {/* أزرار التحكم المنفصلة للمظهر واللغة */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {/* 1. زر تغيير المظهر والثيمات */}
+          <button
+            type="button"
+            onClick={() => setIsThemeModalOpen(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "linear-gradient(135deg, #e07a5f, #d4af37)",
+              color: "#111",
+              border: "none",
+              padding: "8px 14px",
+              borderRadius: "10px",
+              fontWeight: 800,
+              cursor: "pointer",
+              fontSize: "13px"
+            }}
+          >
+            <Palette size={16} />
+            {isEN ? "System Themes" : "تغيير المظهر"}
+          </button>
+
+          {/* 2. زر تغيير لغة النظام */}
+          <button
+            type="button"
+            onClick={() => setIsLangModalOpen(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: themeStyles.card || "#1e1e1e",
+              border: `1px solid ${themeStyles.border || "#333"}`,
+              color: themeStyles.accentGold || "#e8cd9c",
+              padding: "8px 14px",
+              borderRadius: "10px",
+              fontWeight: 800,
+              cursor: "pointer",
+              fontSize: "13px"
+            }}
+          >
+            <Globe size={16} />
+            {isEN ? "Language" : "لغة النظام"}
+          </button>
+        </div>
       </div>
 
       {/* TABS SYSTEM */}
@@ -626,20 +666,20 @@ export function SettingsScreen({
 
       </div>
 
-      {/* MODAL: THEMES & LANGUAGE SELECTOR */}
+      {/* 🟢 MODAL 1: THEMES SELECTOR */}
       {isThemeModalOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: "20px", width: "100%", maxWidth: "800px", maxHeight: "85vh", overflowY: "auto", padding: "20px" }}>
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: "20px", width: "100%", maxWidth: "850px", maxHeight: "85vh", overflowY: "auto", padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: "12px" }}>
-              <h3 style={{ margin: 0, color: themeStyles.accentGold || "#e8cd9c", fontSize: "16px", fontWeight: 800 }}>
-                {isEN ? "Select System Theme & Language" : "اختر ثيم المظهر ولغة النظام"}
+              <h3 style={{ margin: 0, color: themeStyles.accentGold || "#e8cd9c", fontSize: "16px", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}>
+                <Palette size={18} /> {isEN ? "Choose System Theme" : "اختيار ثيم ومظهر البرنامج"}
               </h3>
               <button onClick={() => setIsThemeModalOpen(false)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer" }}><X size={20} /></button>
             </div>
 
             {/* THEMES GRID */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px" }}>
-              {themes.map((th) => (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "12px" }}>
+              {availableThemes.map((th) => (
                 <div
                   key={th.id}
                   onClick={() => {
@@ -650,16 +690,72 @@ export function SettingsScreen({
                     background: th.card || "#111",
                     border: `2px solid ${currentThemeId === th.id ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.border || "#333")}`,
                     borderRadius: "12px",
-                    padding: "12px",
+                    padding: "14px",
                     cursor: "pointer",
-                    textAlign: "center"
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    justify: "space-between",
+                    gap: "10px"
                   }}
                 >
-                  <div style={{ fontWeight: 800, color: th.accentGold || "#fff", fontSize: "13px", marginBottom: "8px" }}>{th.name}</div>
-                  <button type="button" style={{ background: th.accentGold || "#e8cd9c", color: "#111", border: "none", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 800 }}>
-                    {currentThemeId === th.id ? (isEN ? "Active" : "نشط الآن") : (isEN ? "Select" : "تطبيق الثيم")}
+                  <div style={{ fontWeight: 800, color: th.accentGold || "#fff", fontSize: "13.5px" }}>{th.name || th.label}</div>
+                  
+                  {/* معاينة ألوان الثيم */}
+                  <div style={{ display: "flex", justifyContent: "center", gap: "6px" }}>
+                    <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.accentGold || "#e8cd9c", border: "1px solid #fff" }} />
+                    <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.accent || "#e07a5f", border: "1px solid #fff" }} />
+                    <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: th.card || "#1e1e1e", border: "1px solid #fff" }} />
+                  </div>
+
+                  <button type="button" style={{ background: currentThemeId === th.id ? "#4caf50" : (th.accentGold || "#e8cd9c"), color: "#111", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "11.5px", fontWeight: 800 }}>
+                    {currentThemeId === th.id ? (isEN ? "Active Theme ✓" : "الثيم النشط الآن ✓") : (isEN ? "Apply Theme" : "معاينة وتطبيق")}
                   </button>
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🟢 MODAL 2: LANGUAGE SELECTOR */}
+      {isLangModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: "20px", width: "100%", maxWidth: "420px", padding: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: "12px" }}>
+              <h3 style={{ margin: 0, color: themeStyles.accentGold || "#e8cd9c", fontSize: "16px", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}>
+                <Globe size={18} /> {isEN ? "Select Language" : "اختر لغة النظام"}
+              </h3>
+              <button onClick={() => setIsLangModalOpen(false)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer" }}><X size={20} /></button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {availableLanguages.map((lang) => (
+                <button
+                  key={lang.code || lang.id}
+                  type="button"
+                  onClick={() => {
+                    document.documentElement.lang = lang.code;
+                    document.documentElement.dir = lang.dir || (lang.code === "ar" ? "rtl" : "ltr");
+                    window.location.reload();
+                  }}
+                  style={{
+                    background: (t?.lang === lang.code || (isEN && lang.code === "en") || (!isEN && lang.code === "ar")) ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.inputBg || "#121214"),
+                    color: (t?.lang === lang.code || (isEN && lang.code === "en") || (!isEN && lang.code === "ar")) ? "#111" : (themeStyles.text || "#fff"),
+                    border: `1px solid ${themeStyles.border || "#333"}`,
+                    borderRadius: "10px",
+                    padding: "12px",
+                    fontWeight: 800,
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justify: "space-between"
+                  }}
+                >
+                  <span>{lang.name || lang.label}</span>
+                  {((t?.lang === lang.code) || (isEN && lang.code === "en") || (!isEN && lang.code === "ar")) && <Check size={18} />}
+                </button>
               ))}
             </div>
           </div>
