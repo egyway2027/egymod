@@ -275,6 +275,8 @@ export function App() {
           changeLang={changeLang}
           currentThemeId={currentThemeId}
           changeTheme={changeTheme}
+          onSelectTheme={changeTheme}
+          themes={THEMES_LIST}
           t={t}
           themeStyles={themeStyles}
           isRTL={isRTL}
