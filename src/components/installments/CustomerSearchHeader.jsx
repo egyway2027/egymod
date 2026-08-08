@@ -63,11 +63,11 @@ export default function CustomerSearchHeader({
         <div style={{ width: "100%", minWidth: 0, boxSizing: "border-box" }}>
           <NameComboBox
             items={rows}
-            getLabel={(r) => `${r.name} — ${r.item}`}
+            getLabel={(r) => r.name || r.clientName}
             getSecondary={(r) => `${t.remaining || (isEN ? "Remaining" : "متبقي")} ${fmtCleanInt(r.remaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
             placeholder={t.searchClientPlaceholder || (isEN ? "Type client name..." : "اكتب اسم العميل...")}
             onSelect={(item) => { setSelected(item); setAmount(""); }}
-            selectedLabel={selected ? `${selected.name} — ${selected.item}` : null}
+            selectedLabel={selected ? (selected.name || selected.clientName) : null}
             onClear={() => { setSelected(null); setAmount(""); }}
             styles={styles}
             t={t}
@@ -77,6 +77,27 @@ export default function CustomerSearchHeader({
 
       {selected && (
         <form onSubmit={onSubmitPayment} style={{ marginTop: 10, width: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* 📌 مربعي اسم العميل والسلعة منفصلين جنباً إلى جنب */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, width: "100%" }}>
+            <div style={{ background: themeStyles.inputBg || "#141414", padding: "12px 16px", borderRadius: themeStyles.borderRadius || 10, border: `1px solid ${themeStyles.border || "#333333"}` }}>
+              <span style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa", display: "block", marginBottom: 4, fontWeight: 700 }}>
+                {t.clientName || (isEN ? "Client Name" : "اسم العميل")}
+              </span>
+              <strong style={{ fontSize: 14, color: themeStyles.text || "#ffffff" }}>
+                {selected.name || selected.clientName}
+              </strong>
+            </div>
+
+            <div style={{ background: themeStyles.inputBg || "#141414", padding: "12px 16px", borderRadius: themeStyles.borderRadius || 10, border: `1px solid ${themeStyles.border || "#333333"}` }}>
+              <span style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa", display: "block", marginBottom: 4, fontWeight: 700 }}>
+                {t.itemLabel || (isEN ? "Item Purchased" : "السلعة المشتراة")}
+              </span>
+              <strong style={{ fontSize: 14, color: themeStyles.accentGold || "#d4af37" }}>
+                {selected.item || selected.itemName || "غير محدد"}
+              </strong>
+            </div>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%", boxSizing: "border-box" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
               <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
