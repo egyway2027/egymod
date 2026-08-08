@@ -64,7 +64,7 @@ export default function CustomerSearchHeader({
           <NameComboBox
             items={rows || []}
             getLabel={(r) => (r ? (r.name || r.clientName || "عميل بدون اسم") : "")}
-            getSecondary={(r) => (r ? `${t.remaining || (isEN ? "Remaining" : "متبقي")} ${fmtCleanInt(r.remaining ?? r.remainingAmount)} ${t.currency || (isEN ? "EGP" : "ج.م")}` : "")}
+            getSecondary={(r) => r ? `${t.remaining || (isEN ? "Remaining" : "متبقي")} ${fmtCleanInt(r.remaining ?? r.remainingAmount)} ${t.currency || (isEN ? "EGP" : "ج.م")}` : ""}
             placeholder={t.searchClientPlaceholder || (isEN ? "Type client name..." : "اكتب اسم العميل...")}
             onSelect={(item) => {
               if (typeof setSelected === "function") setSelected(item);
@@ -90,7 +90,7 @@ export default function CustomerSearchHeader({
                 {t.clientName || (isEN ? "Client Name" : "اسم العميل")}
               </span>
               <strong style={{ fontSize: 14, color: themeStyles.text || "#ffffff" }}>
-                {selected.name || selected.clientName || "غير محدد"}
+                {selected.name || selected.clientName}
               </strong>
             </div>
 
@@ -235,9 +235,9 @@ export default function CustomerSearchHeader({
             </div>
           </div>
 
-          {/* شريط الإحصائيات الحية */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: themeStyles.highlightBg || "rgba(212,175,55,0.08)", border: `1px dashed ${themeStyles.accent || "#d4af37"}`, borderRadius: themeStyles.borderRadius || 12, padding: 14, margin: "6px 0" }}>
-            <LiveStat label={t.itemLabel || (isEN ? "Item" : "السلعة")} value={selected.item || selected.itemName || selected.item_name || "غير محدد"} themeStyles={themeStyles} />
+          {/* شريط الإحصائيات الحية */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: themeStyles.highlightBg, border: `1px dashed ${themeStyles.accent}`, borderRadius: themeStyles.borderRadius || 12, padding: 14, margin: "6px 0" }}>
+            <LiveStat label={t.itemLabel || (isEN ? "Item" : "السلعة")} value={selected.item} themeStyles={themeStyles} />
             <LiveStat label={t.currentRemaining || (isEN ? "Current Remaining" : "المتبقي الحالي")} value={`${fmtCleanInt(currentRemaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`} themeStyles={themeStyles} />
             <LiveStat label={t.remainingAfterPay || (isEN ? "Remaining After Payment" : "المتبقي بعد هذا السداد")} value={`${fmtCleanInt(remainingAfterPay)} ${t.currency || (isEN ? "EGP" : "ج.م")}`} themeStyles={themeStyles} />
           </div>
