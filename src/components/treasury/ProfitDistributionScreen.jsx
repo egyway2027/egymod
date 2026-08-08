@@ -92,7 +92,7 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
     const cleanFrom = fromDate || "";
     const cleanTo = toDate || "";
 
-    // 1. المصروفات والرواتب غير المسواة بداخل الفترة
+    // 1. المصروفات والرواتب غير المسواة بداخل الفترة (المطلوب خصمها الآن)
     const periodExpenses = expenses
       .filter((e) => !e.is_settled && (!cleanFrom || e.date >= cleanFrom) && (!cleanTo || e.date <= cleanTo))
       .reduce((sum, e) => sum + Number(e.amount || 0), 0);
@@ -101,16 +101,7 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
       .filter((s) => !s.is_settled && (!cleanFrom || s.date >= cleanFrom) && (!cleanTo || s.date <= cleanTo))
       .reduce((sum, s) => sum + Number(s.amount || 0), 0);
 
-    // 2. إجمالي المصروفات والرواتب التي تم تسويتها في توزيعات سابقة
-    const settledExpenses = expenses
-      .filter((e) => e.is_settled)
-      .reduce((sum, e) => sum + Number(e.amount || 0), 0);
-
-    const settledSalaries = salaryLog
-      .filter((s) => s.is_settled)
-      .reduce((sum, s) => sum + Number(s.amount || 0), 0);
-
-    // 3. إجمالي أرباح العقود والتحصيلات الخام
+    // 2. إجمالي أرباح العقود والتحصيلات الخام
     const rawProfitPool = (contracts || []).reduce((acc, curr) => {
       const sale = Number(curr.sale_price ?? curr.salePrice ?? curr.sale ?? 0);
       const cost = Number(curr.cost_price ?? curr.costPrice ?? curr.cost ?? 0);
@@ -128,13 +119,13 @@ export function ProfitDistributionScreen({ onBack, t = {}, themeStyles = {} }) {
       return acc + Math.round((down + totalPaidInst) * ((sale - cost) / sale));
     }, 0);
 
-    // 4. إجمالي التوزيعات النقدية السابقة للشركاء
+    // 3. إجمالي ما تم سحبه من الخزينة سابقاً (أرباح شركاء + مصروفات ورواتب مسواة)
     const totalDistributedSoFar = distributionsLog.reduce((sum, d) => sum + Number(d.amount || 0), 0);
 
-    // 5. إجمالي الأرباح المحصلة المتبقية (الخام - التوزيعات - المصروفات والرواتب المسواة)
-    const activeProfitPool = Math.max(0, rawProfitPool - totalDistributedSoFar - settledExpenses - settledSalaries);
+    // 4. إجمالي الأرباح المحصلة المتبقية (يطابق الشاشة الرئيسية تماماً = 167)
+    const activeProfitPool = Math.max(0, rawProfitPool - totalDistributedSoFar);
 
-    // 6. الصافي القابل للتوزيع بعد خصم المصروفات والرواتب الحالية غير المسواة
+    // 5. الصافي القابل للتوزيع بعد خصم المصروفات والرواتب الحالية غير المسواة (يطابق شاشة الخزينة = 147)
     const netPeriodProfit = Math.max(0, activeProfitPool - periodExpenses - periodSalaries);
 
     return {
