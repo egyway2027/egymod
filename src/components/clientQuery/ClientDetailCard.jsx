@@ -111,6 +111,9 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
       const clientId = contract.client_id || contract.clients?.id;
       const contractId = contract.id;
 
+      const natIdVal = editForm.national_id || editForm.nationalId || "";
+      const addrVal = editForm.address || "";
+
       // 1. تحديث جدول العملاء بالسحابة (clients)
       if (clientId) {
         await supabase
@@ -118,6 +121,8 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
           .update({
             name: editForm.name,
             phone: editForm.phone,
+            national_id: natIdVal,
+            address: addrVal,
             guarantor_name: editForm.guarantor,
             guarantor_phone: editForm.guarantorPhone
           })
@@ -136,6 +141,8 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
           .update({
             client_name: editForm.name,
             client_phone: editForm.phone,
+            national_id: natIdVal,
+            address: addrVal,
             guarantor_name: gNameVal,
             guarantor_phone: gPhoneVal,
             item_name: editForm.item,
@@ -165,6 +172,9 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
         clientName: editForm.name,
         phone: editForm.phone,
         clientPhone: editForm.phone,
+        national_id: natIdVal,
+        nationalId: natIdVal,
+        address: addrVal,
         guarantor: gNameVal,
         guarantor_name: gNameVal,
         guarantorName: gNameVal,
@@ -221,10 +231,16 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
                 }
               }
 
+              const natIdVal = contract.national_id || contract.nationalId || "";
+              const addrVal = contract.address || "";
+
               setEditForm({
                 ...contract,
                 name: contract.name || contract.clientName || contract.client_name || "",
                 phone: contract.phone || contract.clientPhone || contract.client_phone || "",
+                national_id: natIdVal,
+                nationalId: natIdVal,
+                address: addrVal,
                 guarantor: gName,
                 guarantor_name: gName,
                 guarantorName: gName,
