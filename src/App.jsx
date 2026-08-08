@@ -101,20 +101,20 @@ export function App() {
   // 🌟 نافذة التنبيه المخصصة بوسط الشاشة
   const [successModal, setSuccessModal] = useState({ open: false, title: "", msg: "" });
 
-  // أزرار شبكة التحكم الرئيسية
+  // أزرار شبكة التحكم الرئيسية مع نصوص احتياطية ضامنة للظهور
   const buttons = [
-    { key: "addClient", label: t.addClient, icon: UserPlus, tone: "dark" },
-    { key: "pay", label: t.pay, icon: CreditCard, tone: "gold" },
-    { key: "search", label: t.search, icon: Search, tone: "silver" },
-    { key: "monthlyDues", label: t.monthlyDues, icon: CalendarClock, tone: "copper" },
-    { key: "lateClients", label: t.lateClients, icon: UserX, tone: "rose" },
-    { key: "deleteClient", label: t.deleteClient, icon: Trash2, tone: "gold" },
-    { key: "treasury", label: t.treasury, icon: Wallet, tone: "roseDark" },
-    { key: "treasuryPartners", label: t.treasuryPartners, icon: Users, tone: "copper" },
-    { key: "treasuryEmployees", label: t.treasuryEmployees, icon: UserCog, tone: "silver" },
-    { key: "settings", label: t.settings, icon: Settings, tone: "tan" },
+    { key: "addClient", label: t.addClient || "إضافة عميل جديد", icon: UserPlus, tone: "dark" },
+    { key: "pay", label: t.pay || "سداد الأقساط", icon: CreditCard, tone: "gold" },
+    { key: "search", label: t.search || "استعلام عن عميل", icon: Search, tone: "silver" },
+    { key: "monthlyDues", label: t.monthlyDues || "مستحقات هذا الشهر", icon: CalendarClock, tone: "copper" },
+    { key: "lateClients", label: t.lateClients || "المتأخرين عن السداد", icon: UserX, tone: "rose" },
+    { key: "deleteClient", label: t.deleteClient || "حذف حساب عميل", icon: Trash2, tone: "gold" },
+    { key: "treasury", label: t.treasury || "توزيع الأرباح والخزينة", icon: Wallet, tone: "roseDark" },
+    { key: "treasuryPartners", label: t.treasuryPartners || "الشركاء ورأس المال", icon: Users, tone: "copper" },
+    { key: "treasuryEmployees", label: t.treasuryEmployees || "شؤون الموظفين والرواتب", icon: UserCog, tone: "silver" },
+    { key: "settings", label: t.settings || "الإعدادات والصلاحيات", icon: Settings, tone: "tan" },
     { key: "whatsapp", label: "مركز الواتساب الذكي", icon: MessageSquare, tone: "roseLight" },
-    { key: "exit", label: t.exit, icon: Power, tone: "dark" },
+    { key: "exit", label: t.exit || "تسجيل الخروج", icon: Power, tone: "dark" },
   ];
 
   const currentLangObj = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
@@ -330,23 +330,23 @@ export function App() {
           </header>
 
           <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
-            <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-              <TrendingUp size={24} color={themeStyles.accentGold} />
-              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{netProfit.toLocaleString()} {t.currency}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.netProfit}</div>
-              <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.netProfitSub}</div>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+              <TrendingUp size={24} color={themeStyles.accentGold || "#d0b689"} />
+              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8, color: themeStyles.text || "#ffffff" }}>{netProfit.toLocaleString()} {t.currency || "ج.م"}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689" }}>{t.netProfit || "صافي الأرباح حتى اليوم"}</div>
+              <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.netProfitSub || "إجمالي أرباح العقود والتحصيلات الصافية"}</div>
             </div>
 
-            <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-              <CalendarClock size={24} color={themeStyles.accentGold} />
-              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{monthlyDues.toLocaleString()} {t.currency}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.monthlyDues}</div>
-              <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.monthlyDuesSub}</div>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+              <CalendarClock size={24} color={themeStyles.accentGold || "#d0b689"} />
+              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8, color: themeStyles.text || "#ffffff" }}>{monthlyDues.toLocaleString()} {t.currency || "ج.م"}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689" }}>{t.monthlyDues || "مستحقات هذا الشهر"}</div>
+              <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.monthlyDuesSub || "المطلوب تحصيله حالياً"}</div>
             </div>
 
-            <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-              <Wallet size={24} color={themeStyles.accentGold} />
-              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+              <Wallet size={24} color={themeStyles.accentGold || "#d0b689"} />
+              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8, color: themeStyles.text || "#ffffff" }}>
                 {(clientsList || []).reduce((acc, curr) => {
                   if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
                   const sale = Number(curr.sale_price || curr.salePrice || curr.sale || curr.total || 0);
@@ -358,10 +358,10 @@ export function App() {
                     .reduce((sum, i) => sum + Number(i.amount || 0), 0);
 
                   return acc + Math.max(0, sale - down - paidFromInst);
-                }, 0).toLocaleString()} {t.currency}
+                }, 0).toLocaleString()} {t.currency || "ج.م"}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold }}>{t.totalPortfolio}</div>
-              <div style={{ fontSize: 11, color: themeStyles.subText }}>{t.totalPortfolioSub}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689" }}>{t.totalPortfolio || "إجمالي الأقساط المتبقية"}</div>
+              <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.totalPortfolioSub || "المبالغ المتبقية في ذمة العملاء"}</div>
             </div>
           </section>
 
@@ -386,9 +386,9 @@ export function App() {
 }}
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
-                    background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : themeStyles.card,
-                    color: (b.tone === "silver" || b.tone === "rose") ? "#111" : (b.tone === "gold" || b.tone === "copper" || b.tone === "roseDark") ? "#ffffff" : (themeStyles.text || "#111"),
-                    border: `1px solid ${themeStyles.border}`, borderRadius: themeStyles.buttonRadius || 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
+                    background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : (themeStyles.card || "#1e1e1e"),
+                    color: (b.tone === "silver" || b.tone === "rose") ? "#111111" : "#ffffff",
+                    border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.buttonRadius || 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
                   }}
                 >
                   <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
