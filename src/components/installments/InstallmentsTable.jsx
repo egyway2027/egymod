@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Printer, Trash2 } from "lucide-react";
+import { CustomDatePicker } from "../CustomDatePicker";
 import { Field, DateInput } from "../CommonUI";
 
 const fmtCleanInt = (val) => {
@@ -115,13 +116,51 @@ export function AllPaymentsRegisterModal({ payments = [], storeInfo = {}, onClos
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <Field label={t.fromDate || (isEN ? "From Date" : "من تاريخ")} styles={styles}>
-              <DateInput value={fromDate} onChange={e => setFromDate(e.target.value)} style={{ padding: "6px 10px", fontSize: 13 }} themeStyles={themeStyles} t={t} lang={isEN ? "en" : "ar"} />
-            </Field>
-            <Field label={t.toDate || (isEN ? "To Date" : "إلى تاريخ")} styles={styles}>
-              <DateInput value={toDate} onChange={e => setToDate(e.target.value)} style={{ padding: "6px 10px", fontSize: 13 }} themeStyles={themeStyles} t={t} lang={isEN ? "en" : "ar"} />
-            </Field>
+          <div style={{ display: "flex", gap: "14px", alignItems: "flex-end", flexWrap: "wrap" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12.5px", fontWeight: 700, color: themeStyles.subText || "#aaaaaa" }}>
+              <span>{t.fromDate || (isEN ? "From Date" : "من تاريخ")}</span>
+              <CustomDatePicker
+                value={fromDate}
+                onChange={(valOrEvent) => {
+                  const val = typeof valOrEvent === "string" ? valOrEvent : valOrEvent?.target?.value || valOrEvent?.value || "";
+                  setFromDate(val);
+                }}
+                isEN={isEN}
+                themeStyles={themeStyles}
+                inputStyle={{
+                  background: themeStyles.card || "#1e1e1e",
+                  border: `1px solid ${themeStyles.border || "#333333"}`,
+                  borderRadius: "8px",
+                  padding: "8px 12px",
+                  color: themeStyles.text || "#ffffff",
+                  fontSize: "13px",
+                  outline: "none",
+                  minWidth: "160px"
+                }}
+              />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12.5px", fontWeight: 700, color: themeStyles.subText || "#aaaaaa" }}>
+              <span>{t.toDate || (isEN ? "To Date" : "إلى تاريخ")}</span>
+              <CustomDatePicker
+                value={toDate}
+                onChange={(valOrEvent) => {
+                  const val = typeof valOrEvent === "string" ? valOrEvent : valOrEvent?.target?.value || valOrEvent?.value || "";
+                  setToDate(val);
+                }}
+                isEN={isEN}
+                themeStyles={themeStyles}
+                inputStyle={{
+                  background: themeStyles.card || "#1e1e1e",
+                  border: `1px solid ${themeStyles.border || "#333333"}`,
+                  borderRadius: "8px",
+                  padding: "8px 12px",
+                  color: themeStyles.text || "#ffffff",
+                  fontSize: "13px",
+                  outline: "none",
+                  minWidth: "160px"
+                }}
+              />
+            </label>
           </div>
           <button
             type="button"
