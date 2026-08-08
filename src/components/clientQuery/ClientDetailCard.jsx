@@ -284,6 +284,14 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
           <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.phone : contract.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
         </label>
         <label style={labelStyle}>
+          <span>{t.nationalIdLabel || (isEN ? "National ID" : "الرقم القومي")}</span>
+          <input style={inputStyle} disabled={!isEditing} value={isEditing ? (editForm.national_id || editForm.nationalId || "") : (contract.national_id || contract.nationalId || "-")} onChange={(e) => setEditForm({ ...editForm, national_id: e.target.value, nationalId: e.target.value })} />
+        </label>
+        <label style={labelStyle}>
+          <span>{t.addressLabel || (isEN ? "Address" : "العنوان")}</span>
+          <input style={inputStyle} disabled={!isEditing} value={isEditing ? (editForm.address || "") : (contract.address || "-")} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} />
+        </label>
+        <label style={labelStyle}>
           <span>{t.guarantorNameLabel || (isEN ? "Guarantor Name" : "اسم الضامن")}</span>
           <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.guarantor : (contract.guarantor || contract.guarantor_name || contract.guarantorName || "-")} onChange={(e) => setEditForm({ ...editForm, guarantor: e.target.value, guarantor_name: e.target.value, guarantorName: e.target.value })} />
         </label>
