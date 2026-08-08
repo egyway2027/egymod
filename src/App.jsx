@@ -294,8 +294,8 @@ export function App() {
             borderRadius: 18, padding: "18px 24px", marginBottom: 20, color: "#fff"
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>
-                {t.welcome} {t.generalSupervisor}
+              <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#ffffff" }}>
+                {(t.welcome || "مرحباً،")} {(t.generalSupervisor || "المشرف العام")}
               </div>
 
               <button onClick={() => setShowLangModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
@@ -320,8 +320,8 @@ export function App() {
             </div>
 
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 800 }}>{t.appName}</div>
-              <div style={{ fontSize: 11, opacity: 0.8 }}>Cloud Enterprise Active</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#ffffff" }}>{t.appName || "نظام إدارة الأقساط والمبيعات"}</div>
+              <div style={{ fontSize: 11, opacity: 0.8, color: "#ffffff" }}>Cloud Enterprise Active</div>
             </div>
 
             <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
