@@ -718,12 +718,21 @@ export function SettingsScreen({
             {/* THEMES GRID (عرض الـ 100 ثيم كاملة) */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "12px" }}>
               {filteredThemes.map((th) => {
-                const isCurrent = currentThemeId === th.id;
+                const isCurrent = currentThemeId === th.id || (typeof currentThemeId === "object" && currentThemeId?.id === th.id);
                 return (
                   <div
                     key={th.id}
                     onClick={() => {
-                      if (onSelectTheme) onSelectTheme(th.id || th);
+                      try {
+                        localStorage.setItem("egymod_theme", th.id);
+                        localStorage.setItem("egymod_theme_data", JSON.stringify(th));
+                      } catch (e) {
+                        console.error(e);
+                      }
+                      if (typeof onSelectTheme === "function") {
+                        onSelectTheme(th.id);
+                        onSelectTheme(th);
+                      }
                       setIsThemeModalOpen(false);
                     }}
                     style={{
