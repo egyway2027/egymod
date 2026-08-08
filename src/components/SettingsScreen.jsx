@@ -17,8 +17,30 @@ import { supabase } from "../supabaseClient";
 import * as themesModule from "../config/themes";
 import * as languagesModule from "../config/languages";
 
-const THEMES = themesModule.THEMES || themesModule.themes || themesModule.default || [];
-const LANGUAGES = languagesModule.LANGUAGES || languagesModule.languages || languagesModule.default || [];
+// ثيمات مدمجة احتياطية تمنع ظهور الشاشة فارغة نهائياً
+const FALLBACK_THEMES = [
+  { id: "dark_gold", name: "ذهبي ملكي فاخر", accentGold: "#d4af37", accent: "#e07a5f", card: "#1e1e1e" },
+  { id: "oled_dark", name: "الداكن والـ OLED", accentGold: "#e8cd9c", accent: "#3b82f6", card: "#121212" },
+  { id: "emerald", name: "زمرد أندلسي", accentGold: "#10b981", accent: "#059669", card: "#111827" },
+  { id: "royal_purple", name: "ياقوت سلطاني", accentGold: "#a855f7", accent: "#ec4899", card: "#1f192e" },
+  { id: "modern_glass", name: "الزجاجي الحديث", accentGold: "#38bdf8", accent: "#818cf8", card: "#182232" }
+];
+
+const getSafeThemesList = (propThemes) => {
+  if (Array.isArray(propThemes) && propThemes.length > 0) return propThemes;
+  const raw = themesModule.THEMES || themesModule.themes || themesModule.default || themesModule;
+  if (Array.isArray(raw) && raw.length > 0) return raw;
+  if (typeof raw === "object" && raw !== null) {
+    const vals = Object.values(raw).filter((item) => item && typeof item === "object" && (item.id || item.name));
+    if (vals.length > 0) return vals;
+  }
+  return FALLBACK_THEMES;
+};
+
+const LANGUAGES = languagesModule.LANGUAGES || languagesModule.languages || languagesModule.default || [
+  { code: "ar", name: "العربية", dir: "rtl" },
+  { code: "en", name: "English", dir: "ltr" }
+];
 
 export function SettingsScreen({
   onBack,
@@ -40,9 +62,9 @@ export function SettingsScreen({
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isLangModalOpen, setIsLangModalOpen] = useState(false);
 
-  // مصفوفات الثيمات واللغات الآمنة
+  // مصفوفات الثيمات واللغات الآمنة الضامنة لعدم الفراغ
   const availableThemes = useMemo(() => {
-    return (themes && themes.length > 0) ? themes : (THEMES || []);
+    return getSafeThemesList(themes);
   }, [themes]);
 
   const availableLanguages = useMemo(() => {
