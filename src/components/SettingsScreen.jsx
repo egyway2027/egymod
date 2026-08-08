@@ -14,8 +14,8 @@ import {
   Send, ExternalLink, Copy, CheckCircle2, AlertTriangle, X
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import { THEMES } from "../config/themes";
-import { LANGUAGES } from "../config/languages";
+import THEMES from "../config/themes";
+import LANGUAGES from "../config/languages";
 
 export function SettingsScreen({
   onBack,
