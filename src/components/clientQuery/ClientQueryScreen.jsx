@@ -54,6 +54,8 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
       const payload = {
         client_name: updatedData.client_name || updatedData.clientName || updatedData.name,
         client_phone: updatedData.client_phone || updatedData.clientPhone || updatedData.phone,
+        national_id: updatedData.national_id || updatedData.nationalId || "",
+        address: updatedData.address || "",
         item_name: updatedData.item_name || updatedData.itemName || updatedData.item,
         sale_price: Number(updatedData.sale_price ?? updatedData.salePrice ?? updatedData.sale ?? 0),
         cost_price: Number(updatedData.cost_price ?? updatedData.costPrice ?? updatedData.cost ?? 0),
