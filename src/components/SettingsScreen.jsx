@@ -782,42 +782,53 @@ export function SettingsScreen({
       {/* 🟢 MODAL 2: LANGUAGE SELECTOR */}
       {isLangModalOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: "20px", width: "100%", maxWidth: "420px", padding: "20px" }}>
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: "20px", width: "100%", maxWidth: "620px", maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column", padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: "12px" }}>
               <h3 style={{ margin: 0, color: themeStyles.accentGold || "#e8cd9c", fontSize: "16px", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}>
                 <Globe size={18} /> {isEN ? "Select Language" : "اختر لغة النظام"}
               </h3>
-              <button onClick={() => setIsLangModalOpen(false)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer" }}><X size={20} /></button>
+              <button onClick={() => setIsLangModalOpen(false)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", padding: "4px" }}><X size={22} /></button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {availableLanguages.map((lang) => (
-                <button
-                  key={lang.code || lang.id}
-                  type="button"
-                  onClick={() => {
-                    document.documentElement.lang = lang.code;
-                    document.documentElement.dir = lang.dir || (lang.code === "ar" ? "rtl" : "ltr");
-                    window.location.reload();
-                  }}
-                  style={{
-                    background: (t?.lang === lang.code || (isEN && lang.code === "en") || (!isEN && lang.code === "ar")) ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.inputBg || "#121214"),
-                    color: (t?.lang === lang.code || (isEN && lang.code === "en") || (!isEN && lang.code === "ar")) ? "#111" : (themeStyles.text || "#fff"),
-                    border: `1px solid ${themeStyles.border || "#333"}`,
-                    borderRadius: "10px",
-                    padding: "12px",
-                    fontWeight: 800,
-                    fontSize: "14px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justify: "space-between"
-                  }}
-                >
-                  <span>{lang.name || lang.label}</span>
-                  {((t?.lang === lang.code) || (isEN && lang.code === "en") || (!isEN && lang.code === "ar")) && <Check size={18} />}
-                </button>
-              ))}
+            <div style={{ overflowY: "auto", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "10px", paddingRight: "4px" }}>
+              {availableLanguages.map((lang) => {
+                const isSelected = (currentLang === lang.code) || (t?.lang === lang.code) || (isEN && lang.code === "en") || (!isEN && lang.code === "ar");
+                return (
+                  <button
+                    key={lang.code || lang.id}
+                    type="button"
+                    onClick={() => {
+                      if (typeof changeLang === "function") {
+                        changeLang(lang.code);
+                      } else {
+                        document.documentElement.lang = lang.code;
+                        document.documentElement.dir = lang.dir || (lang.code === "ar" ? "rtl" : "ltr");
+                        window.location.reload();
+                      }
+                      setIsLangModalOpen(false);
+                    }}
+                    style={{
+                      background: isSelected ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.inputBg || "#121214"),
+                      color: isSelected ? "#111" : (themeStyles.text || "#fff"),
+                      border: `1px solid ${isSelected ? (themeStyles.accentGold || "#e8cd9c") : (themeStyles.border || "#333")}`,
+                      borderRadius: "12px",
+                      padding: "12px 8px",
+                      fontWeight: 800,
+                      fontSize: "13px",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justify: "center",
+                      gap: "6px",
+                      textAlign: "center"
+                    }}
+                  >
+                    <span>{lang.flag || "🌐"} {lang.name || lang.label}</span>
+                    {isSelected && <Check size={16} />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
