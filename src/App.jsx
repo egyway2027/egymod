@@ -302,8 +302,8 @@ export function App() {
                 <Globe size={15} /> <span>{currentLangObj.flag} {currentLangObj.name}</span>
               </button>
 
-              <button onClick={() => navigateTo("settings")} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                <Palette size={15} /> <span>{t.appThemes} (100)</span>
+              <button onClick={() => setShowThemeModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <Palette size={15} /> <span>{t.appThemes || "ثيمات النظام"}</span>
               </button>
 
               <button onClick={() => setShowGlobalSearchModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
@@ -473,34 +473,113 @@ export function App() {
         </div>
       )}
 
-      {/* 🌐 نافذة اختيار اللغات الـ 15 المكتملة */}
-      {showLangModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div style={{ background: themeStyles.card, border: `1px solid ${themeStyles.border}`, borderRadius: 20, padding: 24, width: "100%", maxWidth: 460, maxHeight: "85vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <span style={{ fontWeight: 800, fontSize: 18, color: themeStyles.accentGold }}>{t.selectLang} (15)</span>
-              <X style={{ cursor: "pointer" }} onClick={() => setShowLangModal(false)} />
+      {/* 🎨 نافذة اختيار الثيمات المباشرة بالصفحة الرئيسية */}
+      {showThemeModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: 16 }}>
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 20, padding: 20, width: "100%", maxWidth: 850, maxHeight: "85vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: 12 }}>
+              <span style={{ fontWeight: 800, fontSize: 16, color: themeStyles.accentGold || "#d0b689", display: "flex", alignItems: "center", gap: 8 }}>
+                <Palette size={18} /> {t.selectTheme || "اختر ثيم ومظهر البرنامج"}
+              </span>
+              <X style={{ cursor: "pointer", color: "#aaa" }} onClick={() => setShowThemeModal(false)} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(1, 1fr)", gap: 8 }}>
-              {LANGUAGES.map(l => (
-                <button
-                  key={l.code}
-                  onClick={() => {
-                    changeLang(l.code);
-                    setShowLangModal(false);
-                  }}
-                  style={{
-                    width: "100%", padding: "12px 16px",
-                    background: currentLang === l.code ? "rgba(212, 175, 55, 0.2)" : themeStyles.inputBg,
-                    border: `1px solid ${currentLang === l.code ? themeStyles.accentGold : themeStyles.border}`,
-                    color: themeStyles.text, borderRadius: 10, textAlign: "start", fontWeight: 700, cursor: "pointer",
-                    display: "flex", alignItems: "center", justifyContent: "space-between"
-                  }}
-                >
-                  <span>{l.flag} {l.name}</span>
-                  <span style={{ fontSize: 12, opacity: 0.6 }}>{l.code.toUpperCase()}</span>
-                </button>
-              ))}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+              {(THEMES_LIST || []).map((th) => {
+                const isCurrent = currentThemeId === th.id;
+                return (
+                  <div
+                    key={th.id}
+                    onClick={() => {
+                      changeTheme(th.id);
+                      setShowThemeModal(false);
+                    }}
+                    style={{
+                      background: th.card || "#111",
+                      border: `2px solid ${isCurrent ? (themeStyles.accentGold || "#d0b689") : (themeStyles.border || "#333")}`,
+                      borderRadius: "12px",
+                      padding: "12px",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      display: "flex",
+                      flexDirection: "column",
+                      justify: "space-between",
+                      gap: "10px"
+                    }}
+                  >
+                    <div style={{ fontWeight: 800, color: th.accentGold || "#fff", fontSize: "13px" }}>{th.name}</div>
+                    <div style={{ display: "flex", justifyContent: "center", gap: "6px" }}>
+                      <span style={{ width: "12px", height: "12px", borderRadius: "50%", background: th.bg || "#111", border: "1px solid #555" }} />
+                      <span style={{ width: "12px", height: "12px", borderRadius: "50%", background: th.card || "#222", border: "1px solid #555" }} />
+                      <span style={{ width: "12px", height: "12px", borderRadius: "50%", background: th.accentGold || "#d0b689", border: "1px solid #fff" }} />
+                    </div>
+                    <button
+                      type="button"
+                      style={{
+                        background: isCurrent ? "#4caf50" : (th.accentGold || "#d0b689"),
+                        color: "#111",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "6px 10px",
+                        fontSize: "11px",
+                        fontWeight: 800
+                      }}
+                    >
+                      {isCurrent ? "نشط الآن ✓" : "تطبيق الثيم"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌐 نافذة اختيار اللغات المنسقة بوسط الشاشة (Grid Layout) */}
+      {showLangModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: 16 }}>
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 20, padding: 20, width: "100%", maxWidth: 580, maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: 12 }}>
+              <span style={{ fontWeight: 800, fontSize: 16, color: themeStyles.accentGold || "#d0b689", display: "flex", alignItems: "center", gap: 8 }}>
+                <Globe size={18} /> {t.selectLang || "اختر لغة النظام"}
+              </span>
+              <X style={{ cursor: "pointer", color: "#aaa" }} onClick={() => setShowLangModal(false)} />
+            </div>
+            <div style={{ overflowY: "auto", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10, paddingRight: 4 }}>
+              {(LANGUAGES || []).map((l) => {
+                const isSelected = currentLang === l.code;
+                return (
+                  <button
+                    key={l.code}
+                    type="button"
+                    onClick={() => {
+                      if (typeof changeLang === "function") {
+                        changeLang(l.code);
+                      }
+                      setShowLangModal(false);
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "10px 8px",
+                      background: isSelected ? (themeStyles.accentGold || "#d0b689") : (themeStyles.inputBg || "#121214"),
+                      color: isSelected ? "#111111" : (themeStyles.text || "#ffffff"),
+                      border: `1px solid ${isSelected ? (themeStyles.accentGold || "#d0b689") : (themeStyles.border || "#333333")}`,
+                      borderRadius: 12,
+                      fontWeight: 700,
+                      fontSize: 12.5,
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justify: "center",
+                      gap: 4,
+                      textAlign: "center"
+                    }}
+                  >
+                    <span>{l.flag || "🌐"} {l.name}</span>
+                    <span style={{ fontSize: 10, opacity: 0.7 }}>{l.code.toUpperCase()}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
