@@ -135,13 +135,13 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   // ✅ قائمة اقتراحات آمنة تحمي من انهيار الشاشة البيضاء
 const suggestions = useMemo(() => {
   const q = String(searchQuery || "").trim().toLowerCase();
-  if (!q) return [];
 
   return (normalizedContracts || []).filter((item) => {
     const isArchived = item.status === "archived" || item.status === "deleted" || item.is_deleted;
     const isMatchTab = activeTab === "archive" ? isArchived : !isArchived;
 
     if (!isMatchTab) return false;
+    if (!q) return true;
 
     const name = String(item.name || "").toLowerCase();
     const phone = String(item.phone || "").toLowerCase();
@@ -268,10 +268,13 @@ const handleSelectSearchItem = (contract) => {
    <input
   type="text"
   value={searchQuery}
-  onClick={() => setIsExcelModalOpen(true)}
+  onFocus={() => {
+    setIsFocused(true);
+    setSelectedContract(null);
+  }}
   onChange={(e) => {
     setSearchQuery(e.target.value);
-    setSelectedContract(null); // 🎯 إعادة إظهار قائمة الاقتراحات عند التعديل
+    setSelectedContract(null);
   }}
   placeholder={t.searchPlaceholder || (isEN ? "Search by client name, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
   style={{
@@ -296,7 +299,7 @@ const handleSelectSearchItem = (contract) => {
           )}
 
           {/* SUGGESTIONS LIST */}
-          {searchQuery && !selectedContract && (
+          {(isFocused || searchQuery) && !selectedContract && (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "250px", overflowY: "auto" }}>
               {suggestions.map((item) => (
                 <div
