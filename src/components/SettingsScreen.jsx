@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
-export default function SettingsScreen({
+export function SettingsScreen({
   onBack,
   onSelectTheme,
   themes = [],
