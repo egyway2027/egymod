@@ -1,53 +1,31 @@
-/**
- * =========================================================
- * 📌 الملف: هك التحكم بالمظهر واللغة (Theme & Lang Controller)
- * 📁 المسار: src/hooks/useThemeAndLang.js
- * 📝 الوظيفة: إدارة حفظ الثيم واللغة والاتجاه (RTL/LTR)
- *            في LocalStorage وتزويد التطبيق بالقيم المحدثة.
- * =========================================================
- */
-
-import { useState, useEffect, useMemo } from "react";
-import { LANGUAGES, TRANSLATIONS } from "../config/languages";
-import { THEMES_LIST, THEME_CATEGORIES } from "../config/themes";
+import { useState, useMemo, useEffect } from "react";
+import { THEMES_LIST, THEME_CATEGORIES, getThemeStyles } from "../config/themes";
+import { LANGUAGES } from "../config/languages";
 
 export function useThemeAndLang() {
-  // 1. إدارة اللغة
-  const [currentLang, setCurrentLang] = useState(() => {
-    return localStorage.getItem("egymod_lang") || "ar";
-  });
+  const [currentLang, setCurrentLang] = useState(() => localStorage.getItem("egymod_lang") || "ar");
+  const [currentThemeId, setCurrentThemeId] = useState(() => localStorage.getItem("egymod_theme") || "royalGold");
 
-  // 2. إدارة الثيم
-  const [currentThemeId, setCurrentThemeId] = useState(() => {
-    return localStorage.getItem("egymod_theme") || "royal_1";
-  });
+  const changeLang = (code) => {
+    setCurrentLang(code);
+    localStorage.setItem("egymod_lang", code);
+  };
 
-  // حفظ وحسب البيانات
-  const langObj = useMemo(() => {
-    return LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
-  }, [currentLang]);
-
-  const t = useMemo(() => {
-    return TRANSLATIONS[currentLang] || TRANSLATIONS.ar;
-  }, [currentLang]);
+  const changeTheme = (themeId) => {
+    const id = typeof themeId === "object" ? themeId.id : themeId;
+    setCurrentThemeId(id);
+    localStorage.setItem("egymod_theme", id);
+  };
 
   const themeStyles = useMemo(() => {
-    return THEMES_LIST.find((t) => t.id === currentThemeId) || THEMES_LIST[0];
+    return getThemeStyles(currentThemeId);
   }, [currentThemeId]);
 
-  // تطبيق الاتجاه RTL / LTR تلقائياً في المستند
-  useEffect(() => {
-    localStorage.setItem("egymod_lang", currentLang);
-    document.documentElement.dir = langObj.dir;
-    document.documentElement.lang = currentLang;
-  }, [currentLang, langObj]);
+  const t = useMemo(() => {
+    return LANGUAGES.find((l) => l.code === currentLang)?.translations || {};
+  }, [currentLang]);
 
-  useEffect(() => {
-    localStorage.setItem("egymod_theme", currentThemeId);
-  }, [currentThemeId]);
-
-  const changeLang = (code) => setCurrentLang(code);
-  const changeTheme = (themeId) => setCurrentThemeId(themeId);
+  const isRTL = currentLang === "ar";
 
   return {
     currentLang,
@@ -56,7 +34,7 @@ export function useThemeAndLang() {
     changeTheme,
     t,
     themeStyles,
-    isRTL: langObj.dir === "rtl",
+    isRTL,
     LANGUAGES,
     THEMES_LIST,
     THEME_CATEGORIES
