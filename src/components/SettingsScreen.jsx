@@ -25,12 +25,15 @@ const LANGUAGES = languagesModule.LANGUAGES || languagesModule.languages || lang
 export function SettingsScreen({
   onBack,
   onSelectTheme,
+  changeTheme,
   themes = [],
+  THEMES_LIST = [],
   currentThemeId,
   t = {},
   themeStyles = {},
   userRole = "admin"
 }) {
+  const handleThemeSelect = onSelectTheme || changeTheme;
   const isEN = useMemo(() => {
     return t?.lang === "en" || document.documentElement?.lang === "en" || document.documentElement?.dir === "ltr";
   }, [t]);
@@ -723,15 +726,9 @@ export function SettingsScreen({
                   <div
                     key={th.id}
                     onClick={() => {
-                      try {
-                        localStorage.setItem("egymod_theme", th.id);
-                        localStorage.setItem("egymod_theme_data", JSON.stringify(th));
-                      } catch (e) {
-                        console.error(e);
-                      }
-                      if (typeof onSelectTheme === "function") {
-                        onSelectTheme(th.id);
-                        onSelectTheme(th);
+                      const activeHandler = handleThemeSelect || onSelectTheme || changeTheme;
+                      if (typeof activeHandler === "function") {
+                        activeHandler(th.id || th);
                       }
                       setIsThemeModalOpen(false);
                     }}
