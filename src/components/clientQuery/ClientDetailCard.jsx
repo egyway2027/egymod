@@ -271,10 +271,12 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
       </div>
 
       {/* SECTION 1: Client Info */}
-      <div style={{ color: themeStyles.accentGold || "#e07a5f", fontSize: "13px", fontWeight: 800, marginBottom: "10px" }}>
+      <div style={{ color: themeStyles.accentGold || "#e07a5f", fontSize: "13px", fontWeight: 800, marginBottom: "12px" }}>
         {t.clientAndGuarantorSection || (isEN ? "Client & Guarantor Information" : "بيانات العميل والضامن")}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "16px" }}>
+
+      {/* الصف الأول: البيانات الأساسية للعميل والضامن (4 خانات رئيسية) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", marginBottom: "12px" }}>
         <label style={labelStyle}>
           <span>{t.clientNameLabel || (isEN ? "Client Name *" : "اسم العميل *")}</span>
           <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.name : contract.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
@@ -284,20 +286,24 @@ export function ClientDetailCard({ contract, onSaveUpdate, t = {}, themeStyles =
           <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.phone : contract.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
         </label>
         <label style={labelStyle}>
-          <span>{t.nationalIdLabel || (isEN ? "National ID" : "الرقم القومي")}</span>
-          <input style={inputStyle} disabled={!isEditing} value={isEditing ? (editForm.national_id || editForm.nationalId || "") : (contract.national_id || contract.nationalId || "-")} onChange={(e) => setEditForm({ ...editForm, national_id: e.target.value, nationalId: e.target.value })} />
-        </label>
-        <label style={labelStyle}>
-          <span>{t.addressLabel || (isEN ? "Address" : "العنوان")}</span>
-          <input style={inputStyle} disabled={!isEditing} value={isEditing ? (editForm.address || "") : (contract.address || "-")} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} />
-        </label>
-        <label style={labelStyle}>
           <span>{t.guarantorNameLabel || (isEN ? "Guarantor Name" : "اسم الضامن")}</span>
           <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.guarantor : (contract.guarantor || contract.guarantor_name || contract.guarantorName || "-")} onChange={(e) => setEditForm({ ...editForm, guarantor: e.target.value, guarantor_name: e.target.value, guarantorName: e.target.value })} />
         </label>
         <label style={labelStyle}>
           <span>{t.guarantorPhoneLabel || (isEN ? "Guarantor Phone" : "تليفون الضامن")}</span>
           <input style={inputStyle} disabled={!isEditing} value={isEditing ? editForm.guarantorPhone : (contract.guarantorPhone || "-")} onChange={(e) => setEditForm({ ...editForm, guarantorPhone: e.target.value })} />
+        </label>
+      </div>
+
+      {/* الصف الثاني: الرقم القومي والعنوان (مربعين متمركزين بمنتصف الشاشة) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px", maxWidth: "650px", margin: "0 auto 16px auto" }}>
+        <label style={labelStyle}>
+          <span>{t.nationalIdLabel || (isEN ? "National ID" : "الرقم القومي")}</span>
+          <input style={inputStyle} disabled={!isEditing} value={isEditing ? (editForm.national_id || editForm.nationalId || "") : (contract.national_id || contract.nationalId || "-")} onChange={(e) => setEditForm({ ...editForm, national_id: e.target.value, nationalId: e.target.value })} />
+        </label>
+        <label style={labelStyle}>
+          <span>{t.addressLabel || (isEN ? "Address" : "العنوان")}</span>
+          <input style={inputStyle} disabled={!isEditing} value={isEditing ? (editForm.address || "") : (contract.address || "-")} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} />
         </label>
       </div>
 
