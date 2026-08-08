@@ -117,7 +117,22 @@ export function App() {
     { key: "exit", label: t.exit || "تسجيل الخروج", icon: Power, tone: "dark" },
   ];
 
-  const currentLangObj = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
+  // حماية آمنة لمصفوفة اللغات وكائن اللغة الحالي لمنع الانهيار نهائياً
+  const safeLanguages = useMemo(() => {
+    return Array.isArray(LANGUAGES) && LANGUAGES.length > 0 ? LANGUAGES : [
+      { code: "ar", name: "العربية", flag: "🇪🇬", dir: "rtl" },
+      { code: "en", name: "English", flag: "🇺🇸", dir: "ltr" }
+    ];
+  }, [LANGUAGES]);
+
+  const currentLangObj = useMemo(() => {
+    return safeLanguages.find((l) => l && l.code === currentLang) || safeLanguages[0] || { code: "ar", name: "العربية", flag: "🇪🇬", dir: "rtl" };
+  }, [safeLanguages, currentLang]);
+
+  // نصوص الهيدر الحامية من الاختفاء
+  const welcomeText = (t && typeof t.welcome === "string" && t.welcome.trim()) ? t.welcome : "مرحباً،";
+  const supervisorText = (t && typeof t.generalSupervisor === "string" && t.generalSupervisor.trim()) ? t.generalSupervisor : "المشرف العام";
+  const appNameText = (t && typeof t.appName === "string" && t.appName.trim()) ? t.appName : "نظام إدارة الأقساط والمبيعات";
 
   const netProfit = useMemo(() => {
     const totalCollectedProfits = (clientsList || []).reduce((acc, curr) => {
