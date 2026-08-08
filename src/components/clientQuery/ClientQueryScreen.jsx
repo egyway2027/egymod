@@ -23,6 +23,7 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedContract, setSelectedContract] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   // 🔄 الجلب المباشر والتخزين الداخلي
   const [fetchedContracts, setFetchedContracts] = useState([]);
@@ -135,13 +136,14 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   // ✅ قائمة اقتراحات آمنة تحمي من انهيار الشاشة البيضاء
 const suggestions = useMemo(() => {
   const q = String(searchQuery || "").trim().toLowerCase();
-  if (!q) return [];
 
   return (normalizedContracts || []).filter((item) => {
+    if (!item) return false;
     const isArchived = item.status === "archived" || item.status === "deleted" || item.is_deleted;
     const isMatchTab = activeTab === "archive" ? isArchived : !isArchived;
 
     if (!isMatchTab) return false;
+    if (!q) return true;
 
     const name = String(item.name || "").toLowerCase();
     const phone = String(item.phone || "").toLowerCase();
@@ -265,13 +267,18 @@ const handleSelectSearchItem = (contract) => {
             <label style={{ display: "block", fontSize: "13px", fontWeight: 700, color: themeStyles.subText || "#aaaaaa", marginBottom: "8px" }}>
               {t.searchPlaceholder || (isEN ? "Search by client name, phone, or item..." : "ابحث باسم العميل أو رقم التليفون أو السلعة")}
             </label>
-   <input
-  type="text"
-  value={searchQuery}
-  onChange={(e) => {
-    setSearchQuery(e.target.value);
-    setSelectedContract(null); // 🎯 إعادة إظهار قائمة الاقتراحات عند التعديل
-  }}
+          <input
+            type="text"
+            value={searchQuery}
+            onFocus={() => {
+              setShowDropdown(true);
+              setSelectedContract(null);
+            }}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setSelectedContract(null);
+              setShowDropdown(true);
+            }}
   placeholder={t.searchPlaceholder || (isEN ? "Search by client name, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
   style={{
     width: "100%",
@@ -295,12 +302,15 @@ const handleSelectSearchItem = (contract) => {
           )}
 
           {/* SUGGESTIONS LIST */}
-          {searchQuery && !selectedContract && (
+          {(showDropdown || searchQuery) && !selectedContract && (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "250px", overflowY: "auto" }}>
-              {suggestions.map((item) => (
+              {suggestions.map((item, idx) => (
                 <div
-                  key={item.id}
-                  onClick={() => handleSelectSearchItem(item)}
+                  key={item.id || idx}
+                  onClick={() => {
+                    handleSelectSearchItem(item);
+                    setShowDropdown(false);
+                  }}
                   style={{
                     padding: "10px 14px",
                     background: themeStyles.inputBg || "#1b1b1d",
