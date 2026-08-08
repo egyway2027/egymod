@@ -117,6 +117,17 @@ export function EmployeesMergedScreen({ onBack, t = {}, themeStyles = {} }) {
     }
   };
 
+  // حذف حركة راتب أو سلفة من السجل
+  const handleDeleteSalaryLog = async (id) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذه الحركة من السجل؟")) return;
+    try {
+      await supabase.from("salary_log").delete().eq("id", id);
+      await loadData();
+    } catch (err) {
+      console.error("❌ خطأ في حذف حركة الراتب:", err);
+    }
+  };
+
   return (
     <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1050px", margin: "0 auto", padding: "16px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
       {/* الشريط العلوي */}
@@ -298,6 +309,7 @@ export function EmployeesMergedScreen({ onBack, t = {}, themeStyles = {} }) {
                         <th style={{ padding: "10px" }}>النوع</th>
                         <th style={{ padding: "10px" }}>المبلغ</th>
                         <th style={{ padding: "10px" }}>ملاحظات</th>
+                        <th style={{ padding: "10px", textAlign: "center" }}>إجراءات</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -308,6 +320,11 @@ export function EmployeesMergedScreen({ onBack, t = {}, themeStyles = {} }) {
                           <td style={{ padding: "10px" }}>{s.type}</td>
                           <td style={{ padding: "10px", fontWeight: 800, color: "#f87171" }}>{Number(s.amount).toLocaleString()} ج.م</td>
                           <td style={{ padding: "10px", color: themeStyles.subText || "#aaaaaa" }}>{s.notes || "—"}</td>
+                          <td style={{ padding: "10px", textAlign: "center" }}>
+                            <button type="button" onClick={() => handleDeleteSalaryLog(s.id)} style={{ background: "#3e1c24", border: "1px solid #ef444455", color: "#f87171", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <Trash2 size={12} /> حذف
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
