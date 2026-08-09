@@ -23,7 +23,6 @@ export default function InstallmentsScreen({
 
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
-  const [multipleContractsModal, setMultipleContractsModal] = useState({ open: false, contracts: [], clientName: "" });
 
   // 🔄 جلب العقود والأقساط مباشرة وفق الهيكلة الموحدة الجديدة بالسحابة
   const fetchLocalContracts = useCallback(async () => {
@@ -126,38 +125,6 @@ export default function InstallmentsScreen({
   const activeSelectedRow = useMemo(() => {
     return rows.find((r) => String(r.id) === String(selectedId)) || null;
   }, [rows, selectedId]);
-
-  // 📑 دالة التحقق من عقود العميل المتعددة
-  const handleSelectContract = useCallback((val) => {
-    if (!val) {
-      setSelectedId("");
-      return;
-    }
-    const targetObj = typeof val === "object" ? val : rows.find((r) => String(r.id) === String(val));
-    if (!targetObj) {
-      setSelectedId("");
-      return;
-    }
-
-    const clientName = (targetObj.clientName || targetObj.name || "").trim();
-    const clientPhone = (targetObj.phone || targetObj.client_phone || "").trim();
-
-    const matchedContracts = rows.filter((r) => {
-      const sameName = clientName && (r.clientName || r.name || "").trim() === clientName;
-      const samePhone = clientPhone && (r.phone || r.client_phone || "").trim() === clientPhone;
-      return sameName || samePhone;
-    });
-
-    if (matchedContracts.length > 1) {
-      setMultipleContractsModal({
-        open: true,
-        contracts: matchedContracts,
-        clientName: clientName
-      });
-    } else {
-      setSelectedId(targetObj.id);
-    }
-  }, [rows]);
 
   // 🗑️ معالجة حذف القسط من السحابة
   const handleDeletePayment = async (paymentId) => {
@@ -343,7 +310,11 @@ export default function InstallmentsScreen({
             <CustomerSearchHeader
               rows={rows}
               selected={activeSelectedRow}
-              setSelected={handleSelectContract}
+              setSelected={(val) => {
+                if (!val) setSelectedId("");
+                else if (typeof val === "object") setSelectedId(val.id || "");
+                else setSelectedId(val);
+              }}
               amount={amount}
               setAmount={setAmount}
               payDate={payDate}
@@ -392,72 +363,6 @@ export default function InstallmentsScreen({
           t={t}
           themeStyles={themeStyles}
         />
-      )}
-
-      {/* 📑 نافذة اختيار العقد المطلوب عند وجود أكثر من عقد لنفس العميل */}
-      {multipleContractsModal.open && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.accentGold || "#d0b689"}`, borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "520px", textAlign: "center" }}>
-            <div style={{ width: "50px", height: "50px", borderRadius: "50%", background: "rgba(208, 182, 137, 0.15)", border: `1px solid ${themeStyles.accentGold || "#d0b689"}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px auto" }}>
-              <span style={{ fontSize: "22px" }}>📑</span>
-            </div>
-
-            <h3 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "17px", fontWeight: 800 }}>
-              العميل ({multipleContractsModal.clientName}) لديه أكثر من عقد
-            </h3>
-            <p style={{ margin: "0 0 18px 0", color: themeStyles.subText || "#aaa", fontSize: "13px" }}>
-              يرجى تحديد العقد والسلعة المطلوب سداد أقساطها الآن:
-            </p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "50vh", overflowY: "auto", paddingRight: "4px" }}>
-              {multipleContractsModal.contracts.map((contract, idx) => (
-                <div
-                  key={contract.id || idx}
-                  onClick={() => {
-                    setSelectedId(contract.id);
-                    setMultipleContractsModal({ open: false, contracts: [], clientName: "" });
-                  }}
-                  style={{
-                    background: themeStyles.inputBg || "#121214",
-                    border: `1px solid ${themeStyles.border || "#333"}`,
-                    borderRadius: "12px",
-                    padding: "14px 16px",
-                    cursor: "pointer",
-                    textAlign: "right",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    transition: "0.2s"
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 800, color: themeStyles.accentGold || "#d0b689", fontSize: "14px" }}>
-                      📦 السلعة: {contract.item || contract.itemName || contract.item_name || "غير محدد"}
-                    </div>
-                    <div style={{ fontSize: "12px", color: themeStyles.subText || "#aaa", marginTop: "4px" }}>
-                      تاريخ العقد: {contract.contract_date || contract.created_at?.split("T")[0] || "غير محدد"}
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: "left" }}>
-                    <div style={{ fontSize: "13px", fontWeight: 800, color: "#ffffff" }}>
-                      {Number(contract.remainingAmount ?? contract.remaining ?? 0).toLocaleString()} ج.م
-                    </div>
-                    <span style={{ fontSize: "11px", color: "#4caf50", fontWeight: 700 }}>سداد هذا العقد ←</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setMultipleContractsModal({ open: false, contracts: [], clientName: "" })}
-              style={{ marginTop: "16px", background: "none", border: `1px solid ${themeStyles.border || "#333"}`, color: "#aaa", padding: "8px 20px", borderRadius: "10px", cursor: "pointer", fontWeight: 700, fontSize: "13px" }}
-            >
-              إلغاء
-            </button>
-          </div>
-        </div>
       )}
     </div>
   );
