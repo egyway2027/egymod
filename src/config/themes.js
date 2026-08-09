@@ -1,13 +1,13 @@
 /**
  * =========================================================
- * 📌 الملف: قاعدة الثيمات المتقدمة (30 Handcrafted Themes)
+ * 📌 الملف: قاعدة الثيمات المتقدمة
  * 📁 المسار: src/config/themes.js
  * =========================================================
  */
 
 export const THEME_CATEGORIES = [
   { id: "all", name: "جميع الثيمات العادية (30)" },
-  { id: "pro", name: "ثيمات Pro الاحترافية 💎 (20)" },
+  { id: "pro", name: "ثيمات Pro الاحترافية 💎" },
   { id: "Luxury Dark", name: "الملكي والفاخر 👑" },
   { id: "Cyber & Neon", name: "النيون المضيء ⚡" },
   { id: "Glassmorphism", name: "الزجاج المعتم 💎" },
@@ -48,27 +48,10 @@ export const THEMES_LIST = [
   { id: "light_rose_quartz", name: "الكوارتز الوردي (Rose Quartz Light)", category: "Light Modes", bg: "#fff1f2", card: "#ffffff", accentGold: "#be123c" },
   { id: "light_mint_breeze", name: "النعناع الفاتح (Mint Breeze Light)", category: "Light Modes", bg: "#ecfdf5", card: "#ffffff", accentGold: "#047857" },
 
-  /* 💎 ثيمات Pro الـ 20 المتقدمة المستخرجة من التصاميم */
-  { id: "pro_walnut_noir", name: "Walnut Noir Glass Pro", category: "pro", isPro: true, bg: "linear-gradient(135deg, #2E1F1B, #5E4B43)", card: "rgba(46, 31, 27, 0.75)", accentGold: "#e2b887" },
-  { id: "pro_navy_mirage", name: "Navy Mirage Glass Pro", category: "pro", isPro: true, bg: "linear-gradient(135deg, #141E30, #35577D)", card: "rgba(20, 30, 48, 0.75)", accentGold: "#38bdf8" },
-  { id: "pro_liquid_prism", name: "Liquid Prism UI Pro", category: "pro", isPro: true, bg: "#0d0f17", card: "rgba(255, 255, 255, 0.08)", accentGold: "#a855f7" },
-  { id: "pro_cyber_neon", name: "Cyber Neon Glass Pro", category: "pro", isPro: true, bg: "#0a0c14", card: "rgba(15, 23, 42, 0.8)", accentGold: "#38bdf8" },
-  { id: "pro_ice_blue", name: "Ice Blue Glass Pro", category: "pro", isPro: true, bg: "linear-gradient(135deg, #0284c7, #0369a1)", card: "rgba(255, 255, 255, 0.2)", accentGold: "#7dd3fc" },
-  { id: "pro_mint_coral", name: "Soft Mint & Coral Pro", category: "pro", isPro: true, bg: "#fbf8f5", card: "#ffffff", accentGold: "#10b981" },
-  { id: "pro_midnight_gold", name: "Midnight Gold Pro", category: "pro", isPro: true, bg: "linear-gradient(135deg, #1A1A1A, #2A2421)", card: "rgba(26, 26, 26, 0.85)", accentGold: "#d4af37" },
-  { id: "pro_amber_bronze", name: "Warm Amber & Bronze Pro", category: "pro", isPro: true, bg: "linear-gradient(135deg, #583714, #2c1b0c)", card: "rgba(88, 55, 20, 0.5)", accentGold: "#FFEB97" },
-  { id: "pro_frosted_minimal", name: "Frosted Minimal Glass Pro", category: "pro", isPro: true, bg: "#e2e8f0", card: "rgba(255, 255, 255, 0.65)", accentGold: "#0284c7" },
-  { id: "pro_dark_rose", name: "Dark Rose Velvet Pro", category: "pro", isPro: true, bg: "linear-gradient(135deg, #180b0e, #3a151b)", card: "rgba(58, 21, 27, 0.65)", accentGold: "#e11d48" },
-  { id: "pro_pastel_3d", name: "Pastel Glass 3D Pro", category: "pro", isPro: true, bg: "#f1f5f9", card: "rgba(255, 255, 255, 0.8)", accentGold: "#8b5cf6" },
-  { id: "pro_pearl_cream", name: "3D Pearl & Cream Pro", category: "pro", isPro: true, bg: "#f3ede7", card: "#ffffff", accentGold: "#d97706" },
-  { id: "pro_frosted_silver", name: "Frosted Silver Dashboard Pro", category: "pro", isPro: true, bg: "#f8fafc", card: "rgba(255, 255, 255, 0.7)", accentGold: "#475569" },
-  { id: "pro_royal_gold_swatch", name: "Royal Gold Swatch Pro", category: "pro", isPro: true, bg: "linear-gradient(135deg, #FFEB97, #583714)", card: "rgba(40, 24, 8, 0.85)", accentGold: "#FFEB97" },
-  { id: "pro_holo_analytics", name: "Holographic Analytics Pro", category: "pro", isPro: true, bg: "#0f172a", card: "rgba(30, 41, 59, 0.6)", accentGold: "#38bdf8" },
-  { id: "pro_dark_liquid", name: "Dark Liquid Glass Pro", category: "pro", isPro: true, bg: "#09090b", card: "rgba(24, 24, 27, 0.8)", accentGold: "#e4e4e7" },
-  { id: "pro_floating_glass", name: "Floating Glass Shadow Pro", category: "pro", isPro: true, bg: "#18181b", card: "rgba(39, 39, 42, 0.7)", accentGold: "#3b82f6" },
-  { id: "pro_prismatic_gloss", name: "Prismatic Gloss UI Pro", category: "pro", isPro: true, bg: "#020617", card: "rgba(15, 23, 42, 0.75)", accentGold: "#ec4899" },
-  { id: "pro_clean_teal", name: "Clean Teal Health Pro", category: "pro", isPro: true, bg: "#f0fdfa", card: "#ffffff", accentGold: "#0d9488" },
-  { id: "pro_dual_glass", name: "Dual Glass Contrast Pro", category: "pro", isPro: true, bg: "#0f172a", card: "rgba(30, 41, 59, 0.8)", accentGold: "#f59e0b" }
+  /* 💎 ثيمات الصور الثلاث المطابقة 100% للتصميم البصري */
+  { id: "pro_liquid_prism", name: "Liquid Glass Kit (الصورة 1)", category: "pro", isPro: true, bg: "#e8e3df", card: "rgba(255, 255, 255, 0.55)", accentGold: "#7c3aed" },
+  { id: "pro_dark_gel_capsules", name: "Liquid Dark Gel (الصورة 2)", category: "pro", isPro: true, bg: "#e5e5e7", card: "rgba(15, 15, 20, 0.88)", accentGold: "#38bdf8" },
+  { id: "pro_royal_gold_swatch", name: "Imperial Gold Swatch (الصورة 3)", category: "pro", isPro: true, bg: "linear-gradient(135deg, #2b1806 0%, #120902 100%)", card: "rgba(88, 55, 20, 0.75)", accentGold: "#FFEB97" }
 ];
 
 export function getThemeStyles(themeId = "royalGold") {
@@ -218,66 +201,55 @@ export function getThemeStyles(themeId = "royalGold") {
       bg = "#ecfdf5"; card = "#ffffff"; inputBg = "#d1fae5"; text = "#064e3b"; subText = "#047857"; border = "#a7f3d0"; accent = "#059669"; accentGold = "#047857"; highlightBg = "rgba(5, 150, 105, 0.1)"; borderRadius = "18px";
       break;
 
-    /* 💎 محرك خصائص ثيمات Pro الـ 20 المتقدمة مع تأثيرات الزجاج والعمق الثلاثي الأبعاد */
+    /* 💎 تطبيق ثيم الصورة الأولى (Liquid Glass Kit) */
     case "pro_liquid_prism":
-      bg = "#0d0f17"; card = "rgba(255, 255, 255, 0.08)"; inputBg = "rgba(255, 255, 255, 0.05)"; text = "#ffffff"; subText = "#94a3b8"; border = "rgba(255, 255, 255, 0.35)"; accent = "#a855f7"; accentGold = "#a855f7"; highlightBg = "rgba(168, 85, 247, 0.2)"; borderRadius = "24px"; backdropFilter = "blur(25px) saturate(180%)"; boxShadow = "0 20px 50px rgba(168, 85, 247, 0.25)";
+      bg = "#e8e3df";
+      card = "rgba(255, 255, 255, 0.55)";
+      inputBg = "rgba(255, 255, 255, 0.7)";
+      text = "#18181b";
+      subText = "#52525b";
+      border = "rgba(255, 255, 255, 0.9)";
+      accent = "#7c3aed";
+      accentGold = "#7c3aed";
+      highlightBg = "rgba(168, 85, 247, 0.15)";
+      borderRadius = "30px";
+      backdropFilter = "blur(30px) saturate(190%)";
+      boxShadow = "0 25px 50px rgba(0,0,0,0.08), inset 0 2px 3px rgba(255,255,255,0.95), 0 0 25px rgba(168, 85, 247, 0.25)";
+      buttonShadow = "0 10px 20px rgba(124, 58, 237, 0.35)";
       break;
-    case "pro_dark_rose":
-      bg = "linear-gradient(135deg, #180b0e 0%, #3a151b 100%)"; card = "rgba(58, 21, 27, 0.65)"; inputBg = "rgba(0, 0, 0, 0.4)"; text = "#ffffff"; subText = "#fecdd3"; border = "rgba(225, 29, 72, 0.35)"; accent = "#e11d48"; accentGold = "#f43f5e"; highlightBg = "rgba(225, 29, 72, 0.25)"; borderRadius = "20px"; backdropFilter = "blur(20px)"; boxShadow = "0 15px 35px rgba(225, 29, 72, 0.3)";
+
+    /* 💎 تطبيق ثيم الصورة الثانية (Liquid Dark Gel Capsules) */
+    case "pro_dark_gel_capsules":
+      bg = "#e5e5e7";
+      card = "rgba(15, 15, 20, 0.88)";
+      inputBg = "rgba(30, 30, 40, 0.9)";
+      text = "#ffffff";
+      subText = "#a1a1aa";
+      border = "rgba(255, 255, 255, 0.4)";
+      accent = "#38bdf8";
+      accentGold = "#38bdf8";
+      highlightBg = "rgba(56, 189, 248, 0.2)";
+      borderRadius = "50px";
+      backdropFilter = "blur(20px)";
+      boxShadow = "0 20px 40px rgba(0,0,0,0.35), inset 0 2px 4px rgba(255,255,255,0.75), 0 12px 25px rgba(6, 182, 212, 0.4)";
+      buttonShadow = "0 8px 20px rgba(56, 189, 248, 0.5)";
       break;
-    case "pro_cyber_neon":
-      bg = "#0a0c14"; card = "rgba(15, 23, 42, 0.8)"; inputBg = "#020617"; text = "#f8fafc"; subText = "#64748b"; border = "#38bdf8"; accent = "#38bdf8"; accentGold = "#38bdf8"; highlightBg = "rgba(56, 189, 248, 0.22)"; borderRadius = "16px"; borderWidth = "1.5px"; backdropFilter = "blur(16px)"; boxShadow = "0 0 20px rgba(56, 189, 248, 0.4)";
-      break;
+
+    /* 💎 تطبيق ثيم الصورة الثالثة (Imperial Gold Swatch #FFEB97 → #583714) */
     case "pro_royal_gold_swatch":
-      bg = "linear-gradient(135deg, #FFEB97 0%, #583714 100%)"; card = "rgba(40, 24, 8, 0.85)"; inputBg = "#1a0f07"; text = "#ffffff"; subText = "#fef08a"; border = "#FFEB97"; accent = "#FFEB97"; accentGold = "#FFEB97"; highlightBg = "rgba(255, 235, 151, 0.2)"; borderRadius = "18px"; backdropFilter = "blur(18px)"; boxShadow = "0 10px 30px rgba(88, 55, 20, 0.5)";
-      break;
-    case "pro_midnight_gold":
-      bg = "linear-gradient(135deg, #1A1A1A 0%, #2A2421 100%)"; card = "rgba(26, 26, 26, 0.85)"; inputBg = "#121212"; text = "#ffffff"; subText = "#a1a1aa"; border = "#5E4B43"; accent = "#d4af37"; accentGold = "#d4af37"; highlightBg = "rgba(212, 175, 55, 0.15)"; borderRadius = "16px"; backdropFilter = "blur(16px)";
-      break;
-    case "pro_walnut_noir":
-      bg = "linear-gradient(135deg, #2E1F1B 0%, #5E4B43 100%)"; card = "rgba(46, 31, 27, 0.8)"; inputBg = "#1f1412"; text = "#ffffff"; subText = "#d1c7bd"; border = "rgba(94, 75, 67, 0.5)"; accent = "#e2b887"; accentGold = "#e2b887"; highlightBg = "rgba(226, 184, 135, 0.15)"; borderRadius = "18px"; backdropFilter = "blur(18px)"; boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
-      break;
-    case "pro_navy_mirage":
-      bg = "linear-gradient(135deg, #141E30 0%, #35577D 100%)"; card = "rgba(20, 30, 48, 0.8)"; inputBg = "#0f172a"; text = "#ffffff"; subText = "#a0aec0"; border = "rgba(53, 87, 125, 0.5)"; accent = "#38bdf8"; accentGold = "#38bdf8"; highlightBg = "rgba(56, 189, 248, 0.15)"; borderRadius = "18px"; backdropFilter = "blur(18px)";
-      break;
-    case "pro_frosted_minimal":
-      bg = "#e2e8f0"; card = "rgba(255, 255, 255, 0.65)"; inputBg = "#ffffff"; text = "#0f172a"; subText = "#475569"; border = "rgba(255, 255, 255, 0.85)"; accent = "#0284c7"; accentGold = "#0284c7"; highlightBg = "rgba(2, 132, 199, 0.1)"; borderRadius = "22px"; backdropFilter = "blur(22px)"; boxShadow = "0 20px 40px rgba(0,0,0,0.06)";
-      break;
-    case "pro_ice_blue":
-      bg = "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)"; card = "rgba(255, 255, 255, 0.25)"; inputBg = "rgba(0, 0, 0, 0.2)"; text = "#ffffff"; subText = "#e0f2fe"; border = "rgba(255, 255, 255, 0.55)"; accent = "#7dd3fc"; accentGold = "#7dd3fc"; highlightBg = "rgba(125, 211, 252, 0.2)"; borderRadius = "22px"; backdropFilter = "blur(20px)";
-      break;
-    case "pro_mint_coral":
-      bg = "#fbf8f5"; card = "rgba(255, 255, 255, 0.9)"; inputBg = "#f1f5f9"; text = "#1e293b"; subText = "#64748b"; border = "rgba(249, 115, 22, 0.25)"; accent = "#10b981"; accentGold = "#10b981"; highlightBg = "rgba(16, 185, 129, 0.12)"; borderRadius = "20px"; boxShadow = "0 10px 25px rgba(0,0,0,0.04)";
-      break;
-    case "pro_pastel_3d":
-      bg = "#f1f5f9"; card = "rgba(255, 255, 255, 0.85)"; inputBg = "#ffffff"; text = "#1e293b"; subText = "#64748b"; border = "rgba(139, 92, 246, 0.35)"; accent = "#8b5cf6"; accentGold = "#8b5cf6"; highlightBg = "rgba(139, 92, 246, 0.1)"; borderRadius = "20px"; backdropFilter = "blur(16px)";
-      break;
-    case "pro_pearl_cream":
-      bg = "#f3ede7"; card = "rgba(255, 255, 255, 0.95)"; inputBg = "#fafaf9"; text = "#292524"; subText = "#78716c"; border = "rgba(217, 119, 6, 0.25)"; accent = "#d97706"; accentGold = "#d97706"; highlightBg = "rgba(217, 119, 6, 0.1)"; borderRadius = "18px";
-      break;
-    case "pro_frosted_silver":
-      bg = "#f8fafc"; card = "rgba(255, 255, 255, 0.75)"; inputBg = "#ffffff"; text = "#0f172a"; subText = "#64748b"; border = "rgba(203, 213, 225, 0.85)"; accent = "#475569"; accentGold = "#475569"; highlightBg = "rgba(71, 85, 105, 0.1)"; borderRadius = "20px"; backdropFilter = "blur(25px)";
-      break;
-    case "pro_holo_analytics":
-      bg = "#0f172a"; card = "rgba(30, 41, 59, 0.65)"; inputBg = "#020617"; text = "#f8fafc"; subText = "#94a3b8"; border = "rgba(56, 189, 248, 0.45)"; accent = "#38bdf8"; accentGold = "#38bdf8"; highlightBg = "rgba(56, 189, 248, 0.18)"; borderRadius = "22px"; backdropFilter = "blur(22px)";
-      break;
-    case "pro_dark_liquid":
-      bg = "#09090b"; card = "rgba(24, 24, 27, 0.85)"; inputBg = "#18181b"; text = "#fafafa"; subText = "#a1a1aa"; border = "rgba(255, 255, 255, 0.25)"; accent = "#e4e4e7"; accentGold = "#e4e4e7"; highlightBg = "rgba(228, 228, 231, 0.15)"; borderRadius = "20px"; backdropFilter = "blur(20px)";
-      break;
-    case "pro_floating_glass":
-      bg = "#18181b"; card = "rgba(39, 39, 42, 0.75)"; inputBg = "#09090b"; text = "#ffffff"; subText = "#a1a1aa"; border = "rgba(255, 255, 255, 0.2)"; accent = "#3b82f6"; accentGold = "#3b82f6"; highlightBg = "rgba(59, 130, 246, 0.18)"; borderRadius = "22px"; backdropFilter = "blur(22px)"; boxShadow = "0 25px 50px -12px rgba(0, 0, 0, 0.5)";
-      break;
-    case "pro_prismatic_gloss":
-      bg = "#020617"; card = "rgba(15, 23, 42, 0.8)"; inputBg = "#0f172a"; text = "#ffffff"; subText = "#94a3b8"; border = "rgba(236, 72, 153, 0.45)"; accent = "#ec4899"; accentGold = "#ec4899"; highlightBg = "rgba(236, 72, 153, 0.2)"; borderRadius = "20px"; backdropFilter = "blur(20px)";
-      break;
-    case "pro_clean_teal":
-      bg = "#f0fdfa"; card = "rgba(255, 255, 255, 0.9)"; inputBg = "#ccfbf1"; text = "#134e4a"; subText = "#0d9488"; border = "rgba(13, 148, 136, 0.25)"; accent = "#0d9488"; accentGold = "#0d9488"; highlightBg = "rgba(13, 148, 136, 0.1)"; borderRadius = "18px";
-      break;
-    case "pro_dual_glass":
-      bg = "#0f172a"; card = "rgba(30, 41, 59, 0.85)"; inputBg = "#020617"; text = "#ffffff"; subText = "#94a3b8"; border = "rgba(245, 158, 11, 0.35)"; accent = "#f59e0b"; accentGold = "#f59e0b"; highlightBg = "rgba(245, 158, 11, 0.18)"; borderRadius = "18px"; backdropFilter = "blur(18px)";
-      break;
-    case "pro_amber_bronze":
-      bg = "linear-gradient(135deg, #583714 0%, #2c1b0c 100%)"; card = "rgba(88, 55, 20, 0.55)"; inputBg = "#1a0f07"; text = "#ffffff"; subText = "#fef08a"; border = "rgba(255, 235, 151, 0.45)"; accent = "#FFEB97"; accentGold = "#FFEB97"; highlightBg = "rgba(255, 235, 151, 0.2)"; borderRadius = "18px"; backdropFilter = "blur(18px)";
+      bg = "linear-gradient(135deg, #2b1806 0%, #120902 100%)";
+      card = "linear-gradient(180deg, rgba(88, 55, 20, 0.75) 0%, rgba(44, 27, 10, 0.9) 100%)";
+      inputBg = "#1a0f07";
+      text = "#ffffff";
+      subText = "#fef08a";
+      border = "#FFEB97";
+      accent = "#FFEB97";
+      accentGold = "#FFEB97";
+      highlightBg = "rgba(255, 235, 151, 0.2)";
+      borderRadius = "18px";
+      backdropFilter = "blur(15px)";
+      boxShadow = "0 15px 35px rgba(0, 0, 0, 0.6), inset 0 1px 2px #FFEB97";
+      buttonShadow = "0 6px 18px rgba(255, 235, 151, 0.4)";
       break;
 
     default:
