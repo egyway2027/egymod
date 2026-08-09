@@ -91,7 +91,6 @@ export function App() {
 
   const [showLangModal, setShowLangModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
-  const [activeThemeTab, setActiveThemeTab] = useState("regular");
 
   // 📌 حالات الاختصارات والنوافذ الجديدة
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
@@ -478,50 +477,14 @@ export function App() {
       {showThemeModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: 16 }}>
           <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 20, padding: 20, width: "100%", maxWidth: 850, maxHeight: "85vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: 12, flexWrap: "wrap", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setActiveThemeTab("regular")}
-                  style={{
-                    background: activeThemeTab === "regular" ? (themeStyles.accentGold || "#d0b689") : (themeStyles.inputBg || "#121214"),
-                    color: activeThemeTab === "regular" ? "#111111" : (themeStyles.text || "#ffffff"),
-                    border: `1px solid ${themeStyles.border || "#333333"}`,
-                    padding: "8px 16px",
-                    borderRadius: 10,
-                    fontWeight: 800,
-                    fontSize: 13,
-                    cursor: "pointer"
-                  }}
-                >
-                  الثيمات العادية
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveThemeTab("pro")}
-                  style={{
-                    background: activeThemeTab === "pro" ? "linear-gradient(135deg, #a855f7, #38bdf8)" : (themeStyles.inputBg || "#121214"),
-                    color: "#ffffff",
-                    border: `1px solid ${activeThemeTab === "pro" ? "#a855f7" : (themeStyles.border || "#333333")}`,
-                    padding: "8px 16px",
-                    borderRadius: 10,
-                    fontWeight: 800,
-                    fontSize: 13,
-                    cursor: "pointer",
-                    boxShadow: activeThemeTab === "pro" ? "0 0 12px rgba(168, 85, 247, 0.4)" : "none"
-                  }}
-                >
-                  ثيمات Pro 💎
-                </button>
-              </div>
-
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: 12 }}>
+              <span style={{ fontWeight: 800, fontSize: 16, color: themeStyles.accentGold || "#d0b689", display: "flex", alignItems: "center", gap: 8 }}>
+                <Palette size={18} /> {t.selectTheme || "اختر ثيم ومظهر البرنامج"}
+              </span>
               <X style={{ cursor: "pointer", color: "#aaa" }} onClick={() => setShowThemeModal(false)} />
             </div>
-
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
-              {(THEMES_LIST || [])
-                .filter((th) => activeThemeTab === "pro" ? (th.category === "pro" || th.isPro) : (th.category !== "pro" && !th.isPro))
-                .map((th) => {
+              {(THEMES_LIST || []).map((th) => {
                 const isCurrent = currentThemeId === th.id;
                 return (
                   <div
