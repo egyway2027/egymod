@@ -182,7 +182,7 @@ export function App() {
   }, [clientsList]);
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "10px 8px", fontFamily: "Cairo, sans-serif", width: "100%", boxSizing: "border-box" }}>
 
       {/* 1. شاشة إضافة عميل */}
       {currentScreen === "addClient" && (
@@ -288,7 +288,7 @@ export function App() {
 
       {/* 5. لوحة التحكم الرئيسية */}
       {currentScreen === "dashboard" && (
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", boxSizing: "border-box" }}>
           <header style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
             background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
@@ -366,7 +366,7 @@ export function App() {
             </div>
           </section>
 
-          <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
             {buttons.map((b) => {
               const Icon = b.icon;
               return (
@@ -386,15 +386,15 @@ export function App() {
   }
 }}
                   style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6,
                     background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : (themeStyles.card || "#1e1e1e"),
                     color: (b.tone === "silver" || b.tone === "rose") ? "#111111" : "#ffffff",
-                    border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.buttonRadius || 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
+                    border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.buttonRadius || 14, padding: "12px 10px", cursor: "pointer", fontFamily: "inherit", minHeight: 60
                   }}
                 >
-                  <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
-                  <span style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon size={18} />
+                  <span style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.25, textAlign: "right", flex: 1 }}>{b.label}</span>
+                  <span style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon size={16} />
                   </span>
                 </button>
               );
