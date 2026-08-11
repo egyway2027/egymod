@@ -340,24 +340,32 @@ export function App() {
             </div>
           </header>
 
-          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: isMobile ? 10 : 14, marginBottom: isMobile ? 14 : 20 }}>
-            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "14px" : "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-              <TrendingUp size={24} color={themeStyles.accentGold || "#d0b689"} />
-              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8, color: themeStyles.text || "#ffffff" }}>{netProfit.toLocaleString()} {t.currency || "ج.م"}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689" }}>{t.netProfit || "صافي الأرباح حتى اليوم"}</div>
-              <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.netProfitSub || "إجمالي أرباح العقود والتحصيلات الصافية"}</div>
+          <section style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))", gap: isMobile ? 6 : 14, marginBottom: isMobile ? 14 : 20 }}>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "10px 4px" : "20px", boxShadow: themeStyles.cardShadow || "none", textAlign: isMobile ? "center" : "initial" }}>
+              <TrendingUp size={isMobile ? 18 : 24} color={themeStyles.accentGold || "#d0b689"} />
+              <div style={{ fontSize: isMobile ? 12 : 22, fontWeight: 800, marginTop: isMobile ? 4 : 8, color: themeStyles.text || "#ffffff", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", gap: 2 }}>
+                {netProfit.toLocaleString()} <span style={{ fontSize: isMobile ? 9 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
+              </div>
+              <div style={{ fontSize: isMobile ? 9 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 4 }}>
+                {isMobile ? "الأرباح" : (t.netProfit || "صافي الأرباح حتى اليوم")}
+              </div>
+              {!isMobile && <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.netProfitSub || "إجمالي أرباح العقود والتحصيلات الصافية"}</div>}
             </div>
 
-            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "14px" : "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-              <CalendarClock size={24} color={themeStyles.accentGold || "#d0b689"} />
-              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8, color: themeStyles.text || "#ffffff" }}>{monthlyDues.toLocaleString()} {t.currency || "ج.م"}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689" }}>{t.monthlyDues || "مستحقات هذا الشهر"}</div>
-              <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.monthlyDuesSub || "المطلوب تحصيله حالياً"}</div>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "10px 4px" : "20px", boxShadow: themeStyles.cardShadow || "none", textAlign: isMobile ? "center" : "initial" }}>
+              <CalendarClock size={isMobile ? 18 : 24} color={themeStyles.accentGold || "#d0b689"} />
+              <div style={{ fontSize: isMobile ? 12 : 22, fontWeight: 800, marginTop: isMobile ? 4 : 8, color: themeStyles.text || "#ffffff", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", gap: 2 }}>
+                {monthlyDues.toLocaleString()} <span style={{ fontSize: isMobile ? 9 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
+              </div>
+              <div style={{ fontSize: isMobile ? 9 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 4 }}>
+                {isMobile ? "المستحقات" : (t.monthlyDues || "مستحقات هذا الشهر")}
+              </div>
+              {!isMobile && <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.monthlyDuesSub || "المطلوب تحصيله حالياً"}</div>}
             </div>
 
-            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "14px" : "20px", boxShadow: themeStyles.cardShadow || "none" }}>
-              <Wallet size={24} color={themeStyles.accentGold || "#d0b689"} />
-              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8, color: themeStyles.text || "#ffffff" }}>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "10px 4px" : "20px", boxShadow: themeStyles.cardShadow || "none", textAlign: isMobile ? "center" : "initial" }}>
+              <Wallet size={isMobile ? 18 : 24} color={themeStyles.accentGold || "#d0b689"} />
+              <div style={{ fontSize: isMobile ? 12 : 22, fontWeight: 800, marginTop: isMobile ? 4 : 8, color: themeStyles.text || "#ffffff", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", gap: 2 }}>
                 {(clientsList || []).reduce((acc, curr) => {
                   if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
                   const sale = Number(curr.sale_price || curr.salePrice || curr.sale || curr.total || 0);
@@ -369,10 +377,12 @@ export function App() {
                     .reduce((sum, i) => sum + Number(i.amount || 0), 0);
 
                   return acc + Math.max(0, sale - down - paidFromInst);
-                }, 0).toLocaleString()} {t.currency || "ج.م"}
+                }, 0).toLocaleString()} <span style={{ fontSize: isMobile ? 9 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689" }}>{t.totalPortfolio || "إجمالي الأقساط المتبقية"}</div>
-              <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.totalPortfolioSub || "المبالغ المتبقية في ذمة العملاء"}</div>
+              <div style={{ fontSize: isMobile ? 9 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 4 }}>
+                {isMobile ? "المتبقي" : (t.totalPortfolio || "إجمالي الأقساط المتبقية")}
+              </div>
+              {!isMobile && <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.totalPortfolioSub || "المبالغ المتبقية في ذمة العملاء"}</div>}
             </div>
           </section>
 
