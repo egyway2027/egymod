@@ -37,6 +37,14 @@ export function App() {
   const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
   const [clientsList, setClientsList] = useState([]);
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     async function loadDashboardData() {
@@ -182,7 +190,7 @@ export function App() {
   }, [clientsList]);
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: "20px", fontFamily: "Cairo, sans-serif" }}>
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: isMobile ? "12px 8px" : "20px", fontFamily: "Cairo, sans-serif", width: "100%", boxSizing: "border-box" }}>
 
       {/* 1. شاشة إضافة عميل */}
       {currentScreen === "addClient" && (
@@ -292,7 +300,7 @@ export function App() {
           <header style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
             background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
-            borderRadius: 18, padding: "18px 24px", marginBottom: 20, color: "#fff"
+            borderRadius: 18, padding: isMobile ? "14px 12px" : "18px 24px", marginBottom: isMobile ? 14 : 20, color: "#fff"
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#ffffff" }}>
@@ -320,32 +328,34 @@ export function App() {
               </button>
             </div>
 
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#ffffff" }}>{t.appName || "نظام إدارة الأقساط والمبيعات"}</div>
-              <div style={{ fontSize: 11, opacity: 0.8, color: "#ffffff" }}>Cloud Enterprise Active</div>
-            </div>
+            {!isMobile && (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#ffffff" }}>{t.appName || "نظام إدارة الأقساط والمبيعات"}</div>
+                <div style={{ fontSize: 11, opacity: 0.8, color: "#ffffff" }}>Cloud Enterprise Active</div>
+              </div>
+            )}
 
             <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Calculator size={22} />
             </div>
           </header>
 
-          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
-            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: isMobile ? 10 : 14, marginBottom: isMobile ? 14 : 20 }}>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "14px" : "20px", boxShadow: themeStyles.cardShadow || "none" }}>
               <TrendingUp size={24} color={themeStyles.accentGold || "#d0b689"} />
               <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8, color: themeStyles.text || "#ffffff" }}>{netProfit.toLocaleString()} {t.currency || "ج.م"}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689" }}>{t.netProfit || "صافي الأرباح حتى اليوم"}</div>
               <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.netProfitSub || "إجمالي أرباح العقود والتحصيلات الصافية"}</div>
             </div>
 
-            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "14px" : "20px", boxShadow: themeStyles.cardShadow || "none" }}>
               <CalendarClock size={24} color={themeStyles.accentGold || "#d0b689"} />
               <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8, color: themeStyles.text || "#ffffff" }}>{monthlyDues.toLocaleString()} {t.currency || "ج.م"}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689" }}>{t.monthlyDues || "مستحقات هذا الشهر"}</div>
               <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.monthlyDuesSub || "المطلوب تحصيله حالياً"}</div>
             </div>
 
-            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: "20px", boxShadow: themeStyles.cardShadow || "none" }}>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "14px" : "20px", boxShadow: themeStyles.cardShadow || "none" }}>
               <Wallet size={24} color={themeStyles.accentGold || "#d0b689"} />
               <div style={{ fontSize: 22, fontWeight: 800, marginTop: 8, color: themeStyles.text || "#ffffff" }}>
                 {(clientsList || []).reduce((acc, curr) => {
@@ -366,7 +376,7 @@ export function App() {
             </div>
           </section>
 
-          <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+          <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: isMobile ? 8 : 12 }}>
             {buttons.map((b) => {
               const Icon = b.icon;
               return (
@@ -386,15 +396,19 @@ export function App() {
   }
 }}
                   style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: isMobile ? 6 : 0,
                     background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : (themeStyles.card || "#1e1e1e"),
                     color: (b.tone === "silver" || b.tone === "rose") ? "#111111" : "#ffffff",
-                    border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.buttonRadius || 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
+                    border: `1px solid ${themeStyles.border || "#333333"}`, 
+                    borderRadius: themeStyles.buttonRadius || 14, 
+                    padding: isMobile ? "12px 10px" : "18px 20px", 
+                    cursor: "pointer", fontFamily: "inherit",
+                    minHeight: isMobile ? 64 : "auto"
                   }}
                 >
-                  <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
-                  <span style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon size={18} />
+                  <span style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, textAlign: isMobile ? "right" : "initial", flex: isMobile ? 1 : "none", lineHeight: 1.3 }}>{b.label}</span>
+                  <span style={{ width: isMobile ? 32 : 36, height: isMobile ? 32 : 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon size={isMobile ? 16 : 18} />
                   </span>
                 </button>
               );
