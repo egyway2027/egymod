@@ -30,6 +30,35 @@
       input[type="number"] {
         -moz-appearance: textfield;
       }
+
+      /* 📱 ضبط أبعاد الأزرار للشاشات الصغيرة فقط دون المساس بتصميم الكمبيوتر */
+      @media (max-width: 640px) {
+        #root > div {
+          padding: 10px 6px !important;
+        }
+
+        /* تقليل الحشو الداخلي وأبعاد الأزرار على الهواتف منعاً للاستطالة */
+        section button {
+          padding: 10px 10px !important;
+          gap: 6px !important;
+          border-radius: 12px !important;
+        }
+
+        section button span:first-child {
+          font-size: 12.5px !important;
+          line-height: 1.25 !important;
+        }
+
+        section button span:last-child {
+          width: 30px !important;
+          height: 30px !important;
+        }
+
+        section button span:last-child svg {
+          width: 15px !important;
+          height: 15px !important;
+        }
+      }
     </style>
   </head>
   <body>
