@@ -366,7 +366,7 @@ export function App() {
             </div>
           </section>
 
-          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+          <section style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
             {buttons.map((b) => {
               const Icon = b.icon;
               return (
@@ -386,15 +386,15 @@ export function App() {
   }
 }}
                   style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
                     background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : (themeStyles.card || "#1e1e1e"),
                     color: (b.tone === "silver" || b.tone === "rose") ? "#111111" : "#ffffff",
-                    border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.buttonRadius || 14, padding: "14px 12px", cursor: "pointer", fontFamily: "inherit"
+                    border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.buttonRadius || 14, padding: "18px 20px", cursor: "pointer", fontFamily: "inherit"
                   }}
                 >
-                  <span style={{ fontSize: 13.5, fontWeight: 800, lineHeight: 1.3, textAlign: "right", flex: 1 }}>{b.label}</span>
-                  <span style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon size={17} />
+                  <span style={{ fontSize: 15, fontWeight: 800 }}>{b.label}</span>
+                  <span style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon size={18} />
                   </span>
                 </button>
               );
