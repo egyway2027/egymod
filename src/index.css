@@ -1,0 +1,41 @@
+/* =========================================================
+ * 📌 الملف: ستايل عام لكل التطبيق (خصوصًا نسخة الموبايل)
+ * 📁 المسار: src/index.css
+ * 📝 الوظيفة: حاجات مش ممكن تتظبط بالـ inline style جوا الكومبوننتس،
+ *            زي مساحة الشاشة عند الـ notch، والـ bounce عند السحب
+ *            لفوق/تحت، ولون اللمس الافتراضي على الأندرويد.
+ *
+ *            التعديلات هنا بتأثر على التطبيق كله (ويب + موبايل)،
+ *            فلو عايز حاجة للموبايل بس استخدم media query
+ *            زي اللي تحت (max-width: 767px).
+ * ========================================================= */
+
+html, body {
+  overscroll-behavior-y: none; /* يمنع أثر الـ "bounce" الأبيض القبيح عند السحب لآخر الصفحة */
+  -webkit-tap-highlight-color: transparent; /* يمنع الفلاش الرمادي عند الضغط على أي زرار في أندرويد */
+}
+
+/* مساحة أمان لأعلى وأسفل الشاشة في الموبايل (notch / أزرار النظام) */
+#root {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
+}
+
+button {
+  touch-action: manipulation; /* استجابة أسرع للمس، وبيمنع الزوم بالدبل تاب على الأزرار */
+}
+
+/* ✍️ من هنا ينزل: عدّل زي ما تحب، الكلاسات دي مش مستخدمة في
+   أي كومبوننت لسه، اختيارية لو حبيت تستخدمها بدل الـ inline style */
+@media (max-width: 767px) {
+  .mobile-hide {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .desktop-hide {
+    display: none !important;
+  }
+}
