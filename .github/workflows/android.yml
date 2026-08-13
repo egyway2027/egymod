@@ -28,7 +28,7 @@ jobs:
       - name: Install Dependencies
         run: |
           npm install
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/cli @capacitor/android
 
       - name: Initialize & Build React Project
         run: |
