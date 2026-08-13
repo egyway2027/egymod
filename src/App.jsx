@@ -42,6 +42,11 @@ export function App() {
 
   const isMobile = useIsMobile();
 
+  // 🔄 إبلاغ نظام التحديثات الهوائية بأن التطبيق يشتغل بنجاح لمنع الـ Rollback
+  useEffect(() => {
+    CapacitorUpdater.notifyAppReady();
+  }, []);
+
   // 📌 حالات تنبيه الخروج عند الضغط على زر الرجوع في الموبايل
   const [showExitHint, setShowExitHint] = useState(false);
   const [lastBackPress, setLastBackPress] = useState(0);
