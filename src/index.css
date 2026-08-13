@@ -11,8 +11,13 @@
  * ========================================================= */
 
 html, body {
-  overscroll-behavior-y: none; /* يمنع أثر الـ "bounce" الأبيض القبيح عند السحب لآخر الصفحة */
-  -webkit-tap-highlight-color: transparent; /* يمنع الفلاش الرمادي عند الضغط على أي زرار في أندرويد */
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto; /* لإعادة التمرير التلقائي بعجلة الماوس على الويب */
+  -webkit-overflow-scrolling: touch; /* لإعادة السحب والتمرير السلس على الهواتف */
+  -webkit-tap-highlight-color: transparent; /* يمنع الفلاش الرمادي عند الضغط بـ أندرويد */
 }
 
 /* مساحة أمان لأعلى وأسفل الشاشة في الموبايل (notch / أزرار النظام) */
