@@ -35,6 +35,15 @@ jobs:
           npx cap init EGYMOD com.egymod.app --web-dir dist
           npm run build
 
+      - name: Prepare & Upload Capgo OTA Bundle
+        env:
+          CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+        run: |
+          npx @capgo/cli@latest bundle zip --path dist --out ota-bundle.zip
+          if [ -n "$CAPGO_TOKEN" ]; then
+            npx @capgo/cli@latest upload --token "$CAPGO_TOKEN" --channel production || true
+          fi
+
       - name: Add Android Platform & Sync
         run: |
           npx cap add android || true
