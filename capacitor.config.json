@@ -1,0 +1,11 @@
+{
+  "appId": "com.egymod.app",
+  "appName": "EGYMOD",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "CapacitorUpdater": {
+      "autoUpdate": true
+    }
+  }
+}
