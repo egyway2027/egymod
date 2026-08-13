@@ -31,6 +31,7 @@ import {
   ProfitDistributionScreen
 } from "./components/treasury";
 import { App as CapacitorApp } from "@capacitor/app";
+import { CapacitorUpdater } from "@capgo/capacitor-updater";
 import { useNavigation } from "./hooks/useNavigation";
 import { useThemeAndLang } from "./hooks/useThemeAndLang";
 import { useIsMobile } from "./hooks/useIsMobile";
