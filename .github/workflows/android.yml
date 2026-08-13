@@ -50,6 +50,7 @@ jobs:
           npx cap sync android
           sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 35/g' android/variables.gradle
           sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 35/g' android/variables.gradle
+          sed -i 's/minSdkVersion = [0-9]*/minSdkVersion = 23/g' android/variables.gradle
 
       - name: Fix Kotlin Duplicate Classes
         run: |
