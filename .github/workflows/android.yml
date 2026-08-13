@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup Java JDK 21
         uses: actions/setup-java@v4
@@ -39,7 +39,7 @@ jobs:
         env:
           CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
         run: |
-          npx @capgo/cli@latest bundle zip --path dist --out ota-bundle.zip
+          cd dist && zip -r ../ota-bundle.zip . && cd ..
           if [ -n "$CAPGO_TOKEN" ]; then
             npx @capgo/cli@latest upload --token "$CAPGO_TOKEN" --channel production || true
           fi
