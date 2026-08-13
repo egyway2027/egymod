@@ -30,20 +30,20 @@ import {
   EmployeesMergedScreen,
   ProfitDistributionScreen
 } from "./components/treasury";
+import { App as CapacitorApp } from "@capacitor/app";
 import { useNavigation } from "./hooks/useNavigation";
 import { useThemeAndLang } from "./hooks/useThemeAndLang";
+import { useIsMobile } from "./hooks/useIsMobile";
 
 export function App() {
   const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
   const [clientsList, setClientsList] = useState([]);
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const isMobile = useIsMobile();
 
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  // 📌 حالات تنبيه الخروج عند الضغط على زر الرجوع في الموبايل
+  const [showExitHint, setShowExitHint] = useState(false);
+  const [lastBackPress, setLastBackPress] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -109,6 +109,48 @@ export function App() {
 
   // 🌟 نافذة التنبيه المخصصة بوسط الشاشة
   const [successModal, setSuccessModal] = useState({ open: false, title: "", msg: "" });
+
+  // 📱 التحكم في زر الرجوع الفيزيائي لأجهزة الأندرويد (Hardware Back Button)
+  useEffect(() => {
+    let backListener;
+    async function setupBackButton() {
+      try {
+        backListener = await CapacitorApp.addListener("backButton", () => {
+          // 1. إغلاق النوافذ المنبثقة المفتوحة أولاً
+          if (showWhatsAppModal) { setShowWhatsAppModal(false); return; }
+          if (showRecycleBinModal) { setShowRecycleBinModal(false); return; }
+          if (showGlobalSearchModal) { setShowGlobalSearchModal(false); return; }
+          if (showCentralRecordsModal) { setShowCentralRecordsModal(false); return; }
+          if (showLangModal) { setShowLangModal(false); return; }
+          if (showThemeModal) { setShowThemeModal(false); return; }
+
+          // 2. العودة للشاشة الرئيسية إذا كنا في شاشة فرعية
+          if (currentScreen !== "dashboard") {
+            handleBack();
+            return;
+          }
+
+          // 3. المطالبة بضغطة ثانية خلال ثانيتين للخروج
+          const now = Date.now();
+          if (now - lastBackPress < 2000) {
+            CapacitorApp.exitApp();
+          } else {
+            setLastBackPress(now);
+            setShowExitHint(true);
+            setTimeout(() => setShowExitHint(false), 2000);
+          }
+        });
+      } catch (err) {
+        // في بيئة الويب العادية لن تحدث أخطاء
+      }
+    }
+    setupBackButton();
+    return () => {
+      if (backListener && typeof backListener.remove === "function") {
+        backListener.remove();
+      }
+    };
+  }, [currentScreen, showWhatsAppModal, showRecycleBinModal, showGlobalSearchModal, showCentralRecordsModal, showLangModal, showThemeModal, lastBackPress]);
 
   // أزرار شبكة التحكم الرئيسية مع نصوص احتياطية ضامنة للظهور
   const buttons = [
@@ -424,6 +466,18 @@ export function App() {
               );
             })}
           </section>
+        </div>
+      )}
+
+      {/* 📱 شريط تنبيه الخروج عند استخدام زر الرجوع الفيزيائي */}
+      {showExitHint && (
+        <div style={{
+          position: "fixed", bottom: 40, left: "50%", transform: "translateX(-50%)",
+          background: "rgba(0,0,0,0.85)", color: "#ffffff", padding: "10px 20px",
+          borderRadius: 20, fontSize: 12, fontWeight: 700, zIndex: 99999,
+          border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(4px)"
+        }}>
+          اضغط رجوع مرة أخرى للخروج من التطبيق
         </div>
       )}
 
