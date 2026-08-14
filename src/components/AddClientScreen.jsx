@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { CustomDatePicker } from "./CustomDatePicker";
 import { insertClientContract } from "../services/clientInsertService";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const emptyForm = {
   name: "",
@@ -26,6 +27,7 @@ const fmtCleanInt = (val) => {
 };
 
 export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} }) {
+  const isMobile = useIsMobile();
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
 
@@ -109,9 +111,9 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
     background: safeTheme.inputBg || "#1b1b1d",
     border: `${safeTheme.borderWidth || "1px"} solid ${safeTheme.border || "#333333"}`,
     borderRadius: safeTheme.borderRadius || "10px",
-    padding: "12px 14px",
+    padding: isMobile ? "8px 10px" : "12px 14px",
     color: safeTheme.text || "#ffffff",
-    fontSize: "14px",
+    fontSize: isMobile ? "13px" : "14px",
     outline: "none",
     fontFamily: "inherit",
     boxShadow: safeTheme.inputShadow || "none",
@@ -122,21 +124,21 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
   const labelStyle = {
     display: "flex",
     flexDirection: "column",
-    gap: "6px",
-    fontSize: "13px",
+    gap: isMobile ? "4px" : "6px",
+    fontSize: isMobile ? "12px" : "13px",
     fontWeight: 700,
     color: safeTheme.subText || "#aaaaaa",
     boxSizing: "border-box"
   };
 
   const sectionLabelStyle = {
-    fontSize: "13.5px",
+    fontSize: isMobile ? "12.5px" : "13.5px",
     fontWeight: 800,
     color: safeTheme.accentGold || "#e07a5f",
-    marginTop: "16px",
-    marginBottom: "12px",
+    marginTop: isMobile ? "10px" : "16px",
+    marginBottom: isMobile ? "8px" : "12px",
     borderBottom: `${safeTheme.borderWidth || "1px"} solid ${safeTheme.border || "#333333"}`,
-    paddingBottom: "8px"
+    paddingBottom: isMobile ? "6px" : "8px"
   };
 
   return (
@@ -157,9 +159,9 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
       </div>
 
       {/* MAIN CARD */}
-      <div style={{ background: themeStyles.card || "#1e1e1e", border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.borderRadius || "18px", padding: "24px", boxShadow: themeStyles.boxShadow || "none" }}>
+      <div style={{ background: themeStyles.card || "#1e1e1e", border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.borderRadius || "18px", padding: isMobile ? "12px 8px" : "24px", boxShadow: themeStyles.boxShadow || "none" }}>
         {error && (
-          <div style={{ background: "rgba(224,122,95,0.12)", border: "1px solid rgba(224,122,95,0.5)", color: "#e8a996", borderRadius: themeStyles.borderRadius || "10px", padding: "12px 14px", fontSize: "14px", marginBottom: "16px" }}>
+          <div style={{ background: "rgba(224,122,95,0.12)", border: "1px solid rgba(224,122,95,0.5)", color: "#e8a996", borderRadius: themeStyles.borderRadius || "10px", padding: isMobile ? "8px 10px" : "12px 14px", fontSize: isMobile ? "12px" : "14px", marginBottom: isMobile ? "10px" : "16px" }}>
             {error}
           </div>
         )}
@@ -170,7 +172,7 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
           <div style={{ ...sectionLabelStyle, marginTop: "0" }}>
             {t.clientAndGuarantorInfo || (isEN ? "Client & Guarantor Information" : "بيانات العميل والضامن")}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fit, minmax(200px, 1fr))", gap: isMobile ? "8px" : "14px" }}>
             <label style={labelStyle}>
               <span>{t.clientNameLabel || (isEN ? "Client Name *" : "اسم العميل *")}</span>
               <input style={inputStyle} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t.clientNamePlaceholder || (isEN ? "Enter full client name..." : "أدخل اسم العميل ثلاثياً...")} required />
@@ -201,13 +203,13 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
           <div style={sectionLabelStyle}>
             {t.itemAndInstallmentInfo || (isEN ? "Item & Installment Details" : "بيانات السلعة والتقسيط")}
           </div>
-          <div style={{ marginBottom: "14px" }}>
+          <div style={{ marginBottom: isMobile ? "8px" : "14px" }}>
             <label style={labelStyle}>
               <span>{t.itemLabel || (isEN ? "Item Name *" : "السلعة *")}</span>
               <input style={inputStyle} value={form.item} onChange={(e) => setForm({ ...form, item: e.target.value })} placeholder={t.itemPlaceholder || (isEN ? "e.g., iPhone 13 / 55-inch TV..." : "مثال: هاتف أيفون 13 / شاشة 55 بوصة...")} required />
             </label>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fit, minmax(160px, 1fr))", gap: isMobile ? "8px" : "14px" }}>
             <label style={labelStyle}>
               <span>{t.costPriceLabel || (isEN ? "Cost Price *" : "سعر التكلفة *")}</span>
               <input type="number" step="1" style={inputStyle} value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} placeholder="0" required />
@@ -230,7 +232,7 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
           <div style={sectionLabelStyle}>
             {t.datesAndNotes || (isEN ? "Dates & Notes" : "التواريخ والملاحظات")}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px", marginBottom: "14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fit, minmax(200px, 1fr))", gap: isMobile ? "8px" : "14px", marginBottom: isMobile ? "8px" : "14px" }}>
             <label style={labelStyle}>
               <span>{t.contractDateLabel || (isEN ? "Contract Date *" : "تاريخ التعاقد *")}</span>
               <CustomDatePicker
@@ -266,7 +268,7 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
           </div>
 
           {/* LIVE KPI DASHBOARD */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px", background: themeStyles.highlightBg || "rgba(212,175,55,0.08)", border: `1px dashed ${themeStyles.accentGold || "#d4af37"}`, borderRadius: themeStyles.borderRadius || "12px", padding: "16px", marginTop: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(auto-fit, minmax(150px, 1fr))", gap: isMobile ? "6px" : "12px", background: themeStyles.highlightBg || "rgba(212,175,55,0.08)", border: `1px dashed ${themeStyles.accentGold || "#d4af37"}`, borderRadius: themeStyles.borderRadius || "12px", padding: isMobile ? "10px 6px" : "16px", marginTop: isMobile ? "14px" : "24px" }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "18px", fontWeight: 800, color: themeStyles.accentGold || "#d4af37", fontVariantNumeric: "tabular-nums" }}>{fmtCleanInt(live.profit)} {t.currency || (isEN ? "EGP" : "ج.م")}</div>
               <div style={{ fontSize: "12px", color: themeStyles.subText || "#aaaaaa", marginTop: "4px" }}>{t.totalProfitContract || (isEN ? "Net Contract Profit" : "صافي ربح العقد")}</div>
