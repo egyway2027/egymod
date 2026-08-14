@@ -240,7 +240,7 @@ export function App() {
   }, [clientsList]);
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: isMobile ? "12px 8px" : "20px", fontFamily: "Cairo, sans-serif", width: "100%", boxSizing: "border-box" }}>
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: isMobile ? "6px 8px" : "20px", fontFamily: "Cairo, sans-serif", width: "100%", boxSizing: "border-box" }}>
 
       {/* 1. شاشة إضافة عميل */}
       {currentScreen === "addClient" && (
@@ -355,52 +355,52 @@ export function App() {
           justifyContent: isMobile ? "space-between" : "initial"
         }}>
           {isMobile ? (
-            /* هيدر الموبايل المتناسق الممتد */
+            /* هيدر الموبايل المتناسق المريح */
             <header style={{
               background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
-              borderRadius: 16,
-              padding: "16px 14px",
-              marginBottom: 10,
+              borderRadius: 14,
+              padding: "10px 12px",
+              marginBottom: 6,
               color: "#fff",
               display: "flex",
               flexDirection: "column",
-              gap: 12
+              gap: 8
             }}>
               {/* اسم المستخدم بالمنتصف */}
-              <div style={{ textAlign: "center", fontSize: 15, fontWeight: 800, color: "#ffffff", letterSpacing: "0.3px" }}>
+              <div style={{ textAlign: "center", fontSize: 14, fontWeight: 800, color: "#ffffff", letterSpacing: "0.2px" }}>
                 {(t.welcome || "مرحباً،")} {(t.generalSupervisor || "المشرف العام")}
               </div>
 
               {/* شريط الأيقونات السريعة الستة */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
                 {/* 1. اللغة */}
-                <button type="button" onClick={() => setShowLangModal(true)} title={currentLangObj.name} style={{ width: 42, height: 42, borderRadius: 10, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16 }}>
+                <button type="button" onClick={() => setShowLangModal(true)} title={currentLangObj.name} style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 14 }}>
                   <span>{currentLangObj.flag || "🌐"}</span>
                 </button>
 
                 {/* 2. الثيمات */}
-                <button type="button" onClick={() => setShowThemeModal(true)} title="الثيمات" style={{ width: 42, height: 42, borderRadius: 10, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <Palette size={19} />
+                <button type="button" onClick={() => setShowThemeModal(true)} title="الثيمات" style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Palette size={17} />
                 </button>
 
                 {/* 3. البحث الشامل */}
-                <button type="button" onClick={() => setShowGlobalSearchModal(true)} title="البحث الشامل" style={{ width: 42, height: 42, borderRadius: 10, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <Search size={19} />
+                <button type="button" onClick={() => setShowGlobalSearchModal(true)} title="البحث الشامل" style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Search size={17} />
                 </button>
 
                 {/* 4. مركز السجلات */}
-                <button type="button" onClick={() => setShowCentralRecordsModal(true)} title="مركز السجلات" style={{ width: 42, height: 42, borderRadius: 10, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <FolderKanban size={19} />
+                <button type="button" onClick={() => setShowCentralRecordsModal(true)} title="مركز السجلات" style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <FolderKanban size={17} />
                 </button>
 
                 {/* 5. سلة المهملات */}
-                <button type="button" onClick={() => setShowRecycleBinModal(true)} title="سلة المهملات" style={{ width: 42, height: 42, borderRadius: 10, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <Trash2 size={19} />
+                <button type="button" onClick={() => setShowRecycleBinModal(true)} title="سلة المهملات" style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Trash2 size={17} />
                 </button>
 
                 {/* 6. الآلة الحاسبة الذكية */}
-                <button type="button" onClick={() => setShowCalcModal(true)} title="الآلة الحاسبة" style={{ width: 42, height: 42, borderRadius: 10, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(212,175,55,0.4)", color: "#fef08a", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <Calculator size={19} />
+                <button type="button" onClick={() => setShowCalcModal(true)} title="الآلة الحاسبة" style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(212,175,55,0.4)", color: "#fef08a", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Calculator size={17} />
                 </button>
               </div>
             </header>
@@ -449,32 +449,32 @@ export function App() {
           )}
 
           {/* كروت المؤشرات المالية */}
-          <section style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))", gap: isMobile ? 8 : 14, marginBottom: isMobile ? 10 : 20 }}>
-            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "12px 6px" : "20px", boxShadow: themeStyles.cardShadow || "none", textAlign: isMobile ? "center" : "initial" }}>
-              <TrendingUp size={isMobile ? 20 : 24} color={themeStyles.accentGold || "#d0b689"} />
-              <div style={{ fontSize: isMobile ? 13 : 22, fontWeight: 800, marginTop: isMobile ? 4 : 8, color: themeStyles.text || "#ffffff", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", gap: 2 }}>
-                {netProfit.toLocaleString()} <span style={{ fontSize: isMobile ? 10 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
+          <section style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))", gap: isMobile ? 6 : 14, marginBottom: isMobile ? 6 : 20 }}>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 14, padding: isMobile ? "8px 4px" : "20px", boxShadow: themeStyles.cardShadow || "none", textAlign: isMobile ? "center" : "initial" }}>
+              <TrendingUp size={isMobile ? 17 : 24} color={themeStyles.accentGold || "#d0b689"} />
+              <div style={{ fontSize: isMobile ? 12 : 22, fontWeight: 800, marginTop: isMobile ? 2 : 8, color: themeStyles.text || "#ffffff", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", gap: 2 }}>
+                {netProfit.toLocaleString()} <span style={{ fontSize: isMobile ? 9 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
               </div>
-              <div style={{ fontSize: isMobile ? 10 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 4 }}>
+              <div style={{ fontSize: isMobile ? 9.5 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 2 }}>
                 {isMobile ? "الأرباح" : (t.netProfit || "صافي الأرباح حتى اليوم")}
               </div>
               {!isMobile && <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.netProfitSub || "إجمالي أرباح العقود والتحصيلات الصافية"}</div>}
             </div>
 
-            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "12px 6px" : "20px", boxShadow: themeStyles.cardShadow || "none", textAlign: isMobile ? "center" : "initial" }}>
-              <CalendarClock size={isMobile ? 20 : 24} color={themeStyles.accentGold || "#d0b689"} />
-              <div style={{ fontSize: isMobile ? 13 : 22, fontWeight: 800, marginTop: isMobile ? 4 : 8, color: themeStyles.text || "#ffffff", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", gap: 2 }}>
-                {monthlyDues.toLocaleString()} <span style={{ fontSize: isMobile ? 10 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 14, padding: isMobile ? "8px 4px" : "20px", boxShadow: themeStyles.cardShadow || "none", textAlign: isMobile ? "center" : "initial" }}>
+              <CalendarClock size={isMobile ? 17 : 24} color={themeStyles.accentGold || "#d0b689"} />
+              <div style={{ fontSize: isMobile ? 12 : 22, fontWeight: 800, marginTop: isMobile ? 2 : 8, color: themeStyles.text || "#ffffff", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", gap: 2 }}>
+                {monthlyDues.toLocaleString()} <span style={{ fontSize: isMobile ? 9 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
               </div>
-              <div style={{ fontSize: isMobile ? 10 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 4 }}>
+              <div style={{ fontSize: isMobile ? 9.5 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 2 }}>
                 {isMobile ? "المستحقات" : (t.monthlyDues || "مستحقات هذا الشهر")}
               </div>
               {!isMobile && <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.monthlyDuesSub || "المطلوب تحصيله حالياً"}</div>}
             </div>
 
-            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "12px 6px" : "20px", boxShadow: themeStyles.cardShadow || "none", textAlign: isMobile ? "center" : "initial" }}>
-              <Wallet size={isMobile ? 20 : 24} color={themeStyles.accentGold || "#d0b689"} />
-              <div style={{ fontSize: isMobile ? 13 : 22, fontWeight: 800, marginTop: isMobile ? 4 : 8, color: themeStyles.text || "#ffffff", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", gap: 2 }}>
+            <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 14, padding: isMobile ? "8px 4px" : "20px", boxShadow: themeStyles.cardShadow || "none", textAlign: isMobile ? "center" : "initial" }}>
+              <Wallet size={isMobile ? 17 : 24} color={themeStyles.accentGold || "#d0b689"} />
+              <div style={{ fontSize: isMobile ? 12 : 22, fontWeight: 800, marginTop: isMobile ? 2 : 8, color: themeStyles.text || "#ffffff", display: "flex", alignItems: "center", justifyContent: isMobile ? "center" : "flex-start", gap: 2 }}>
                 {(clientsList || []).reduce((acc, curr) => {
                   if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
                   const sale = Number(curr.sale_price || curr.salePrice || curr.sale || curr.total || 0);
@@ -486,9 +486,9 @@ export function App() {
                     .reduce((sum, i) => sum + Number(i.amount || 0), 0);
 
                   return acc + Math.max(0, sale - down - paidFromInst);
-                }, 0).toLocaleString()} <span style={{ fontSize: isMobile ? 10 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
+                }, 0).toLocaleString()} <span style={{ fontSize: isMobile ? 9 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
               </div>
-              <div style={{ fontSize: isMobile ? 10 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 4 }}>
+              <div style={{ fontSize: isMobile ? 9.5 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 2 }}>
                 {isMobile ? "المتبقي" : (t.totalPortfolio || "إجمالي الأقساط المتبقية")}
               </div>
               {!isMobile && <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.totalPortfolioSub || "المبالغ المتبقية في ذمة العملاء"}</div>}
@@ -499,7 +499,7 @@ export function App() {
           <section style={{
             display: "grid",
             gridTemplateColumns: "repeat(2, 1fr)",
-            gap: isMobile ? 8 : 12,
+            gap: isMobile ? 6 : 12,
             flex: isMobile ? 1 : "initial"
           }}>
             {buttons.map((b) => {
@@ -525,16 +525,16 @@ export function App() {
                     background: b.tone === "gold" ? "linear-gradient(135deg, #d69a5f, #b06a35)" : b.tone === "copper" ? "linear-gradient(135deg, #b06a35, #7a4a1f)" : b.tone === "silver" ? "#d1d5db" : b.tone === "rose" ? "#fca5a5" : b.tone === "roseDark" ? "#9f1239" : (themeStyles.card || "#1e1e1e"),
                     color: (b.tone === "silver" || b.tone === "rose") ? "#111111" : "#ffffff",
                     border: `1px solid ${themeStyles.border || "#333333"}`, 
-                    borderRadius: themeStyles.buttonRadius || 14, 
-                    padding: isMobile ? "14px 12px" : "18px 20px", 
+                    borderRadius: themeStyles.buttonRadius || 12, 
+                    padding: isMobile ? "8px 10px" : "18px 20px", 
                     cursor: "pointer", fontFamily: "inherit",
-                    minHeight: isMobile ? 70 : "auto",
+                    minHeight: isMobile ? 52 : "auto",
                     boxSizing: "border-box"
                   }}
                 >
-                  <span style={{ fontSize: isMobile ? 13.5 : 15, fontWeight: 800, textAlign: isMobile ? "right" : "initial", flex: isMobile ? 1 : "none", lineHeight: 1.3 }}>{b.label}</span>
-                  <span style={{ width: isMobile ? 34 : 36, height: isMobile ? 34 : 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon size={isMobile ? 17 : 18} />
+                  <span style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, textAlign: isMobile ? "right" : "initial", flex: isMobile ? 1 : "none", lineHeight: 1.3 }}>{b.label}</span>
+                  <span style={{ width: isMobile ? 30 : 36, height: isMobile ? 30 : 36, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon size={isMobile ? 16 : 18} />
                   </span>
                 </button>
               );
