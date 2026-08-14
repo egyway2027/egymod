@@ -112,6 +112,7 @@ export function App() {
   const [showRecycleBinModal, setShowRecycleBinModal] = useState(false);
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
   const [showCentralRecordsModal, setShowCentralRecordsModal] = useState(false);
+  const [showCalcModal, setShowCalcModal] = useState(false);
 
   // 🌟 نافذة التنبيه المخصصة بوسط الشاشة
   const [successModal, setSuccessModal] = useState({ open: false, title: "", msg: "" });
@@ -129,6 +130,7 @@ export function App() {
           if (showCentralRecordsModal) { setShowCentralRecordsModal(false); return; }
           if (showLangModal) { setShowLangModal(false); return; }
           if (showThemeModal) { setShowThemeModal(false); return; }
+          if (showCalcModal) { setShowCalcModal(false); return; }
 
           // 2. العودة للشاشة الرئيسية إذا كنا في شاشة فرعية
           if (currentScreen !== "dashboard") {
@@ -156,7 +158,7 @@ export function App() {
         backListener.remove();
       }
     };
-  }, [currentScreen, showWhatsAppModal, showRecycleBinModal, showGlobalSearchModal, showCentralRecordsModal, showLangModal, showThemeModal, lastBackPress]);
+  }, [currentScreen, showWhatsAppModal, showRecycleBinModal, showGlobalSearchModal, showCentralRecordsModal, showLangModal, showThemeModal, showCalcModal, lastBackPress]);
 
   // أزرار شبكة التحكم الرئيسية مع نصوص احتياطية ضامنة للظهور
   const buttons = [
@@ -345,48 +347,99 @@ export function App() {
       {/* 5. لوحة التحكم الرئيسية */}
       {currentScreen === "dashboard" && (
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <header style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
-            borderRadius: 18, padding: isMobile ? "14px 12px" : "18px 24px", marginBottom: isMobile ? 14 : 20, color: "#fff"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#ffffff" }}>
+          {isMobile ? (
+            /* هيدر الموبايل الجديد المدمج والمثالي */
+            <header style={{
+              background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
+              borderRadius: 14,
+              padding: "8px 10px",
+              marginBottom: 10,
+              color: "#fff",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6
+            }}>
+              {/* اسم المستخدم بالمنتصف */}
+              <div style={{ textAlign: "center", fontSize: 13, fontWeight: 800, color: "#ffffff" }}>
                 {(t.welcome || "مرحباً،")} {(t.generalSupervisor || "المشرف العام")}
               </div>
 
-              <button onClick={() => setShowLangModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                <Globe size={15} /> <span>{currentLangObj.flag} {currentLangObj.name}</span>
-              </button>
+              {/* شريط الأيقونات السريعة الستة */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+                {/* 1. اللغة */}
+                <button type="button" onClick={() => setShowLangModal(true)} title={currentLangObj.name} style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13 }}>
+                  <span>{currentLangObj.flag || "🌐"}</span>
+                </button>
 
-              <button onClick={() => setShowThemeModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                <Palette size={15} /> <span>{t.appThemes || "ثيمات النظام"}</span>
-              </button>
+                {/* 2. الثيمات */}
+                <button type="button" onClick={() => setShowThemeModal(true)} title="الثيمات" style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Palette size={16} />
+                </button>
 
-              <button onClick={() => setShowGlobalSearchModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                <Search size={15} /> <span>البحث الشامل</span>
-              </button>
+                {/* 3. البحث الشامل */}
+                <button type="button" onClick={() => setShowGlobalSearchModal(true)} title="البحث الشامل" style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Search size={16} />
+                </button>
 
-              <button onClick={() => setShowCentralRecordsModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                <FolderKanban size={15} /> <span>مركز السجلات</span>
-              </button>
+                {/* 4. مركز السجلات */}
+                <button type="button" onClick={() => setShowCentralRecordsModal(true)} title="مركز السجلات" style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <FolderKanban size={16} />
+                </button>
 
-              <button onClick={() => setShowRecycleBinModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(239,68,68,0.4)", color: "#fca5a5", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                <Trash2 size={15} /> <span>سلة المهملات</span>
-              </button>
-            </div>
+                {/* 5. سلة المهملات */}
+                <button type="button" onClick={() => setShowRecycleBinModal(true)} title="سلة المهملات" style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Trash2 size={16} />
+                </button>
 
-            {!isMobile && (
+                {/* 6. الآلة الحاسبة الذكية التفاعلية */}
+                <button type="button" onClick={() => setShowCalcModal(true)} title="الآلة الحاسبة" style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(212,175,55,0.4)", color: "#fef08a", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Calculator size={16} />
+                </button>
+              </div>
+            </header>
+          ) : (
+            /* هيدر الويب / الكمبيوتر الأصلي 100% دون أي تغيير */
+            <header style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 55%, #7a4a1f 100%)",
+              borderRadius: 18, padding: "18px 24px", marginBottom: 20, color: "#fff"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ background: "rgba(0,0,0,0.3)", padding: "6px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#ffffff" }}>
+                  {(t.welcome || "مرحباً،")} {(t.generalSupervisor || "المشرف العام")}
+                </div>
+
+                <button onClick={() => setShowLangModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                  <Globe size={15} /> <span>{currentLangObj.flag} {currentLangObj.name}</span>
+                </button>
+
+                <button onClick={() => setShowThemeModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                  <Palette size={15} /> <span>{t.appThemes || "ثيمات النظام"}</span>
+                </button>
+
+                <button onClick={() => setShowGlobalSearchModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                  <Search size={15} /> <span>البحث الشامل</span>
+                </button>
+
+                <button onClick={() => setShowCentralRecordsModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                  <FolderKanban size={15} /> <span>مركز السجلات</span>
+                </button>
+
+                <button onClick={() => setShowRecycleBinModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(239,68,68,0.4)", color: "#fca5a5", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                  <Trash2 size={15} /> <span>سلة المهملات</span>
+                </button>
+              </div>
+
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#ffffff" }}>{t.appName || "نظام إدارة الأقساط والمبيعات"}</div>
                 <div style={{ fontSize: 11, opacity: 0.8, color: "#ffffff" }}>Cloud Enterprise Active</div>
               </div>
-            )}
 
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Calculator size={22} />
-            </div>
-          </header>
+              <div onClick={() => setShowCalcModal(true)} style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }} title="الآلة الحاسبة">
+                <Calculator size={22} />
+              </div>
+            </header>
+          )}
 
           <section style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))", gap: isMobile ? 6 : 14, marginBottom: isMobile ? 14 : 20 }}>
             <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: themeStyles.cardRadius || 16, padding: isMobile ? "10px 4px" : "20px", boxShadow: themeStyles.cardShadow || "none", textAlign: isMobile ? "center" : "initial" }}>
@@ -658,6 +711,15 @@ export function App() {
         </div>
       )}
 
+      {/* 🧮 نافذة الآلة الحاسبة السريعة والذكية */}
+      {showCalcModal && (
+        <QuickCalculatorModal
+          isOpen={showCalcModal}
+          onClose={() => setShowCalcModal(false)}
+          themeStyles={themeStyles}
+        />
+      )}
+
       {/* 🌐 نافذة اختيار اللغات المنسقة بوسط الشاشة (Grid Layout) */}
       {showLangModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: 16 }}>
@@ -708,6 +770,106 @@ export function App() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// 🧮 مكون الآلة الحاسبة السريعة المنبثقة
+function QuickCalculatorModal({ isOpen, onClose, themeStyles = {} }) {
+  const [calcInput, setCalcInput] = useState("0");
+  const [calcHistory, setCalcHistory] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleDigit = (digit) => {
+    setCalcInput((prev) => (prev === "0" ? digit : prev + digit));
+  };
+
+  const handleOp = (op) => {
+    setCalcHistory(calcInput + " " + op + " ");
+    setCalcInput("0");
+  };
+
+  const handleClear = () => {
+    setCalcInput("0");
+    setCalcHistory("");
+  };
+
+  const handleBackspace = () => {
+    setCalcInput((prev) => (prev.length <= 1 ? "0" : prev.slice(0, -1)));
+  };
+
+  const handleEquals = () => {
+    if (!calcHistory) return;
+    try {
+      const fullExpr = (calcHistory + calcInput).replace(/×/g, "*").replace(/÷/g, "/");
+      const sanitized = fullExpr.replace(/[^0-9+\-*/.]/g, "");
+      const res = Function(`'use strict'; return (${sanitized})`)();
+      const formatted = String(Math.round(Number(res) * 100) / 100);
+      setCalcInput(formatted);
+      setCalcHistory("");
+    } catch (e) {
+      setCalcInput("Error");
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(calcInput);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: 16 }}>
+      <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 20, padding: 16, width: "100%", maxWidth: 310, boxShadow: "0 10px 30px rgba(0,0,0,0.6)" }}>
+        
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: 8 }}>
+          <div style={{ fontWeight: 800, fontSize: 14, color: themeStyles.accentGold || "#d0b689", display: "flex", alignItems: "center", gap: 6 }}>
+            <Calculator size={18} /> آلة حاسبة سريعة
+          </div>
+          <X size={18} style={{ cursor: "pointer", color: "#aaa" }} onClick={onClose} />
+        </div>
+
+        {/* Display */}
+        <div style={{ background: "#111113", border: "1px solid #2a2a2e", borderRadius: 12, padding: "10px 12px", textAlign: "right", marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: "#888", minHeight: 16, fontVariantNumeric: "tabular-nums" }}>{calcHistory}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", fontVariantNumeric: "tabular-nums", overflowX: "auto", whiteSpace: "nowrap" }}>{calcInput}</div>
+        </div>
+
+        {/* Buttons Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+          <button type="button" onClick={handleClear} style={{ background: "#7f1d1d", color: "#fca5a5", border: "none", borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>C</button>
+          <button type="button" onClick={handleBackspace} style={{ background: "#332a1f", color: "#fdba74", border: "none", borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>⌫</button>
+          <button type="button" onClick={() => handleOp("%")} style={{ background: "#222", color: "#aaa", border: "none", borderRadius: 10, padding: 12, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>%</button>
+          <button type="button" onClick={() => handleOp("÷")} style={{ background: "#d69a5f", color: "#111", border: "none", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>÷</button>
+
+          <button type="button" onClick={() => handleDigit("7")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>7</button>
+          <button type="button" onClick={() => handleDigit("8")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>8</button>
+          <button type="button" onClick={() => handleDigit("9")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>9</button>
+          <button type="button" onClick={() => handleOp("×")} style={{ background: "#d69a5f", color: "#111", border: "none", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>×</button>
+
+          <button type="button" onClick={() => handleDigit("4")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>4</button>
+          <button type="button" onClick={() => handleDigit("5")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>5</button>
+          <button type="button" onClick={() => handleDigit("6")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>6</button>
+          <button type="button" onClick={() => handleOp("-")} style={{ background: "#d69a5f", color: "#111", border: "none", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>-</button>
+
+          <button type="button" onClick={() => handleDigit("1")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>1</button>
+          <button type="button" onClick={() => handleDigit("2")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>2</button>
+          <button type="button" onClick={() => handleDigit("3")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>3</button>
+          <button type="button" onClick={() => handleOp("+")} style={{ background: "#d69a5f", color: "#111", border: "none", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>+</button>
+
+          <button type="button" onClick={() => handleDigit("0")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>0</button>
+          <button type="button" onClick={() => handleDigit(".")} style={{ background: "#1e1e24", color: "#fff", border: "1px solid #333", borderRadius: 10, padding: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>.</button>
+          <button type="button" onClick={handleEquals} style={{ gridColumn: "span 2", background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#111", border: "none", borderRadius: 10, padding: 12, fontSize: 18, fontWeight: 800, cursor: "pointer" }}>=</button>
+        </div>
+
+        {/* زر نسخ الناتج */}
+        <button type="button" onClick={handleCopy} style={{ width: "100%", marginTop: 8, background: copied ? "#14532d" : "#26262a", color: copied ? "#86efac" : "#ffffff", border: "1px solid #3f3f46", borderRadius: 10, padding: 10, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          {copied ? "تم نسخ الناتج بنجاح ✓" : "نسخ الناتج"}
+        </button>
+      </div>
     </div>
   );
 }
