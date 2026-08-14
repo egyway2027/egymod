@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { ArrowRight, X, Wallet, CreditCard, UserCog, TrendingUp, Users, Loader2 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {} }) {
+  const isMobile = useIsMobile();
   const isEN = t?.currency === "EGP" || document.documentElement.lang === "en" || document.documentElement.dir === "ltr";
 
   const [loading, setLoading] = useState(true);
@@ -100,9 +102,9 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
   }, [data]);
 
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1050px", margin: "0 auto", padding: "16px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1050px", margin: "0 auto", padding: isMobile ? "10px 8px" : "16px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
       {/* HEADER */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "12px" : "20px" }}>
         <button
           type="button"
           onClick={onBack}
@@ -113,18 +115,18 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
             background: themeStyles.card || "#141414",
             border: `1px solid ${themeStyles.border || "#262626"}`,
             color: themeStyles.accentGold || "#d69a5f",
-            padding: "8px 16px",
+            padding: isMobile ? "6px 12px" : "8px 16px",
             borderRadius: "10px",
             cursor: "pointer",
             fontWeight: 700,
-            fontSize: "13px"
+            fontSize: isMobile ? "12px" : "13px"
           }}
         >
-          <ArrowRight size={16} style={{ transform: isEN ? "rotate(180deg)" : "none" }} />
+          <ArrowRight size={isMobile ? 14 : 16} style={{ transform: isEN ? "rotate(180deg)" : "none" }} />
           {t.back || (isEN ? "Back" : "رجوع")}
         </button>
 
-        <h2 style={{ color: themeStyles.accentGold || "#d69a5f", margin: 0, fontSize: "20px", fontWeight: 800 }}>
+        <h2 style={{ color: themeStyles.accentGold || "#d69a5f", margin: 0, fontSize: isMobile ? "16px" : "20px", fontWeight: 800 }}>
           {t.treasuryTitle || (isEN ? "Profit Distribution & Treasury" : "توزيع الأرباح والخزينة")}
         </h2>
 
@@ -132,8 +134,8 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
           type="button"
           onClick={onBack}
           style={{
-            width: "36px",
-            height: "36px",
+            width: isMobile ? "32px" : "36px",
+            height: isMobile ? "32px" : "36px",
             borderRadius: "50%",
             background: themeStyles.card || "#141414",
             border: `1px solid ${themeStyles.border || "#262626"}`,
@@ -144,7 +146,7 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
             justifyContent: "center"
           }}
         >
-          <X size={18} />
+          <X size={isMobile ? 16 : 18} />
         </button>
       </div>
 
@@ -154,75 +156,83 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
         </div>
       ) : (
         <>
-          {/* KPI CARDS GRID */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px", marginBottom: "22px" }}>
+          {/* KPI CARDS GRID: تحويلها لشبكة 2x2 على الموبايل */}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))", gap: isMobile ? "8px" : "14px", marginBottom: isMobile ? "12px" : "22px" }}>
             {/* CARD 1: NET PROFIT */}
-            <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: "16px", padding: "18px" }}>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
-                <TrendingUp size={22} style={{ color: themeStyles.accentGold || "#d69a5f" }} />
+            <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "10px 8px" : "18px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: isMobile ? "4px" : "10px" }}>
+                <TrendingUp size={isMobile ? 18 : 22} style={{ color: themeStyles.accentGold || "#d69a5f" }} />
               </div>
-              <div style={{ fontSize: "22px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", fontVariantNumeric: "tabular-nums" }}>
-                {totals.netProfit.toLocaleString()} <span style={{ fontSize: "12px", color: themeStyles.subText || "#888" }}>ج.م</span>
+              <div style={{ fontSize: isMobile ? "16px" : "22px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", fontVariantNumeric: "tabular-nums" }}>
+                {totals.netProfit.toLocaleString()} <span style={{ fontSize: isMobile ? "10px" : "12px", color: themeStyles.subText || "#888" }}>ج.م</span>
               </div>
-              <div style={{ fontSize: "13.5px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: "6px" }}>
+              <div style={{ fontSize: isMobile ? "11.5px" : "13.5px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: isMobile ? "2px" : "6px", whiteSpace: "nowrap" }}>
                 صافي الربح القابل للتوزيع
               </div>
-              <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888", marginTop: "4px" }}>
-                أرباح التحصيلات - المصروفات - الرواتب
-              </div>
+              {!isMobile && (
+                <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888", marginTop: "4px" }}>
+                  أرباح التحصيلات - المصروفات - الرواتب
+                </div>
+              )}
             </div>
 
             {/* CARD 2: SALARIES */}
-            <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: "16px", padding: "18px" }}>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
-                <UserCog size={22} style={{ color: themeStyles.accentGold || "#d69a5f" }} />
+            <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "10px 8px" : "18px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: isMobile ? "4px" : "10px" }}>
+                <UserCog size={isMobile ? 18 : 22} style={{ color: themeStyles.accentGold || "#d69a5f" }} />
               </div>
-              <div style={{ fontSize: "22px", fontWeight: 800, color: themeStyles.text || "#ffffff", fontVariantNumeric: "tabular-nums" }}>
-                {totals.totalSalaries.toLocaleString()} <span style={{ fontSize: "12px", color: themeStyles.subText || "#888" }}>ج.م</span>
+              <div style={{ fontSize: isMobile ? "16px" : "22px", fontWeight: 800, color: themeStyles.text || "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+                {totals.totalSalaries.toLocaleString()} <span style={{ fontSize: isMobile ? "10px" : "12px", color: themeStyles.subText || "#888" }}>ج.م</span>
               </div>
-              <div style={{ fontSize: "13.5px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: "6px" }}>
-                إجمالي رواتب وسلف الموظفين
+              <div style={{ fontSize: isMobile ? "11.5px" : "13.5px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: isMobile ? "2px" : "6px", whiteSpace: "nowrap" }}>
+                رواتب وسلف الموظفين
               </div>
-              <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888", marginTop: "4px" }}>
-                كل حركات الرواتب المسجلة
-              </div>
+              {!isMobile && (
+                <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888", marginTop: "4px" }}>
+                  كل حركات الرواتب المسجلة
+                </div>
+              )}
             </div>
 
             {/* CARD 3: EXPENSES */}
-            <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: "16px", padding: "18px" }}>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
-                <CreditCard size={22} style={{ color: themeStyles.accentGold || "#d69a5f" }} />
+            <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "10px 8px" : "18px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: isMobile ? "4px" : "10px" }}>
+                <CreditCard size={isMobile ? 18 : 22} style={{ color: themeStyles.accentGold || "#d69a5f" }} />
               </div>
-              <div style={{ fontSize: "22px", fontWeight: 800, color: themeStyles.text || "#ffffff", fontVariantNumeric: "tabular-nums" }}>
-                {totals.totalExpenses.toLocaleString()} <span style={{ fontSize: "12px", color: themeStyles.subText || "#888" }}>ج.م</span>
+              <div style={{ fontSize: isMobile ? "16px" : "22px", fontWeight: 800, color: themeStyles.text || "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+                {totals.totalExpenses.toLocaleString()} <span style={{ fontSize: isMobile ? "10px" : "12px", color: themeStyles.subText || "#888" }}>ج.م</span>
               </div>
-              <div style={{ fontSize: "13.5px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: "6px" }}>
+              <div style={{ fontSize: isMobile ? "11.5px" : "13.5px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: isMobile ? "2px" : "6px", whiteSpace: "nowrap" }}>
                 إجمالي المصروفات
               </div>
-              <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888", marginTop: "4px" }}>
-                كل المصروفات المسجلة
-              </div>
+              {!isMobile && (
+                <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888", marginTop: "4px" }}>
+                  كل المصروفات المسجلة
+                </div>
+              )}
             </div>
 
             {/* CARD 4: CAPITAL */}
-            <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: "16px", padding: "18px" }}>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
-                <Wallet size={22} style={{ color: themeStyles.accentGold || "#d69a5f" }} />
+            <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "10px 8px" : "18px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: isMobile ? "4px" : "10px" }}>
+                <Wallet size={isMobile ? 18 : 22} style={{ color: themeStyles.accentGold || "#d69a5f" }} />
               </div>
-              <div style={{ fontSize: "22px", fontWeight: 800, color: themeStyles.text || "#ffffff", fontVariantNumeric: "tabular-nums" }}>
-                {totals.totalCapital.toLocaleString()} <span style={{ fontSize: "12px", color: themeStyles.subText || "#888" }}>ج.م</span>
+              <div style={{ fontSize: isMobile ? "16px" : "22px", fontWeight: 800, color: themeStyles.text || "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+                {totals.totalCapital.toLocaleString()} <span style={{ fontSize: isMobile ? "10px" : "12px", color: themeStyles.subText || "#888" }}>ج.م</span>
               </div>
-              <div style={{ fontSize: "13.5px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: "6px" }}>
-                إجمالي رأس مال الشركة الفعلي
+              <div style={{ fontSize: isMobile ? "11.5px" : "13.5px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: isMobile ? "2px" : "6px", whiteSpace: "nowrap" }}>
+                رأس مال الشركة الفعلي
               </div>
-              <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888", marginTop: "4px" }}>
-                صافي مستحقات كل الشركاء
-              </div>
+              {!isMobile && (
+                <div style={{ fontSize: "11px", color: themeStyles.subText || "#888888", marginTop: "4px" }}>
+                  صافي مستحقات كل الشركاء
+                </div>
+              )}
             </div>
           </div>
 
           {/* MAIN NAVIGATION BUTTONS GRID */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: isMobile ? "8px" : "14px", marginBottom: isMobile ? "12px" : "20px" }}>
             <button
               type="button"
               onClick={() => onNavigate && onNavigate("treasuryDistribute")}
@@ -230,9 +240,9 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
                 background: "linear-gradient(135deg, #8a3a2d, #4a1d17)",
                 color: "#ffffff",
                 border: "none",
-                borderRadius: "14px",
-                padding: "20px",
-                fontSize: "16px",
+                borderRadius: isMobile ? "12px" : "14px",
+                padding: isMobile ? "12px 10px" : "20px",
+                fontSize: isMobile ? "13px" : "16px",
                 fontWeight: 800,
                 cursor: "pointer",
                 display: "flex",
@@ -241,7 +251,7 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
               }}
             >
               <span>توزيع الأرباح</span>
-              <Wallet size={22} />
+              <Wallet size={isMobile ? 18 : 22} />
             </button>
 
             <button
@@ -251,9 +261,9 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
                 background: "linear-gradient(135deg, #d69a5f, #7a4a1f)",
                 color: "#ffffff",
                 border: "none",
-                borderRadius: "14px",
-                padding: "20px",
-                fontSize: "16px",
+                borderRadius: isMobile ? "12px" : "14px",
+                padding: isMobile ? "12px 10px" : "20px",
+                fontSize: isMobile ? "13px" : "16px",
                 fontWeight: 800,
                 cursor: "pointer",
                 display: "flex",
@@ -262,7 +272,7 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
               }}
             >
               <span>الشركاء ورأس المال</span>
-              <Users size={22} />
+              <Users size={isMobile ? 18 : 22} />
             </button>
 
             <button
@@ -272,9 +282,9 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
                 background: "linear-gradient(135deg, #d69a5f, #8a5a2d)",
                 color: "#ffffff",
                 border: "none",
-                borderRadius: "14px",
-                padding: "20px",
-                fontSize: "16px",
+                borderRadius: isMobile ? "12px" : "14px",
+                padding: isMobile ? "12px 10px" : "20px",
+                fontSize: isMobile ? "13px" : "16px",
                 fontWeight: 800,
                 cursor: "pointer",
                 display: "flex",
@@ -283,7 +293,7 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
               }}
             >
               <span>المصروفات العامة</span>
-              <CreditCard size={22} />
+              <CreditCard size={isMobile ? 18 : 22} />
             </button>
 
             <button
@@ -293,9 +303,9 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
                 background: themeStyles.card || "#141414",
                 border: `1px solid ${themeStyles.border || "#262626"}`,
                 color: themeStyles.accentGold || "#d69a5f",
-                borderRadius: "14px",
-                padding: "20px",
-                fontSize: "16px",
+                borderRadius: isMobile ? "12px" : "14px",
+                padding: isMobile ? "12px 10px" : "20px",
+                fontSize: isMobile ? "13px" : "16px",
                 fontWeight: 800,
                 cursor: "pointer",
                 display: "flex",
@@ -304,7 +314,7 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
               }}
             >
               <span>شؤون الموظفين والرواتب</span>
-              <UserCog size={22} />
+              <UserCog size={isMobile ? 18 : 22} />
             </button>
           </div>
 
@@ -318,8 +328,8 @@ export function TreasuryMainScreen({ onNavigate, onBack, t = {}, themeStyles = {
               border: `1px solid ${themeStyles.border || "#262626"}`,
               color: themeStyles.accentGold || "#d69a5f",
               borderRadius: "12px",
-              padding: "14px",
-              fontSize: "14px",
+              padding: isMobile ? "10px" : "14px",
+              fontSize: isMobile ? "13px" : "14px",
               fontWeight: 800,
               cursor: "pointer",
               display: "flex",
