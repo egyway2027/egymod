@@ -1,6 +1,7 @@
 import React from "react";
 import { Banknote, CheckCheck } from "lucide-react";
 import { Field, DateInput, NameComboBox, LiveStat } from "../CommonUI";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 // دالة تنظيف الأرقام من الفواصل
 const fmtCleanInt = (val) => {
@@ -9,24 +10,25 @@ const fmtCleanInt = (val) => {
 };
 
 export default function CustomerSearchHeader({
-  rows = [],
-  selected,
-  setSelected,
-  amount,
-  setAmount,
-  payDate,
-  setPayDate,
-  method,
-  setMethod,
-  collector,
-  setCollector,
-  employees = [],
-  onSubmitPayment,
-  t = {},
-  styles = {},
-  themeStyles = {}
+  rows = [],
+  selected,
+  setSelected,
+  amount,
+  setAmount,
+  payDate,
+  setPayDate,
+  method,
+  setMethod,
+  collector,
+  setCollector,
+  employees = [],
+  onSubmitPayment,
+  t = {},
+  styles = {},
+  themeStyles = {}
 }) {
-  const isEN = t?.lang === "en" || document.documentElement?.lang === "en";
+  const isMobile = useIsMobile();
+  const isEN = t?.lang === "en" || document.documentElement?.lang === "en";
 
   const numAmount = parseFloat(amount) || 0;
   const currentRemaining = selected ? Number(selected.remaining || 0) : 0;
@@ -76,10 +78,10 @@ export default function CustomerSearchHeader({
       </div>
 
       {selected && (
-        <form onSubmit={onSubmitPayment} style={{ marginTop: 10, width: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%", boxSizing: "border-box" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-              <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
+        <form onSubmit={onSubmitPayment} style={{ marginTop: isMobile ? 6 : 10, width: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: isMobile ? 8 : 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: isMobile ? 8 : 16, width: "100%", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 4 : 6, minWidth: 0 }}>
+              <label style={{ fontSize: isMobile ? 12 : 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
                 {t.paymentDate || (isEN ? "Payment Date" : "تاريخ السداد")}
               </label>
               <div style={{ width: "100%", minWidth: 0, boxSizing: "border-box" }}>
@@ -94,8 +96,8 @@ export default function CustomerSearchHeader({
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-              <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 4 : 6, minWidth: 0 }}>
+              <label style={{ fontSize: isMobile ? 12 : 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
                 {t.paidAmount || (isEN ? "Amount Paid (EGP) *" : "المبلغ المدفوع (ج.م) *")}
               </label>
               <input
@@ -104,14 +106,14 @@ export default function CustomerSearchHeader({
                 onWheel={(e) => e.target.blur()}
                 style={{ 
                   width: "100%", 
-                  height: 48,
+                  height: isMobile ? 38 : 48,
                   background: themeStyles.inputBg || "#141414", 
                   border: `1px solid ${themeStyles.border || "#333333"}`, 
                   borderRadius: themeStyles.borderRadius || 10, 
-                  padding: "0 14px", 
+                  padding: isMobile ? "0 10px" : "0 14px", 
                   fontFamily: "inherit", 
                   outline: "none",
-                  fontSize: 16, 
+                  fontSize: isMobile ? 14 : 16, 
                   fontWeight: 800, 
                   color: themeStyles.accentGold || "#d4af37", 
                   boxSizing: "border-box" 
@@ -125,21 +127,22 @@ export default function CustomerSearchHeader({
           </div>
 
           {/* أزرار الإدخال السريع للمبلغ */}
-          <div style={{ display: "flex", gap: 10, marginTop: 12, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "auto auto", gap: isMobile ? 6 : 10, marginTop: isMobile ? 4 : 12, marginBottom: isMobile ? 6 : 14 }}>
             <button
               type="button"
               onClick={() => setAmount(String(Math.round(selected.monthly || 0)))}
               style={{
-                display: "inline-flex", alignItems: "center", gap: 7,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
                 background: "rgba(212, 175, 55, 0.08)",
                 border: `1px solid ${themeStyles.accentGold || "rgba(212, 175, 55, 0.35)"}`,
                 color: themeStyles.accentGold || "#d4af37",
-                padding: "8px 16px", borderRadius: themeStyles.borderRadius || 20,
-                fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
+                padding: isMobile ? "6px 8px" : "8px 16px", borderRadius: themeStyles.borderRadius || 20,
+                fontSize: isMobile ? 11 : 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                whiteSpace: "nowrap"
               }}
             >
-              <Banknote size={16} />
-              <span>{t.fullInstallmentBtn || (isEN ? "Full Installment" : "قسط كامل")}:</span>
+              <Banknote size={isMobile ? 14 : 16} />
+              <span>{t.fullInstallmentBtn || (isEN ? "Full" : "قسط كامل")}:</span>
               <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800 }}>
                 {fmtCleanInt(selected.monthly)} {t.currency || (isEN ? "EGP" : "ج.م")}
               </span>
@@ -149,32 +152,33 @@ export default function CustomerSearchHeader({
               type="button"
               onClick={() => setAmount(String(Math.round(selected.remaining || 0)))}
               style={{
-                display: "inline-flex", alignItems: "center", gap: 7,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
                 background: "rgba(16, 185, 129, 0.08)",
                 border: "1px solid rgba(16, 185, 129, 0.35)",
                 color: "#10b981",
-                padding: "8px 16px", borderRadius: themeStyles.borderRadius || 20,
-                fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
+                padding: isMobile ? "6px 8px" : "8px 16px", borderRadius: themeStyles.borderRadius || 20,
+                fontSize: isMobile ? 11 : 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                whiteSpace: "nowrap"
               }}
             >
-              <CheckCheck size={16} />
-              <span>{t.settleContractBtn || (isEN ? "Settle Contract" : "تصفية العقد")}:</span>
+              <CheckCheck size={isMobile ? 14 : 16} />
+              <span>{t.settleContractBtn || (isEN ? "Settle" : "تصفية العقد")}:</span>
               <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800 }}>
                 {fmtCleanInt(selected.remaining)} {t.currency || (isEN ? "EGP" : "ج.م")}
               </span>
             </button>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%", boxSizing: "border-box" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-              <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: isMobile ? 8 : 16, width: "100%", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 4 : 6, minWidth: 0 }}>
+              <label style={{ fontSize: isMobile ? 12 : 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
                 {t.paymentMethod || (isEN ? "Payment Method" : "طريقة الدفع")}
               </label>
               <select 
                 style={{ 
-                  width: "100%", height: 48, background: themeStyles.inputBg || "#141414", 
+                  width: "100%", height: isMobile ? 38 : 48, background: themeStyles.inputBg || "#141414", 
                   border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.borderRadius || 10, 
-                  padding: "0 14px", color: themeStyles.text || "#ffffff", fontFamily: "inherit", fontSize: 15, 
+                  padding: isMobile ? "0 8px" : "0 14px", color: themeStyles.text || "#ffffff", fontFamily: "inherit", fontSize: isMobile ? 12 : 15, 
                   outline: "none", boxSizing: "border-box" 
                 }} 
                 value={method} 
@@ -186,15 +190,15 @@ export default function CustomerSearchHeader({
               </select>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-              <label style={{ fontSize: 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 4 : 6, minWidth: 0 }}>
+              <label style={{ fontSize: isMobile ? 12 : 13.5, color: themeStyles.subText || "#aaaaaa", fontWeight: 700 }}>
                 {t.collectorEmployee || (isEN ? "Collector / Employee" : "المحصل / الموظف")}
               </label>
               <select 
                 style={{ 
-                  width: "100%", height: 48, background: themeStyles.inputBg || "#141414", 
+                  width: "100%", height: isMobile ? 38 : 48, background: themeStyles.inputBg || "#141414", 
                   border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.borderRadius || 10, 
-                  padding: "0 14px", color: themeStyles.text || "#ffffff", fontFamily: "inherit", fontSize: 15, 
+                  padding: isMobile ? "0 8px" : "0 14px", color: themeStyles.text || "#ffffff", fontFamily: "inherit", fontSize: isMobile ? 12 : 15, 
                   outline: "none", boxSizing: "border-box" 
                 }} 
                 value={collector} 
@@ -208,12 +212,12 @@ export default function CustomerSearchHeader({
             </div>
           </div>
 
-          {/* شريط الإحصائيات الحية */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: themeStyles.highlightBg, border: `1px dashed ${themeStyles.accent}`, borderRadius: themeStyles.borderRadius || 12, padding: 14, margin: "6px 0" }}>
-            <LiveStat label={t.itemLabel || (isEN ? "Item" : "السلعة")} value={selected.item} themeStyles={themeStyles} />
-            <LiveStat label={t.currentRemaining || (isEN ? "Current Remaining" : "المتبقي الحالي")} value={`${fmtCleanInt(currentRemaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`} themeStyles={themeStyles} />
-            <LiveStat label={t.remainingAfterPay || (isEN ? "Remaining After Payment" : "المتبقي بعد هذا السداد")} value={`${fmtCleanInt(remainingAfterPay)} ${t.currency || (isEN ? "EGP" : "ج.م")}`} themeStyles={themeStyles} />
-          </div>
+          {/* شريط الإحصائيات الحية المدمج بثلاث خانات أفقية */}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(auto-fit, minmax(140px, 1fr))", gap: isMobile ? 6 : 12, background: themeStyles.highlightBg, border: `1px dashed ${themeStyles.accent}`, borderRadius: themeStyles.borderRadius || 12, padding: isMobile ? "8px 6px" : 14, margin: isMobile ? "2px 0" : "6px 0" }}>
+            <LiveStat label={t.itemLabel || (isEN ? "Item" : "السلعة")} value={selected.item} themeStyles={themeStyles} />
+            <LiveStat label={t.currentRemaining || (isEN ? "Current Remaining" : "المتبقي الحالي")} value={`${fmtCleanInt(currentRemaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`} themeStyles={themeStyles} />
+            <LiveStat label={t.remainingAfterPay || (isEN ? "Remaining After Payment" : "المتبقي بعد هذا السداد")} value={`${fmtCleanInt(remainingAfterPay)} ${t.currency || (isEN ? "EGP" : "ج.م")}`} themeStyles={themeStyles} />
+          </div>
 
           {isPaidOffNow && (
             <div style={{ background: "rgba(232,205,156,0.15)", border: `1px solid ${themeStyles.accentGold || "#d4af37"}`, color: themeStyles.accentGold || "#d4af37", padding: "10px", borderRadius: themeStyles.borderRadius || 10, textAlign: "center", fontWeight: 800, fontSize: 14, margin: "12px 0" }}>
@@ -221,15 +225,15 @@ export default function CustomerSearchHeader({
             </div>
           )}
 
-          <button 
-            type="submit" 
-            style={{ 
-              width: "100%", background: `linear-gradient(145deg, ${themeStyles.accentGold}, ${themeStyles.accent})`, color: "#111111", border: "none", 
-              borderRadius: themeStyles.borderRadius || 12, padding: "14px 20px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 14, fontFamily: "inherit" 
-            }}
-          >
-            {t.recordAndPrintBtn || (isEN ? "Record Payment & Print Receipt" : "تسجيل السداد وطباعة الإيصال")}
-          </button>
+          <button 
+            type="submit" 
+            style={{ 
+              width: "100%", background: `linear-gradient(145deg, ${themeStyles.accentGold}, ${themeStyles.accent})`, color: "#111111", border: "none", 
+              borderRadius: themeStyles.borderRadius || 12, padding: isMobile ? "10px 14px" : "14px 20px", fontSize: isMobile ? 14 : 16, fontWeight: 800, cursor: "pointer", marginTop: isMobile ? 8 : 14, fontFamily: "inherit" 
+            }}
+          >
+            {t.recordAndPrintBtn || (isEN ? "Record Payment & Print Receipt" : "تسجيل السداد وطباعة الإيصال")}
+          </button>
         </form>
       )}
     </div>
