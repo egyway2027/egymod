@@ -3,9 +3,8 @@
   "appName": "EGYMOD",
   "webDir": "dist",
   "bundledWebRuntime": false,
-  "plugins": {
-    "CapacitorUpdater": {
-      "autoUpdate": true
-    }
+  "server": {
+    "url": "https://egymod.vercel.app",
+    "cleartext": true
   }
 }
