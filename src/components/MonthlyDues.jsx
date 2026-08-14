@@ -155,32 +155,69 @@ export function MonthlyDuesScreen({
       />
 
       {/* 2. بطاقات الإحصائيات العلوية الثلاث */}
-      <section style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(auto-fit, minmax(240px, 1fr))", gap: isMobile ? 6 : 14, marginBottom: isMobile ? 10 : 16 }}>
-        <KPI
-          icon={CalendarClock}
-          label={t.totalMonthlyRequired || (isEN ? "Total Required This Month" : "إجمالي المطلوب هذا الشهر")}
-          sub={t.sumDueInstallments || (isEN ? "Sum of due installments" : "مجموع الأقساط المستحقة")}
-          value={`${fmtCleanInt(stats.totalDue)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
-          styles={styles}
-          themeStyles={themeStyles}
-        />
-        <KPI
-          icon={Wallet}
-          label={t.collectedSoFar || (isEN ? "Collected So Far" : "تم تحصيله حتى الآن")}
-          sub={`${t.completionRate || (isEN ? "Completion Rate" : "نسبة الإنجاز")} %${fmtCleanInt(stats.progressPct)}`}
-          value={`${fmtCleanInt(stats.totalCollected)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
-          styles={styles}
-          themeStyles={themeStyles}
-        />
-        <KPI
-          icon={TrendingUp}
-          label={t.remainingToCollect || (isEN ? "Remaining To Collect" : "المتبقي تحصيله")}
-          sub={t.duesUnderFollowUp || (isEN ? "Dues under follow-up" : "مستحقات جاري متابعتها")}
-          value={`${fmtCleanInt(stats.totalRemaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
-          styles={styles}
-          themeStyles={themeStyles}
-        />
-      </section>
+      {isMobile ? (
+        <section style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", marginBottom: "10px" }}>
+          {/* كارت 1: إجمالي المطلوب */}
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "12px", padding: "10px 4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", minHeight: "85px" }}>
+            <CalendarClock size={18} color={themeStyles.accentGold || "#d69a5f"} style={{ marginBottom: "4px" }} />
+            <div style={{ fontSize: "13px", fontWeight: 800, color: themeStyles.text || "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+              {fmtCleanInt(stats.totalDue)} <span style={{ fontSize: "10px", color: themeStyles.accentGold || "#d69a5f" }}>{t.currency || (isEN ? "EGP" : "ج.م")}</span>
+            </div>
+            <div style={{ fontSize: "10px", fontWeight: 700, color: themeStyles.subText || "#aaaaaa", marginTop: "3px", whiteSpace: "nowrap" }}>
+              {t.totalMonthlyRequired || (isEN ? "Total Due" : "إجمالي المطلوب")}
+            </div>
+          </div>
+
+          {/* كارت 2: تم تحصيله */}
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "12px", padding: "10px 4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", minHeight: "85px" }}>
+            <Wallet size={18} color={themeStyles.accentGold || "#d69a5f"} style={{ marginBottom: "4px" }} />
+            <div style={{ fontSize: "13px", fontWeight: 800, color: themeStyles.text || "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+              {fmtCleanInt(stats.totalCollected)} <span style={{ fontSize: "10px", color: themeStyles.accentGold || "#d69a5f" }}>{t.currency || (isEN ? "EGP" : "ج.م")}</span>
+            </div>
+            <div style={{ fontSize: "10px", fontWeight: 700, color: themeStyles.subText || "#aaaaaa", marginTop: "3px", whiteSpace: "nowrap" }}>
+              {t.collectedSoFar || (isEN ? "Collected" : "تم تحصيله")} ({fmtCleanInt(stats.progressPct)}%)
+            </div>
+          </div>
+
+          {/* كارت 3: المتبقي */}
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "12px", padding: "10px 4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", minHeight: "85px" }}>
+            <TrendingUp size={18} color={themeStyles.accentGold || "#d69a5f"} style={{ marginBottom: "4px" }} />
+            <div style={{ fontSize: "13px", fontWeight: 800, color: themeStyles.text || "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+              {fmtCleanInt(stats.totalRemaining)} <span style={{ fontSize: "10px", color: themeStyles.accentGold || "#d69a5f" }}>{t.currency || (isEN ? "EGP" : "ج.م")}</span>
+            </div>
+            <div style={{ fontSize: "10px", fontWeight: 700, color: themeStyles.subText || "#aaaaaa", marginTop: "3px", whiteSpace: "nowrap" }}>
+              {t.remainingToCollect || (isEN ? "Remaining" : "المتبقي")}
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 16 }}>
+          <KPI
+            icon={CalendarClock}
+            label={t.totalMonthlyRequired || (isEN ? "Total Required This Month" : "إجمالي المطلوب هذا الشهر")}
+            sub={t.sumDueInstallments || (isEN ? "Sum of due installments" : "مجموع الأقساط المستحقة")}
+            value={`${fmtCleanInt(stats.totalDue)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
+            styles={styles}
+            themeStyles={themeStyles}
+          />
+          <KPI
+            icon={Wallet}
+            label={t.collectedSoFar || (isEN ? "Collected So Far" : "تم تحصيله حتى الآن")}
+            sub={`${t.completionRate || (isEN ? "Completion Rate" : "نسبة الإنجاز")} %${fmtCleanInt(stats.progressPct)}`}
+            value={`${fmtCleanInt(stats.totalCollected)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
+            styles={styles}
+            themeStyles={themeStyles}
+          />
+          <KPI
+            icon={TrendingUp}
+            label={t.remainingToCollect || (isEN ? "Remaining To Collect" : "المتبقي تحصيله")}
+            sub={t.duesUnderFollowUp || (isEN ? "Dues under follow-up" : "مستحقات جاري متابعتها")}
+            value={`${fmtCleanInt(stats.totalRemaining)} ${t.currency || (isEN ? "EGP" : "ج.م")}`}
+            styles={styles}
+            themeStyles={themeStyles}
+          />
+        </section>
+      )}
 
       {/* 3. حقل البحث وأزرار التصفية السريعة */}
       <div
