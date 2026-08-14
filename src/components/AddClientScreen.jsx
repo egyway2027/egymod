@@ -109,9 +109,9 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
     background: safeTheme.inputBg || "#1b1b1d",
     border: `${safeTheme.borderWidth || "1px"} solid ${safeTheme.border || "#333333"}`,
     borderRadius: safeTheme.borderRadius || "10px",
-    padding: "12px 14px",
+    padding: "8px 10px",
     color: safeTheme.text || "#ffffff",
-    fontSize: "14px",
+    fontSize: "13px",
     outline: "none",
     fontFamily: "inherit",
     boxShadow: safeTheme.inputShadow || "none",
@@ -122,21 +122,21 @@ export function AddClientScreen({ onSuccess, onBack, t = {}, themeStyles = {} })
   const labelStyle = {
     display: "flex",
     flexDirection: "column",
-    gap: "6px",
-    fontSize: "13px",
+    gap: "4px",
+    fontSize: "12px",
     fontWeight: 700,
     color: safeTheme.subText || "#aaaaaa",
     boxSizing: "border-box"
   };
 
   const sectionLabelStyle = {
-    fontSize: "13.5px",
+    fontSize: "12.5px",
     fontWeight: 800,
     color: safeTheme.accentGold || "#e07a5f",
-    marginTop: "16px",
-    marginBottom: "12px",
+    marginTop: "10px",
+    marginBottom: "8px",
     borderBottom: `${safeTheme.borderWidth || "1px"} solid ${safeTheme.border || "#333333"}`,
-    paddingBottom: "8px"
+    paddingBottom: "6px"
   };
 
   return (
