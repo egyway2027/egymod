@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Wallet, CalendarClock, TrendingUp } from "lucide-react";
 import { Field, ScreenHeader, BottomExitButton, KPI } from "./CommonUI";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 // دالة مساعدة لضمان عرض الأرقام كأعداد صحيحة مجردة
 const fmtCleanInt = (val) => {
@@ -18,6 +19,7 @@ export function MonthlyDuesScreen({
   styles = {},
   themeStyles = {}
 }) {
+  const isMobile = useIsMobile();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [payTarget, setPayTarget] = useState(null);
@@ -143,7 +145,7 @@ export function MonthlyDuesScreen({
   };
 
   return (
-    <div style={{ maxWidth: 1050, margin: "0 auto", padding: "16px 20px", ...styles.container }}>
+    <div style={{ maxWidth: 1050, margin: "0 auto", padding: isMobile ? "10px 8px" : "16px 20px", ...styles.container }}>
       {/* 1. الشريط العلوي */}
       <ScreenHeader
         title={`${t.monthlyDuesFor || (isEN ? "Monthly Dues for" : "مستحقات شهر")} ${currentMonthName}`}
@@ -153,7 +155,7 @@ export function MonthlyDuesScreen({
       />
 
       {/* 2. بطاقات الإحصائيات العلوية الثلاث */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 16 }}>
+      <section style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(auto-fit, minmax(240px, 1fr))", gap: isMobile ? 6 : 14, marginBottom: isMobile ? 10 : 16 }}>
         <KPI
           icon={CalendarClock}
           label={t.totalMonthlyRequired || (isEN ? "Total Required This Month" : "إجمالي المطلوب هذا الشهر")}
@@ -185,12 +187,12 @@ export function MonthlyDuesScreen({
         style={{
           background: "#141414",
           border: "1px solid #262626",
-          borderRadius: 16,
-          marginBottom: 16,
-          padding: "14px 18px",
+          borderRadius: isMobile ? 12 : 16,
+          marginBottom: isMobile ? 10 : 16,
+          padding: isMobile ? "10px 12px" : "14px 18px",
           display: "flex",
           flexWrap: "wrap-reverse",
-          gap: 12,
+          gap: isMobile ? 8 : 12,
           alignItems: "center",
           justifyContent: "space-between"
         }}
@@ -200,11 +202,11 @@ export function MonthlyDuesScreen({
             background: "#1a1a1a",
             border: "1px solid #333333",
             color: "#ffffff",
-            padding: "10px 16px",
+            padding: isMobile ? "8px 12px" : "10px 16px",
             borderRadius: 10,
-            fontSize: 13,
+            fontSize: isMobile ? 12 : 13,
             width: "100%",
-            maxWidth: 320,
+            maxWidth: isMobile ? "100%" : 320,
             outline: "none"
           }}
           placeholder={t.searchClientPlaceholder || (isEN ? "Search by client, phone, or item..." : "بحث باسم العميل أو التليفون أو السلعة...")}
@@ -212,7 +214,7 @@ export function MonthlyDuesScreen({
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: isMobile ? 4 : 8, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
           {[
             { key: "all", label: `${t.allFilter || (isEN ? "All" : "الكل")} (${fmtCleanInt(processedRows.length)})` },
             { key: "unpaid", label: t.unpaidFilter || (isEN ? "لم يسدد" : "لم يسدد") },
@@ -224,14 +226,17 @@ export function MonthlyDuesScreen({
               type="button"
               onClick={() => setStatusFilter(btn.key)}
               style={{
+                flex: isMobile ? 1 : "initial",
                 background: statusFilter === btn.key ? "#d69a5f" : "#1a1a1a",
                 color: statusFilter === btn.key ? "#000000" : "#aaaaaa",
                 border: `1px solid ${statusFilter === btn.key ? "#d69a5f" : "#333333"}`,
-                padding: "8px 16px",
+                padding: isMobile ? "6px 8px" : "8px 16px",
                 borderRadius: 8,
-                fontSize: 13,
+                fontSize: isMobile ? 11 : 13,
                 fontWeight: 800,
-                cursor: "pointer"
+                cursor: "pointer",
+                textAlign: "center",
+                whiteSpace: "nowrap"
               }}
             >
               {btn.label}
@@ -241,13 +246,13 @@ export function MonthlyDuesScreen({
       </div>
 
       {/* 4. قائمة كروت العملاء والمستحقات */}
-      <div style={{ background: "#141414", border: "1px solid #262626", borderRadius: 16, padding: 16 }}>
+      <div style={{ background: "#141414", border: "1px solid #262626", borderRadius: isMobile ? 12 : 16, padding: isMobile ? "10px 8px" : 16 }}>
         {filtered.length === 0 ? (
           <div style={styles.emptyState}>
             {t.noDuesNote || (isEN ? "No dues match the search query." : "لا توجد مستحقات تنطبق عليها معايير البحث.")}
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 8 : 12 }}>
             {filtered.map((item) => (
               <div
                 key={item.id}
@@ -255,40 +260,54 @@ export function MonthlyDuesScreen({
                   background: themeStyles.inputBg || "#1a1a1a",
                   border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}`,
                   borderRadius: themeStyles.borderRadius || 12,
-                  padding: 16,
+                  padding: isMobile ? "10px 10px" : 16,
                   display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "center",
+                  flexDirection: isMobile ? "column" : "row",
+                  alignItems: isMobile ? "stretch" : "center",
                   justifyContent: "space-between",
-                  gap: 12
+                  gap: isMobile ? 8 : 12
                 }}
               >
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>{item.name}</div>
-                  <div style={{ fontSize: 13, color: themeStyles.accentGold || "#d69a5f", marginTop: 2 }}>
-                    {item.item} · {item.phone}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: isMobile ? 14 : 16, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>{item.name}</div>
+                    <div style={{ fontSize: isMobile ? 11 : 13, color: themeStyles.accentGold || "#d69a5f", marginTop: 2 }}>
+                      {item.item} · {item.phone}
+                    </div>
                   </div>
+                  {isMobile && (
+                    <div style={{ textAlign: "left" }}>
+                      <div style={{ fontSize: 10, color: themeStyles.subText || "#aaaaaa" }}>{t.monthInstallment || (isEN ? "Installment" : "القسط")}</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>
+                        {fmtCleanInt(item.dueThisMonth)} {t.currency || (isEN ? "EGP" : "ج.م")}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>
-                      {t.monthInstallment || (isEN ? "Monthly Installment" : "قسط الشهر")}
+                <div style={{ display: "flex", gap: isMobile ? 6 : 16, alignItems: "center", justifyContent: isMobile ? "space-between" : "flex-end" }}>
+                  {!isMobile && (
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>
+                        {t.monthInstallment || (isEN ? "Monthly Installment" : "قسط الشهر")}
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>
+                        {fmtCleanInt(item.dueThisMonth)} {t.currency || (isEN ? "EGP" : "ج.م")}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>
-                      {fmtCleanInt(item.dueThisMonth)} {t.currency || (isEN ? "EGP" : "ج.م")}
-                    </div>
-                  </div>
+                  )}
 
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>
-                      {t.paymentStatus || (isEN ? "Payment Status" : "حالة السداد")}
-                    </div>
+                    {!isMobile && (
+                      <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>
+                        {t.paymentStatus || (isEN ? "Payment Status" : "حالة السداد")}
+                      </div>
+                    )}
                     <div
                       style={{
-                        fontSize: 12,
+                        fontSize: isMobile ? 11 : 12,
                         fontWeight: 800,
-                        padding: "4px 8px",
+                        padding: isMobile ? "3px 6px" : "4px 8px",
                         borderRadius: themeStyles.borderRadius || 6,
                         background:
                           item.monthStatus === "paid"
@@ -319,7 +338,7 @@ export function MonthlyDuesScreen({
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 6 }}>
+                  <div style={{ display: "flex", gap: isMobile ? 4 : 6 }}>
                     <button
                       type="button"
                       title={t.whatsapp || (isEN ? "WhatsApp" : "واتساب")}
@@ -328,10 +347,10 @@ export function MonthlyDuesScreen({
                         background: "#213526",
                         border: "1px solid #3d6b4a",
                         color: "#bfe8cd",
-                        padding: "8px 12px",
+                        padding: isMobile ? "6px 8px" : "8px 12px",
                         borderRadius: themeStyles.borderRadius || 8,
                         cursor: "pointer",
-                        fontSize: 12,
+                        fontSize: isMobile ? 11 : 12,
                         fontWeight: 700
                       }}
                     >
@@ -345,11 +364,14 @@ export function MonthlyDuesScreen({
                           background: "#1b2a38",
                           border: "1px solid #385a7c",
                           color: "#b2d4f5",
-                          padding: "8px 12px",
+                          padding: isMobile ? "6px 8px" : "8px 12px",
                           borderRadius: themeStyles.borderRadius || 8,
                           textDecoration: "none",
-                          fontSize: 12,
-                          fontWeight: 700
+                          fontSize: isMobile ? 11 : 12,
+                          fontWeight: 700,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center"
                         }}
                       >
                         {t.call || (isEN ? "Call" : "اتصال")}
@@ -367,10 +389,10 @@ export function MonthlyDuesScreen({
                           background: `linear-gradient(145deg, ${themeStyles.accentGold || "#d69a5f"}, ${themeStyles.accent || "#b06a35"})`,
                           color: "#111111",
                           border: "none",
-                          padding: "8px 14px",
+                          padding: isMobile ? "6px 10px" : "8px 14px",
                           borderRadius: themeStyles.borderRadius || 8,
                           cursor: "pointer",
-                          fontSize: 12,
+                          fontSize: isMobile ? 11 : 12,
                           fontWeight: 800,
                           boxShadow: themeStyles.buttonShadow || "none"
                         }}
