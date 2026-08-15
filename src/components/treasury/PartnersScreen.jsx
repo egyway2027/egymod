@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { ArrowRight, X, FileText, UserMinus, Loader2 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
+  const isMobile = useIsMobile();
   const isEN = document.documentElement.lang === "en" || document.documentElement.dir === "ltr";
 
   const [partners, setPartners] = useState([]);
@@ -206,34 +208,34 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
   };
 
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1050px", margin: "0 auto", padding: "16px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1050px", margin: "0 auto", padding: isMobile ? "10px 8px" : "16px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
       {/* الشريط العلوي */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-        <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "6px", background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, color: themeStyles.accentGold || "#d69a5f", padding: "8px 16px", borderRadius: "10px", cursor: "pointer", fontWeight: 700, fontSize: "13px" }}>
-          <ArrowRight size={16} style={{ transform: isEN ? "rotate(180deg)" : "none" }} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "12px" : "20px" }}>
+        <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "6px", background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, color: themeStyles.accentGold || "#d69a5f", padding: isMobile ? "6px 12px" : "8px 16px", borderRadius: "10px", cursor: "pointer", fontWeight: 700, fontSize: isMobile ? "12px" : "13px" }}>
+          <ArrowRight size={isMobile ? 14 : 16} style={{ transform: isEN ? "rotate(180deg)" : "none" }} />
           <span>رجوع</span>
         </button>
 
-        <h2 style={{ color: themeStyles.accentGold || "#d69a5f", margin: 0, fontSize: "20px", fontWeight: 800 }}>الشركاء ورأس المال</h2>
+        <h2 style={{ color: themeStyles.accentGold || "#d69a5f", margin: 0, fontSize: isMobile ? "16px" : "20px", fontWeight: 800 }}>الشركاء ورأس المال</h2>
 
-        <button type="button" onClick={onBack} style={{ width: "36px", height: "36px", borderRadius: "50%", background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, color: themeStyles.subText || "#888888", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <X size={18} />
+        <button type="button" onClick={onBack} style={{ width: isMobile ? "32px" : "36px", height: isMobile ? "32px" : "36px", borderRadius: "50%", background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, color: themeStyles.subText || "#888888", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <X size={16} />
         </button>
       </div>
 
       {/* كارت رأس المال الإجمالي */}
-      <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: "16px", padding: "20px", textAlign: "center", marginBottom: "20px" }}>
-        <div style={{ fontSize: "13px", color: themeStyles.subText || "#888888" }}>إجمالي رأس مال الشركة الفعلي</div>
-        <div style={{ fontSize: "28px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: "4px" }}>{totalCapitalSum.toLocaleString()} ج.م</div>
+      <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "12px" : "20px", textAlign: "center", marginBottom: isMobile ? "12px" : "20px" }}>
+        <div style={{ fontSize: isMobile ? "11px" : "13px", color: themeStyles.subText || "#888888" }}>إجمالي رأس مال الشركة الفعلي</div>
+        <div style={{ fontSize: isMobile ? "20px" : "28px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: "4px" }}>{totalCapitalSum.toLocaleString()} ج.م</div>
       </div>
 
       {/* جدول الشركاء الحقيقي الشامل */}
-      <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: "16px", padding: "20px", marginBottom: "20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "10px" }}>
-          <div style={{ fontSize: "16px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>جدول حسابات الشركاء والنسب</div>
+      <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "12px 10px" : "20px", marginBottom: isMobile ? "12px" : "20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? "10px" : "14px", flexWrap: "wrap", gap: "8px" }}>
+          <div style={{ fontSize: isMobile ? "14px" : "16px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>جدول حسابات الشركاء والنسب</div>
 
-          <button type="button" style={{ background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.accentGold || "#d69a5f", padding: "6px 12px", borderRadius: "8px", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontWeight: 700 }}>
-            <FileText size={14} />
+          <button type="button" style={{ background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.accentGold || "#d69a5f", padding: isMobile ? "4px 8px" : "6px 12px", borderRadius: "8px", fontSize: isMobile ? "11px" : "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontWeight: 700 }}>
+            <FileText size={isMobile ? 12 : 14} />
             <span>جميع سجلات السحوبات</span>
           </button>
         </div>
@@ -241,6 +243,49 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
         {loading ? (
           <div style={{ textAlign: "center", padding: "30px", color: themeStyles.accentGold || "#d69a5f" }}>
             <Loader2 size={24} className="animate-spin" /> جاري التحميل...
+          </div>
+        ) : isMobile ? (
+          /* عرض الشركاء على شكل كروت مدمجة لمنع انضغاط الجدول */
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {calculatedPartners.length === 0 ? (
+              <div style={{ padding: "20px", textAlign: "center", color: themeStyles.subText || "#888888", fontSize: "13px" }}>
+                لا يوجد شركاء مسجلين حالياً.
+              </div>
+            ) : (
+              calculatedPartners.map((p) => (
+                <div key={p.id} style={{ background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", borderBottom: `1px solid ${themeStyles.border || "#262626"}`, paddingBottom: "6px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ fontWeight: 800, color: themeStyles.text || "#ffffff", fontSize: "14px" }}>{p.name}</span>
+                      <span style={{ background: "rgba(214, 154, 95, 0.15)", color: themeStyles.accentGold || "#d69a5f", padding: "2px 6px", borderRadius: "6px", fontSize: "11px", fontWeight: 800 }}>{p.sharePct}%</span>
+                    </div>
+                    <button type="button" onClick={() => handleSettleAndRemove(p.id, p.name)} style={{ background: "#3e1c24", border: "1px solid #ef444455", color: "#f87171", padding: "3px 6px", borderRadius: "6px", fontSize: "10px", cursor: "pointer", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                      <UserMinus size={11} />
+                      <span>تصفية</span>
+                    </button>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", fontSize: "11.5px" }}>
+                    <div>
+                      <span style={{ color: themeStyles.subText || "#888" }}>رأس المال: </span>
+                      <span style={{ fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>{Number(p.capital).toLocaleString()} ج.م</span>
+                    </div>
+                    <div>
+                      <span style={{ color: themeStyles.subText || "#888" }}>الانضمام: </span>
+                      <span style={{ color: themeStyles.text || "#fff" }}>{p.join_date}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: themeStyles.subText || "#888" }}>مسحوبات: </span>
+                      <span style={{ color: themeStyles.text || "#fff" }}>{p.settledWithdrawals.toLocaleString()} ج.م</span>
+                    </div>
+                    <div>
+                      <span style={{ color: themeStyles.subText || "#888" }}>سلفة قائمة: </span>
+                      <span style={{ color: "#f87171", fontWeight: 800 }}>{p.activeAdvance.toLocaleString()} ج.م</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -286,104 +331,104 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
           </div>
         )}
 
-        <div style={{ fontSize: "11.5px", color: themeStyles.subText || "#888888", marginTop: "12px", lineHeight: "1.6" }}>
+        <div style={{ fontSize: isMobile ? "10.5px" : "11.5px", color: themeStyles.subText || "#888888", marginTop: "10px", lineHeight: "1.5" }}>
           * النسبة اللحظية إرشادية بناءً على رأس المال اليوم. نسبة توزيع الأرباح الفعلية تُحسب بجدول التوزيع حسب رأس مال الشريك وعدد أيامه بالفترة (Capital-Days).
         </div>
       </div>
 
       {/* النماذج الثلاثة بنفس الترتيب والتنسيق */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(300px, 1fr))", gap: isMobile ? "12px" : "16px" }}>
         
         {/* 1. نموذج إضافة شريك جديد */}
-        <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: "16px", padding: "20px" }}>
-          <div style={{ fontSize: "15px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginBottom: "12px" }}>إضافة شريك جديد</div>
-          <form onSubmit={handleAddPartner} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "12px 10px" : "20px" }}>
+          <div style={{ fontSize: isMobile ? "14px" : "15px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginBottom: "10px" }}>إضافة شريك جديد</div>
+          <form onSubmit={handleAddPartner} style={{ display: "flex", flexDirection: "column", gap: isMobile ? "8px" : "12px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#888888", marginBottom: "6px", fontWeight: 700 }}>اسم الشريك *</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} required placeholder="أدخل اسم الشريك..." style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }} />
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#888888", marginBottom: "6px", fontWeight: 700 }}>مبلغ الاستثمار (رأس المال) *</label>
-              <input type="number" step="1" value={capital} onChange={(e) => setCapital(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", fontWeight: 800, boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>اسم الشريك *</label>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} required placeholder="أدخل اسم الشريك..." style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }} />
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#888888", marginBottom: "6px", fontWeight: 700 }}>تاريخ الانضمام *</label>
-              <input type="date" value={joinDate} onChange={(e) => setJoinDate(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>مبلغ الاستثمار (رأس المال) *</label>
+              <input type="number" step="1" value={capital} onChange={(e) => setCapital(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, boxSizing: "border-box" }} />
             </div>
 
-            <div style={{ background: themeStyles.inputBg || "#1a1a1a", border: "1px dashed #d69a5f88", borderRadius: "10px", padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 12.5, color: themeStyles.subText || "#888888" }}>نسبة الشريك التلقائية:</span>
-              <span style={{ fontSize: 16, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>{liveNewPartnerPercent}%</span>
+            <div>
+              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>تاريخ الانضمام *</label>
+              <input type="date" value={joinDate} onChange={(e) => setJoinDate(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }} />
             </div>
 
-            <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#000000", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: 800, cursor: "pointer" }}>
+            <div style={{ background: themeStyles.inputBg || "#1a1a1a", border: "1px dashed #d69a5f88", borderRadius: "8px", padding: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: isMobile ? 11.5 : 12.5, color: themeStyles.subText || "#888888" }}>نسبة الشريك التلقائية:</span>
+              <span style={{ fontSize: isMobile ? 14 : 16, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>{liveNewPartnerPercent}%</span>
+            </div>
+
+            <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#000000", border: "none", borderRadius: "8px", padding: isMobile ? "10px" : "12px", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, cursor: "pointer" }}>
               {submitting ? "جاري الحفظ..." : "حفظ الشريك الجديد"}
             </button>
           </form>
         </div>
 
         {/* 2. زيادة رأس مال شريك حالي */}
-        <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: "16px", padding: "20px" }}>
-          <div style={{ fontSize: "15px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginBottom: "4px" }}>زيادة رأس مال شريك حالي</div>
-          <p style={{ fontSize: "11.5px", color: themeStyles.subText || "#888888", marginTop: 0, marginBottom: "12px", lineHeight: "1.5" }}>
+        <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "12px 10px" : "20px" }}>
+          <div style={{ fontSize: isMobile ? "14px" : "15px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginBottom: "4px" }}>زيادة رأس مال شريك حالي</div>
+          <p style={{ fontSize: isMobile ? "10.5px" : "11.5px", color: themeStyles.subText || "#888888", marginTop: 0, marginBottom: "8px", lineHeight: "1.4" }}>
             منفصلة تماماً عن السلفة. تضاف لرأس المال وتُحسب أرباحه أوتوماتيكياً من تاريخ هذه الزيادة فقط.
           </p>
 
-          <form onSubmit={handleIncreaseCapital} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <form onSubmit={handleIncreaseCapital} style={{ display: "flex", flexDirection: "column", gap: isMobile ? "8px" : "12px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#888888", marginBottom: "6px", fontWeight: 700 }}>اسم الشريك *</label>
-              <select value={increasePartner} onChange={(e) => setIncreasePartner(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }}>
+              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>اسم الشريك *</label>
+              <select value={increasePartner} onChange={(e) => setIncreasePartner(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }}>
                 <option value="">-- اختار اسم الشريك --</option>
                 {partners.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
               </select>
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#888888", marginBottom: "6px", fontWeight: 700 }}>مبلغ الزيادة (ج.م) *</label>
-              <input type="number" step="1" value={increaseAmount} onChange={(e) => setIncreaseAmount(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", fontWeight: 800, boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>مبلغ الزيادة (ج.م) *</label>
+              <input type="number" step="1" value={increaseAmount} onChange={(e) => setIncreaseAmount(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, boxSizing: "border-box" }} />
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#888888", marginBottom: "6px", fontWeight: 700 }}>تاريخ الزيادة *</label>
-              <input type="date" value={increaseDate} onChange={(e) => setIncreaseDate(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>تاريخ الزيادة *</label>
+              <input type="date" value={increaseDate} onChange={(e) => setIncreaseDate(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }} />
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#888888", marginBottom: "6px", fontWeight: 700 }}>ملاحظات</label>
-              <input type="text" value={increaseNotes} onChange={(e) => setIncreaseNotes(e.target.value)} placeholder="مثال: ضخ رأس مال إضافي" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>ملاحظات</label>
+              <input type="text" value={increaseNotes} onChange={(e) => setIncreaseNotes(e.target.value)} placeholder="مثال: ضخ رأس مال إضافي" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }} />
             </div>
 
-            <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#000000", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: 800, cursor: "pointer" }}>
+            <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#000000", border: "none", borderRadius: "8px", padding: isMobile ? "10px" : "12px", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, cursor: "pointer" }}>
               {submitting ? "جاري الحفظ..." : "تسجيل زيادة رأس المال"}
             </button>
           </form>
         </div>
 
         {/* 3. تسجيل سحب مال / سلفة */}
-        <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: "16px", padding: "20px" }}>
-          <div style={{ fontSize: "15px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginBottom: "12px" }}>تسجيل سحب مال / سلفة لشريك</div>
-          <form onSubmit={handleWithdraw} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "12px 10px" : "20px" }}>
+          <div style={{ fontSize: isMobile ? "14px" : "15px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginBottom: "10px" }}>تسجيل سحب مال / سلفة لشريك</div>
+          <form onSubmit={handleWithdraw} style={{ display: "flex", flexDirection: "column", gap: isMobile ? "8px" : "12px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#888888", marginBottom: "6px", fontWeight: 700 }}>اسم الشريك *</label>
-              <select value={withdrawPartner} onChange={(e) => setWithdrawPartner(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }}>
+              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>اسم الشريك *</label>
+              <select value={withdrawPartner} onChange={(e) => setWithdrawPartner(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }}>
                 <option value="">-- اختار اسم الشريك --</option>
                 {partners.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
               </select>
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#888888", marginBottom: "6px", fontWeight: 700 }}>مبلغ السحب (ج.م) *</label>
-              <input type="number" step="1" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", fontWeight: 800, boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>مبلغ السحب (ج.م) *</label>
+              <input type="number" step="1" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, boxSizing: "border-box" }} />
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#888888", marginBottom: "6px", fontWeight: 700 }}>بيان وسبب السحب</label>
-              <input type="text" value={withdrawNotes} onChange={(e) => setWithdrawNotes(e.target.value)} placeholder="مثال: سحب نقدي تحت حساب الأرباح" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>بيان وسبب السحب</label>
+              <input type="text" value={withdrawNotes} onChange={(e) => setWithdrawNotes(e.target.value)} placeholder="مثال: سحب نقدي تحت حساب الأرباح" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }} />
             </div>
 
-            <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#000000", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: 800, cursor: "pointer" }}>
+            <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#000000", border: "none", borderRadius: "8px", padding: isMobile ? "10px" : "12px", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, cursor: "pointer" }}>
               {submitting ? "جاري الحفظ..." : "تسجيل السحب"}
             </button>
           </form>
