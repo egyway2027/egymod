@@ -2,10 +2,12 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Wallet, Users, CalendarClock, Search, Phone, MessageCircle, ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import { fetchOverdueDataFromCloud } from "../../services/overdueService";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 const fmtInt = (v) => Math.round(Number(v) || 0).toLocaleString();
 
 export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {}, t = {} }) {
+  const isMobile = useIsMobile();
   const [overdueRows, setOverdueRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -139,10 +141,10 @@ export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {},
   };
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", color: themeStyles.text || "#ffffff", fontFamily: "Cairo, sans-serif" }}>
+    <div style={{ maxWidth: 1100, margin: "0 auto", color: themeStyles.text || "#ffffff", fontFamily: "Cairo, sans-serif", padding: isMobile ? "10px 8px" : "16px 20px" }}>
       {/* 1. الشريط العلوي */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: themeStyles.text || "#fff" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? 12 : 20 }}>
+        <h2 style={{ margin: 0, fontSize: isMobile ? 16 : 20, fontWeight: 800, color: themeStyles.text || "#fff" }}>
           العملاء المتأخرين عن السداد ({stats.totalCount})
         </h2>
         <button
@@ -150,73 +152,104 @@ export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {},
           style={{
             display: "flex", alignItems: "center", gap: 6,
             background: "rgba(255,255,255,0.05)", border: `1px solid ${themeStyles.border || "#333"}`,
-            color: themeStyles.text || "#fff", padding: "8px 18px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13
+            color: themeStyles.text || "#fff", padding: isMobile ? "6px 12px" : "8px 18px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: isMobile ? 12 : 13
           }}
         >
-          <ArrowRight size={16} /> رجوع
+          <ArrowRight size={isMobile ? 14 : 16} /> رجوع
         </button>
       </div>
 
       {/* 2. الكروت الإحصائية الثلاثية */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>
-        {/* كارت 1: إجمالي المتأخرات المطلوبة */}
-        <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 16, padding: "18px 20px", position: "relative" }}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Wallet size={24} style={{ color: themeStyles.accentGold || "#d4af37" }} />
+      {isMobile ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
+          {/* كارت 1: إجمالي المتأخرات */}
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 12, padding: "10px 4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", minHeight: "85px" }}>
+            <Wallet size={18} style={{ color: themeStyles.accentGold || "#d4af37", marginBottom: 4 }} />
+            <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.accentGold || "#d4af37", fontVariantNumeric: "tabular-nums" }}>
+              {fmtInt(stats.totalOverdueAmt)} <span style={{ fontSize: 10 }}>ج.م</span>
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: themeStyles.subText || "#aaa", marginTop: 3, whiteSpace: "nowrap" }}>إجمالي المتأخرات</div>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: themeStyles.accentGold || "#d4af37", margin: "6px 0 2px 0" }}>
-            {fmtInt(stats.totalOverdueAmt)} ج.م
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.text || "#fff" }}>إجمالي المتأخرات المطلوبة</div>
-          <div style={{ fontSize: 11, color: themeStyles.subText || "#888", marginTop: 2 }}>المبالغ المستحقة حالياً</div>
-        </div>
 
-        {/* كارت 2: عدد العملاء المتأخرين */}
-        <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 16, padding: "18px 20px", position: "relative" }}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Users size={24} style={{ color: themeStyles.accentGold || "#d4af37" }} />
+          {/* كارت 2: عدد العملاء */}
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 12, padding: "10px 4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", minHeight: "85px" }}>
+            <Users size={18} style={{ color: themeStyles.accentGold || "#d4af37", marginBottom: 4 }} />
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+              {stats.totalCount}
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: themeStyles.subText || "#aaa", marginTop: 3, whiteSpace: "nowrap" }}>عدد المتأخرين</div>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", margin: "6px 0 2px 0" }}>
-            {stats.totalCount}
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.text || "#fff" }}>عدد العملاء المتأخرين</div>
-          <div style={{ fontSize: 11, color: themeStyles.subText || "#888", marginTop: 2 }}>عملاء بحاجة للمتابعة</div>
-        </div>
 
-        {/* كارت 3: أقصى مدة تأخير */}
-        <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 16, padding: "18px 20px", position: "relative" }}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <CalendarClock size={24} style={{ color: themeStyles.accentGold || "#d4af37" }} />
+          {/* كارت 3: أقصى مدة تأخير */}
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 12, padding: "10px 4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", minHeight: "85px" }}>
+            <CalendarClock size={18} style={{ color: themeStyles.accentGold || "#d4af37", marginBottom: 4 }} />
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+              {stats.maxDaysLate} <span style={{ fontSize: 10 }}>يوم</span>
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: themeStyles.subText || "#aaa", marginTop: 3, whiteSpace: "nowrap" }}>أقصى مدة تأخير</div>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", margin: "6px 0 2px 0" }}>
-            {stats.maxDaysLate} يوم
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.text || "#fff" }}>أقصى مدة تأخير</div>
-          <div style={{ fontSize: 11, color: themeStyles.subText || "#888", marginTop: 2 }}>أطول فترة قسط غير مسدد</div>
         </div>
-      </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>
+          {/* كارت 1: إجمالي المتأخرات المطلوبة */}
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 16, padding: "18px 20px", position: "relative" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <Wallet size={24} style={{ color: themeStyles.accentGold || "#d4af37" }} />
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: themeStyles.accentGold || "#d4af37", margin: "6px 0 2px 0" }}>
+              {fmtInt(stats.totalOverdueAmt)} ج.م
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.text || "#fff" }}>إجمالي المتأخرات المطلوبة</div>
+            <div style={{ fontSize: 11, color: themeStyles.subText || "#888", marginTop: 2 }}>المبالغ المستحقة حالياً</div>
+          </div>
+
+          {/* كارت 2: عدد العملاء المتأخرين */}
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 16, padding: "18px 20px", position: "relative" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <Users size={24} style={{ color: themeStyles.accentGold || "#d4af37" }} />
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", margin: "6px 0 2px 0" }}>
+              {stats.totalCount}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.text || "#fff" }}>عدد العملاء المتأخرين</div>
+            <div style={{ fontSize: 11, color: themeStyles.subText || "#888", marginTop: 2 }}>عملاء بحاجة للمتابعة</div>
+          </div>
+
+          {/* كارت 3: أقصى مدة تأخير */}
+          <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333"}`, borderRadius: 16, padding: "18px 20px", position: "relative" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <CalendarClock size={24} style={{ color: themeStyles.accentGold || "#d4af37" }} />
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", margin: "6px 0 2px 0" }}>
+              {stats.maxDaysLate} يوم
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.text || "#fff" }}>أقصى مدة تأخير</div>
+            <div style={{ fontSize: 11, color: themeStyles.subText || "#888", marginTop: 2 }}>أطول فترة قسط غير مسدد</div>
+          </div>
+        </div>
+      )}
 
       {/* 3. شريط الفلترة والبحث */}
       <div style={{
         background: themeStyles.card || "#1e1e1e",
         border: `1px solid ${themeStyles.border || "#333"}`,
-        borderRadius: 16,
-        padding: "12px 16px",
-        marginBottom: 20,
+        borderRadius: isMobile ? 12 : 16,
+        padding: isMobile ? "10px 12px" : "12px 16px",
+        marginBottom: isMobile ? 10 : 20,
         display: "flex",
-        alignItems: "center",
+        flexDirection: isMobile ? "column" : "row",
+        alignItems: isMobile ? "stretch" : "center",
         justifyContent: "space-between",
-        gap: 16,
-        flexWrap: "wrap"
+        gap: isMobile ? 8 : 16
       }}>
         {/* أزرار أشرطة التصنيف */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(4, 1fr)" : "auto auto auto auto", gap: isMobile ? 4 : 8 }}>
           <button
             onClick={() => setFilterType("all")}
             style={{
               background: filterType === "all" ? "#e07a5f" : "rgba(255,255,255,0.05)",
               color: filterType === "all" ? "#111" : themeStyles.text || "#fff",
-              border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer"
+              border: "none", borderRadius: isMobile ? 8 : 20, padding: isMobile ? "6px 4px" : "6px 14px", fontSize: isMobile ? 10 : 12, fontWeight: 800, cursor: "pointer", textAlign: "center", whiteSpace: "nowrap"
             }}
           >
             الكل ({overdueRows.length})
@@ -226,35 +259,35 @@ export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {},
             style={{
               background: filterType === "simple" ? "#e07a5f" : "rgba(255,255,255,0.05)",
               color: filterType === "simple" ? "#111" : themeStyles.text || "#fff",
-              border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer"
+              border: "none", borderRadius: isMobile ? 8 : 20, padding: isMobile ? "6px 4px" : "6px 14px", fontSize: isMobile ? 10 : 12, fontWeight: 800, cursor: "pointer", textAlign: "center", whiteSpace: "nowrap"
             }}
           >
-            تأخير بسيط (&lt; 30 يوم)
+            {isMobile ? "بسيط" : "تأخير بسيط (< 30 يوم)"}
           </button>
           <button
             onClick={() => setFilterType("medium")}
             style={{
               background: filterType === "medium" ? "#e07a5f" : "rgba(255,255,255,0.05)",
               color: filterType === "medium" ? "#111" : themeStyles.text || "#fff",
-              border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer"
+              border: "none", borderRadius: isMobile ? 8 : 20, padding: isMobile ? "6px 4px" : "6px 14px", fontSize: isMobile ? 10 : 12, fontWeight: 800, cursor: "pointer", textAlign: "center", whiteSpace: "nowrap"
             }}
           >
-            تأخير متوسط (30-60 يوم)
+            {isMobile ? "متوسط" : "تأخير متوسط (30-60 يوم)"}
           </button>
           <button
             onClick={() => setFilterType("critical")}
             style={{
               background: filterType === "critical" ? "#e07a5f" : "rgba(255,255,255,0.05)",
               color: filterType === "critical" ? "#111" : themeStyles.text || "#fff",
-              border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer"
+              border: "none", borderRadius: isMobile ? 8 : 20, padding: isMobile ? "6px 4px" : "6px 14px", fontSize: isMobile ? 10 : 12, fontWeight: 800, cursor: "pointer", textAlign: "center", whiteSpace: "nowrap"
             }}
           >
-            حرج (&gt; 60 يوم)
+            {isMobile ? "حرج" : "حرج (> 60 يوم)"}
           </button>
         </div>
 
         {/* حقل البحث */}
-        <div style={{ position: "relative", minWidth: 280, flex: 1, maxWidth: 400 }}>
+        <div style={{ position: "relative", minWidth: isMobile ? "100%" : 280, flex: 1, maxWidth: isMobile ? "100%" : 400 }}>
           <input
             type="text"
             value={search}
@@ -262,29 +295,29 @@ export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {},
             placeholder="بحث باسم العميل أو التليفون أو السلعة..."
             style={{
               width: "100%",
-              padding: "10px 14px 10px 38px",
+              padding: isMobile ? "8px 12px 8px 34px" : "10px 14px 10px 38px",
               background: themeStyles.inputBg || "#141414",
               border: `1px solid ${themeStyles.border || "#333"}`,
               borderRadius: 10,
               color: "#fff",
               outline: "none",
-              fontSize: 13,
+              fontSize: isMobile ? 12 : 13,
               boxSizing: "border-box"
             }}
           />
-          <Search size={16} style={{ position: "absolute", left: 12, top: 12, color: "#888" }} />
+          <Search size={isMobile ? 14 : 16} style={{ position: "absolute", left: 10, top: isMobile ? 10 : 12, color: "#888" }} />
         </div>
       </div>
 
       {/* 4. كروت العملاء */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 8 : 14, marginBottom: isMobile ? 12 : 20 }}>
         {loading ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 50, gap: 10, background: themeStyles.card || "#1e1e1e", borderRadius: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? 30 : 50, gap: 10, background: themeStyles.card || "#1e1e1e", borderRadius: 16 }}>
             <Loader2 size={24} className="animate-spin" style={{ color: themeStyles.accentGold || "#d4af37" }} />
-            <span style={{ fontWeight: 700 }}>جاري استخراج كشوفات المتأخرين...</span>
+            <span style={{ fontWeight: 700, fontSize: isMobile ? 12 : 14 }}>جاري استخراج كشوفات المتأخرين...</span>
           </div>
         ) : filteredRows.length === 0 ? (
-          <div style={{ textAlign: "center", padding: 50, background: themeStyles.card || "#1e1e1e", borderRadius: 16, color: themeStyles.subText || "#888", fontWeight: 700 }}>
+          <div style={{ textAlign: "center", padding: isMobile ? 30 : 50, background: themeStyles.card || "#1e1e1e", borderRadius: 16, color: themeStyles.subText || "#888", fontWeight: 700, fontSize: isMobile ? 13 : 14 }}>
             لا يوجد عملاء متأخرين ينطبق عليهم هذا الفلتر حالياً 🎉
           </div>
         ) : (
@@ -294,59 +327,79 @@ export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {},
               style={{
                 background: themeStyles.card || "#1e1e1e",
                 border: `1px solid ${themeStyles.border || "#333"}`,
-                borderRadius: 16,
-                padding: "18px 22px",
+                borderRadius: 12,
+                padding: isMobile ? "10px 12px" : "18px 22px",
                 display: "flex",
-                alignItems: "center",
+                flexDirection: isMobile ? "column" : "row",
+                alignItems: isMobile ? "stretch" : "center",
                 justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 16
+                gap: isMobile ? 8 : 16
               }}
             >
               {/* الجهة اليمنى: اسم العميل والهاتف والضامن */}
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: "#ffffff", marginBottom: 4 }}>
-                  {r.clientName}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <div style={{ fontSize: isMobile ? 14 : 18, fontWeight: 800, color: "#ffffff", marginBottom: 2 }}>
+                    {r.clientName}
+                  </div>
+                  <div style={{ fontSize: isMobile ? 11 : 13, color: themeStyles.subText || "#aaa", marginBottom: 2 }}>
+                    هاتف : {r.phone || "غير محدد"} · السلعة: {r.item}
+                  </div>
+                  {r.guarantorName && (
+                    <div style={{ fontSize: isMobile ? 10 : 12, color: themeStyles.subText || "#888" }}>
+                      اسم الضامن: {r.guarantorName} ({r.guarantorPhone || "بدون رقم"})
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontSize: 13, color: themeStyles.subText || "#aaa", marginBottom: 2 }}>
-                  هاتف : {r.phone || "غير محدد"}
-                </div>
-                {r.guarantorName && (
-                  <div style={{ fontSize: 12, color: themeStyles.subText || "#888" }}>
-                    اسم الضامن: {r.guarantorName} ({r.guarantorPhone || "بدون رقم"})
+
+                {isMobile && (
+                  <div style={{ textAlign: "left" }}>
+                    <div style={{ fontSize: 10, color: themeStyles.subText || "#aaa" }}>المستحق</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#e07a5f" }}>
+                      {fmtInt(r.overdueAmount)} ج.م
+                    </div>
+                    <div style={{ fontSize: 10, color: "#ffffff", marginTop: 2 }}>
+                      ({r.daysLate} يوم)
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* الجهة اليسرى: المبالغ والأزرار */}
-              <div style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: themeStyles.subText || "#aaa" }}>المستحق حالياً</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "#e07a5f", marginTop: 2 }}>
-                    {fmtInt(r.overdueAmount)} ج.م
-                  </div>
-                </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: isMobile ? "flex-end" : "flex-start", gap: isMobile ? 6 : 24, flexWrap: "wrap" }}>
+                {!isMobile && (
+                  <>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 11, color: themeStyles.subText || "#aaa" }}>المستحق حالياً</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#e07a5f", marginTop: 2 }}>
+                        {fmtInt(r.overdueAmount)} ج.م
+                      </div>
+                    </div>
 
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: themeStyles.subText || "#aaa" }}>مدة التأخير</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "#ffffff", marginTop: 2 }}>
-                    {r.daysLate} يوم
-                  </div>
-                </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 11, color: themeStyles.subText || "#aaa" }}>مدة التأخير</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#ffffff", marginTop: 2 }}>
+                        {r.daysLate} يوم
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* الأزرار الإجرائية الثلاثة */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 4 : 8, width: isMobile ? "100%" : "auto" }}>
                   <button
                     onClick={() => onOpenPayment && onOpenPayment(r)}
                     style={{
+                      flex: isMobile ? 1 : "initial",
                       background: "#e07a5f",
                       color: "#111111",
                       border: "none",
-                      borderRadius: 10,
-                      padding: "8px 18px",
+                      borderRadius: 8,
+                      padding: isMobile ? "6px 8px" : "8px 18px",
                       fontWeight: 800,
-                      fontSize: 13,
-                      cursor: "pointer"
+                      fontSize: isMobile ? 11 : 13,
+                      cursor: "pointer",
+                      textAlign: "center"
                     }}
                   >
                     تحصيل
@@ -356,40 +409,44 @@ export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {},
                     <a
                       href={`tel:${r.phone}`}
                       style={{
+                        flex: isMobile ? 1 : "initial",
                         background: "#1e3a8a",
                         color: "#ffffff",
                         border: "none",
-                        borderRadius: 10,
-                        padding: "8px 16px",
+                        borderRadius: 8,
+                        padding: isMobile ? "6px 8px" : "8px 16px",
                         fontWeight: 700,
-                        fontSize: 13,
+                        fontSize: isMobile ? 11 : 13,
                         textDecoration: "none",
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: 6
+                        justifyContent: "center",
+                        gap: 4
                       }}
                     >
-                      <Phone size={14} /> اتصال
+                      <Phone size={isMobile ? 12 : 14} /> اتصال
                     </a>
                   )}
 
                   <button
                     onClick={() => handleWhatsAppNotice(r)}
                     style={{
+                      flex: isMobile ? 1 : "initial",
                       background: "#16a34a",
                       color: "#ffffff",
                       border: "none",
-                      borderRadius: 10,
-                      padding: "8px 16px",
+                      borderRadius: 8,
+                      padding: isMobile ? "6px 8px" : "8px 16px",
                       fontWeight: 700,
-                      fontSize: 13,
+                      fontSize: isMobile ? 11 : 13,
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 6
+                      justifyContent: "center",
+                      gap: 4
                     }}
                   >
-                    <MessageCircle size={14} /> واتساب
+                    <MessageCircle size={isMobile ? 12 : 14} /> واتساب
                   </button>
                 </div>
               </div>
@@ -403,7 +460,7 @@ export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {},
         background: themeStyles.card || "#1e1e1e",
         border: `1px solid ${themeStyles.border || "#333"}`,
         borderRadius: 14,
-        padding: "12px",
+        padding: isMobile ? "10px" : "12px",
         textAlign: "center"
       }}>
         <button
@@ -412,7 +469,7 @@ export default function OverdueScreen({ onBack, onOpenPayment, themeStyles = {},
             background: "transparent",
             border: "none",
             color: themeStyles.subText || "#aaaaaa",
-            fontSize: 14,
+            fontSize: isMobile ? 12 : 14,
             fontWeight: 800,
             cursor: "pointer",
             display: "inline-flex",
