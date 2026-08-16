@@ -1363,3 +1363,4 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, theme
     </div>
   );
 }
+export default App;
