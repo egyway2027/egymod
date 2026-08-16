@@ -239,113 +239,130 @@ export function App() {
     }, 0);
   }, [clientsList]);
 
+  // 💼 إجمالي الأقساط المتبقية (مستخرج كـ useMemo مستقل عشان يتقدر يتشارك بين وضع Pro ووضع سطح المكتب العادي بدون تكرار الحساب)
+  const totalPortfolio = useMemo(() => {
+    return (clientsList || []).reduce((acc, curr) => {
+      if (Boolean(curr.is_deleted) || curr.status === "archived") return acc;
+      const sale = Number(curr.sale_price || curr.salePrice || curr.sale || curr.total || 0);
+      const down = Number(curr.down_payment || curr.downPayment || curr.down || 0);
+
+      const instArr = Array.isArray(curr.installments) ? curr.installments : (Array.isArray(curr.payments) ? curr.payments : []);
+      const paidFromInst = instArr
+        .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
+        .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+
+      return acc + Math.max(0, sale - down - paidFromInst);
+    }, 0);
+  }, [clientsList]);
+
+  // 🖥️ وضع عرض سطح المكتب/الويب: "normal" هو التصميم الجديد بالقائمة الجانبية (الافتراضي)،
+  // و"pro" هو التصميم القديم بالشبكة الملونة. لا علاقة له بالموبايل، والموبايل ثابت زي ما هو دايمًا.
+  const [desktopMode, setDesktopMode] = useState(() => {
+    try {
+      return localStorage.getItem("egymod_desktop_mode") || "normal";
+    } catch (e) {
+      return "normal";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("egymod_desktop_mode", desktopMode);
+    } catch (e) {
+      // تجاهل لو التخزين المحلي غير متاح
+    }
+  }, [desktopMode]);
+
+  // 🧭 دالة موحّدة لتنفيذ إجراء أي زرار قائمة (سواء في شبكة Pro أو في القائمة الجانبية الجديدة)
+  const handleMenuAction = (key) => {
+    if (key === "whatsapp") {
+      setShowWhatsAppModal(true);
+    } else if (key === "search") {
+      navigateTo("clientQuery");
+    } else if (key === "lateClients") {
+      navigateTo("overdue");
+    } else if (key === "exit") {
+      // إجراء الخروج
+    } else {
+      navigateTo(key);
+    }
+  };
+
+  // 📄 عنصر الشاشة الفرعية الحالية (غير لوحة التحكم) — يُحسب مرة واحدة ويُستخدم في وضع الموبايل/Pro
+  // وكذلك داخل قشرة القائمة الجانبية في الوضع العادي، بدون تكرار كتابة نفس الشاشات مرتين.
+  let screenElement = null;
+  if (currentScreen === "addClient") {
+    screenElement = (
+      <AddClientScreen
+        onSuccess={() => {
+          setSuccessModal({
+            open: true,
+            title: "تمت العملية بنجاح",
+            msg: "تم حفظ بيانات العقد بنجاح بالسحابة!"
+          });
+          handleBack();
+        }}
+        onBack={handleBack}
+        t={t}
+        themeStyles={themeStyles}
+      />
+    );
+  } else if (currentScreen === "clientQuery") {
+    screenElement = <ClientQueryScreen onBack={handleBack} t={t} themeStyles={themeStyles} />;
+  } else if (currentScreen === "pay") {
+    screenElement = (
+      <InstallmentsScreen contracts={clientsList} onBack={handleBack} t={t} themeStyles={themeStyles} />
+    );
+  } else if (currentScreen === "monthlyDues") {
+    screenElement = (
+      <MonthlyDues clientsList={clientsList} onOpenPaymentModal={() => navigateTo("pay")} onBack={handleBack} />
+    );
+  } else if (currentScreen === "deleteClient") {
+    screenElement = (
+      <DeleteClientScreen clientsList={clientsList} onBack={handleBack} t={t} themeStyles={themeStyles} />
+    );
+  } else if (currentScreen === "overdue") {
+    screenElement = (
+      <OverdueScreen contracts={clientsList} clientsList={clientsList} onBack={handleBack} t={t} themeStyles={themeStyles} />
+    );
+  } else if (currentScreen === "treasury") {
+    screenElement = <TreasuryMainScreen onNavigate={navigateTo} onBack={handleBack} t={t} themeStyles={themeStyles} />;
+  } else if (currentScreen === "treasuryPartners") {
+    screenElement = <PartnersScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />;
+  } else if (currentScreen === "treasuryEmployees") {
+    screenElement = <EmployeesMergedScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />;
+  } else if (currentScreen === "treasuryExpenses") {
+    screenElement = <ExpensesScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />;
+  } else if (currentScreen === "treasuryDistribute") {
+    screenElement = <ProfitDistributionScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />;
+  } else if (currentScreen === "settings") {
+    screenElement = (
+      <SettingsScreen
+        currentLang={currentLang}
+        changeLang={changeLang}
+        currentThemeId={currentThemeId}
+        changeTheme={changeTheme}
+        t={t}
+        themeStyles={themeStyles}
+        isRTL={isRTL}
+        LANGUAGES={LANGUAGES}
+        THEMES_LIST={THEMES_LIST}
+        THEME_CATEGORIES={THEME_CATEGORIES}
+        onBack={handleBack}
+      />
+    );
+  }
+
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: themeStyles.bg, color: themeStyles.text, padding: isMobile ? "6px 8px" : "20px", fontFamily: "Cairo, sans-serif", width: "100%", boxSizing: "border-box" }}>
 
-      {/* 1. شاشة إضافة عميل */}
-      {currentScreen === "addClient" && (
-        <AddClientScreen
-          onSuccess={() => {
-            setSuccessModal({
-              open: true,
-              title: "تمت العملية بنجاح",
-              msg: "تم حفظ بيانات العقد بنجاح بالسحابة!"
-            });
-            handleBack();
-          }}
-          onBack={handleBack}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
+      {/* 1-4. الشاشات الفرعية (إضافة عميل، استعلام، سداد، إلخ) — تظهر بشكلها الكامل الأصلي
+          في وضع الموبايل أو وضع Pro على الديسكتوب. في الوضع العادي الجديد على الديسكتوب
+          نفس الشاشة دي بالظبط بتتعرض جوا القائمة الجانبية (شوف DesktopSidebarShell تحت). */}
+      {(isMobile || desktopMode === "pro") && currentScreen !== "dashboard" && screenElement}
 
-      {/* 2. شاشة الاستعلام عن عميل */}
-      {currentScreen === "clientQuery" && (
-        <ClientQueryScreen
-          onBack={handleBack}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {/* 3. شاشة سداد الأقساط */}
-      {currentScreen === "pay" && (
-        <InstallmentsScreen
-          contracts={clientsList}
-          onBack={handleBack}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {/* 📌 شاشة مستحقات هذا الشهر */}
-      {currentScreen === "monthlyDues" && (
-        <MonthlyDues
-          clientsList={clientsList}
-          onOpenPaymentModal={() => navigateTo("pay")}
-          onBack={handleBack}
-        />
-      )}
-
-      {/* 📌 شاشة إدارة وحذف حسابات العملاء */}
-      {currentScreen === "deleteClient" && (
-        <DeleteClientScreen
-          clientsList={clientsList}
-          onBack={handleBack}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
-
-      {/* 📌 شاشة المتأخرين عن السداد المربوطة بالبيانات */}
-      {currentScreen === "overdue" && (
-        <OverdueScreen
-          contracts={clientsList}
-          clientsList={clientsList}
-          onBack={handleBack}
-          t={t}
-          themeStyles={themeStyles}
-        />
-      )}
-{/* 💰 شاشات الخزينة والشركاء والرواتب والمصروفات */}
-{currentScreen === "treasury" && (
-  <TreasuryMainScreen onNavigate={navigateTo} onBack={handleBack} t={t} themeStyles={themeStyles} />
-)}
-
-{currentScreen === "treasuryPartners" && (
-  <PartnersScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />
-)}
-
-{currentScreen === "treasuryEmployees" && (
-  <EmployeesMergedScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />
-)}
-
-{currentScreen === "treasuryExpenses" && (
-  <ExpensesScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />
-)}
-
-{currentScreen === "treasuryDistribute" && (
-  <ProfitDistributionScreen onBack={() => navigateTo("treasury")} t={t} themeStyles={themeStyles} />
-)}
-      {/* 4. شاشة الإعدادات الشاملة */}
-      {currentScreen === "settings" && (
-        <SettingsScreen
-          currentLang={currentLang}
-          changeLang={changeLang}
-          currentThemeId={currentThemeId}
-          changeTheme={changeTheme}
-          t={t}
-          themeStyles={themeStyles}
-          isRTL={isRTL}
-          LANGUAGES={LANGUAGES}
-          THEMES_LIST={THEMES_LIST}
-          THEME_CATEGORIES={THEME_CATEGORIES}
-          onBack={handleBack}
-        />
-      )}
-
-      {/* 5. لوحة التحكم الرئيسية */}
-      {currentScreen === "dashboard" && (
+      {/* 5. لوحة التحكم الرئيسية (الموبايل ثابت زي ما هو دايمًا + وضع Pro القديم على الديسكتوب) */}
+      {(isMobile || desktopMode === "pro") && currentScreen === "dashboard" && (
         <div style={{
           maxWidth: 1100,
           margin: "0 auto",
@@ -435,6 +452,23 @@ export function App() {
                 <button onClick={() => setShowRecycleBinModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(239,68,68,0.4)", color: "#fca5a5", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
                   <Trash2 size={15} /> <span>سلة المهملات</span>
                 </button>
+
+                {/* 🔁 الرجوع للتصميم الجديد (القائمة الجانبية) - ديسكتوب فقط */}
+                <div style={{ display: "flex", background: "rgba(0,0,0,0.3)", borderRadius: 20, padding: 3, border: "1px solid rgba(255,255,255,0.2)" }}>
+                  <button
+                    type="button"
+                    onClick={() => setDesktopMode("normal")}
+                    style={{ background: "transparent", border: "none", color: "#fff", fontFamily: "inherit", fontSize: 11.5, fontWeight: 800, padding: "6px 14px", borderRadius: 16, cursor: "pointer" }}
+                  >
+                    عادي
+                  </button>
+                  <button
+                    type="button"
+                    style={{ background: "rgba(255,255,255,0.18)", border: "none", color: "#fff", fontFamily: "inherit", fontSize: 11.5, fontWeight: 800, padding: "6px 14px", borderRadius: 16, cursor: "pointer" }}
+                  >
+                    Pro
+                  </button>
+                </div>
               </div>
 
               <div style={{ textAlign: "center" }}>
@@ -541,6 +575,38 @@ export function App() {
             })}
           </section>
         </div>
+      )}
+
+      {/* 🖥️ الوضع العادي الجديد على الديسكتوب/الويب: قائمة جانبية + شريط علوي، الموبايل غير متأثر إطلاقًا */}
+      {!isMobile && desktopMode === "normal" && (
+        <DesktopSidebarShell
+          buttons={buttons}
+          currentScreen={currentScreen}
+          onNavItemClick={handleMenuAction}
+          onGoDashboard={() => navigateTo("dashboard")}
+          t={t}
+          themeStyles={themeStyles}
+          currentLangObj={currentLangObj}
+          onOpenRecords={() => setShowCentralRecordsModal(true)}
+          onOpenBin={() => setShowRecycleBinModal(true)}
+          onOpenThemes={() => setShowThemeModal(true)}
+          onOpenLang={() => setShowLangModal(true)}
+          onOpenSearch={() => setShowGlobalSearchModal(true)}
+          onOpenCalc={() => setShowCalcModal(true)}
+          onSwitchToPro={() => setDesktopMode("pro")}
+        >
+          {currentScreen === "dashboard" ? (
+            <DesktopDashboardHome
+              netProfit={netProfit}
+              monthlyDues={monthlyDues}
+              totalPortfolio={totalPortfolio}
+              t={t}
+              themeStyles={themeStyles}
+            />
+          ) : (
+            screenElement
+          )}
+        </DesktopSidebarShell>
       )}
 
       {/* 📱 شريط تنبيه الخروج عند استخدام زر الرجوع الفيزيائي */}
@@ -884,6 +950,248 @@ function QuickCalculatorModal({ isOpen, onClose, themeStyles = {} }) {
         <button type="button" onClick={handleCopy} style={{ width: "100%", marginTop: 8, background: copied ? "#14532d" : "#26262a", color: copied ? "#86efac" : "#ffffff", border: "1px solid #3f3f46", borderRadius: 10, padding: 10, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
           {copied ? "تم نسخ الناتج بنجاح ✓" : "نسخ الناتج"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * =========================================================
+ * 🖥️ قشرة الديسكتوب الجديدة (الوضع العادي): شريط علوي + قائمة جانبية قابلة للطي
+ * تُستخدم فقط لما isMobile=false و desktopMode="normal". نسخة الموبايل غير مرتبطة بها إطلاقًا.
+ * =========================================================
+ */
+function DesktopSidebarShell({
+  buttons,
+  currentScreen,
+  onNavItemClick,
+  onGoDashboard,
+  t,
+  themeStyles,
+  currentLangObj,
+  onOpenRecords,
+  onOpenBin,
+  onOpenThemes,
+  onOpenLang,
+  onOpenSearch,
+  onOpenCalc,
+  onSwitchToPro,
+  children
+}) {
+  const [manualOpen, setManualOpen] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const expanded = manualOpen || hovering;
+
+  const isButtonActive = (b) => {
+    if (b.key === "search") return currentScreen === "clientQuery";
+    if (b.key === "lateClients") return currentScreen === "overdue";
+    return currentScreen === b.key;
+  };
+
+  const topbarBtnStyle = {
+    display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none",
+    color: themeStyles.subText || "#9a9aa3", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700,
+    padding: "8px 12px", borderRadius: 9, cursor: "pointer", whiteSpace: "nowrap"
+  };
+
+  const dropdownWrap = (key, label, icon, onOpen) => (
+    <div style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => {
+          setOpenDropdown((prev) => (prev === key ? null : key));
+          if (onOpen) onOpen();
+        }}
+        style={{ ...topbarBtnStyle, background: openDropdown === key ? (themeStyles.inputBg || "#22222a") : "transparent" }}
+      >
+        {icon} <span>{label}</span>
+      </button>
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: themeStyles.bg || "#0b0b0d",
+        display: "flex", flexDirection: "column", zIndex: 5, fontFamily: "inherit"
+      }}
+    >
+      {/* الشريط العلوي */}
+      <div style={{
+        height: 60, flex: "0 0 60px", background: themeStyles.card || "#131316",
+        borderBottom: `1px solid ${themeStyles.border || "#232328"}`,
+        display: "flex", alignItems: "center", gap: 6, padding: "0 20px"
+      }}>
+        <div onClick={onGoDashboard} style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 16, cursor: "pointer" }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#d69a5f,#7a4a1f)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+            <Calculator size={18} color="#fff" />
+          </div>
+          <b style={{ fontSize: 14, fontWeight: 800, color: themeStyles.text || "#fff", whiteSpace: "nowrap" }}>{t.appName || "نظام إدارة الأقساط والمبيعات"}</b>
+        </div>
+
+        {dropdownWrap("records", "مركز السجلات", <FolderKanban size={15} />, onOpenRecords)}
+        {dropdownWrap("bin", "سلة المهملات", <Trash2 size={15} />, onOpenBin)}
+        {dropdownWrap("themes", "الثيمات", <Palette size={15} />, onOpenThemes)}
+        {dropdownWrap("lang", (currentLangObj?.flag || "🌐") + " " + (currentLangObj?.name || "اللغة"), <Globe size={15} />, onOpenLang)}
+        <button type="button" onClick={onOpenSearch} style={topbarBtnStyle}><Search size={15} /> <span>البحث الشامل</span></button>
+        <button type="button" onClick={onOpenCalc} style={topbarBtnStyle}><Calculator size={15} /> <span>الآلة الحاسبة</span></button>
+
+        <div style={{ flex: 1 }} />
+
+        <div style={{ display: "flex", background: themeStyles.inputBg || "#1a1a20", borderRadius: 20, padding: 3, border: `1px solid ${themeStyles.border || "#2e2e38"}`, marginLeft: 14 }}>
+          <button
+            type="button"
+            style={{ background: "linear-gradient(135deg,#d69a5f,#b06a35)", border: "none", color: "#fff", fontFamily: "inherit", fontSize: 12, fontWeight: 800, padding: "6px 16px", borderRadius: 16, cursor: "pointer" }}
+          >
+            عادي
+          </button>
+          <button
+            type="button"
+            onClick={onSwitchToPro}
+            style={{ background: "transparent", border: "none", color: themeStyles.subText || "#9a9aa3", fontFamily: "inherit", fontSize: 12, fontWeight: 800, padding: "6px 16px", borderRadius: 16, cursor: "pointer" }}
+          >
+            Pro
+          </button>
+        </div>
+
+        <div style={{ width: 34, height: 34, borderRadius: "50%", background: themeStyles.inputBg || "#222228", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: themeStyles.text || "#fff" }}>👤</div>
+      </div>
+
+      {/* الجسم: القائمة الجانبية + المحتوى */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
+        {/* القائمة الجانبية القابلة للطي */}
+        <div
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
+          style={{
+            width: expanded ? 260 : 68,
+            background: themeStyles.card || "#131316",
+            borderLeft: `1px solid ${themeStyles.border || "#232328"}`,
+            display: "flex", flexDirection: "column",
+            transition: "width 0.28s cubic-bezier(0.4,0,0.2,1)",
+            overflow: "hidden", flexShrink: 0
+          }}
+        >
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: expanded ? "space-between" : "center",
+            padding: expanded ? "12px 14px" : "12px 0", borderBottom: `1px solid ${themeStyles.border || "#232328"}`,
+            height: 56, flex: "0 0 56px"
+          }}>
+            {expanded && <span style={{ fontSize: 13.5, fontWeight: 800, color: themeStyles.text || "#fff", whiteSpace: "nowrap" }}>القائمة الرئيسية</span>}
+            <div
+              onClick={() => setManualOpen((v) => !v)}
+              title="طي / فتح القائمة"
+              style={{ width: 34, height: 34, borderRadius: 9, background: themeStyles.inputBg || "#1c1c22", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 15, color: themeStyles.accentGold || "#d69a5f", border: `1px solid ${themeStyles.border || "#2e2e36"}`, flexShrink: 0 }}
+            >
+              ☰
+            </div>
+          </div>
+
+          <div style={{ padding: expanded ? "10px 8px" : "10px 0", overflowY: expanded ? "auto" : "hidden", flex: 1 }}>
+            <div
+              onClick={onGoDashboard}
+              style={{
+                display: "flex", alignItems: "center", gap: expanded ? 12 : 0, justifyContent: expanded ? "flex-start" : "center",
+                padding: expanded ? "10px 12px" : "10px 0", borderRadius: expanded ? 10 : 0, fontSize: 13, fontWeight: 800,
+                color: currentScreen === "dashboard" ? (themeStyles.accentGold || "#d69a5f") : (themeStyles.subText || "#9a9aa3"),
+                background: currentScreen === "dashboard" ? "rgba(214,154,95,0.16)" : "transparent",
+                border: currentScreen === "dashboard" ? `1px solid ${themeStyles.accentGold || "#d69a5f"}55` : "1px solid transparent",
+                cursor: "pointer", marginBottom: 3, whiteSpace: "nowrap"
+              }}
+            >
+              <span style={{ fontSize: 16, width: 22, textAlign: "center", flex: "0 0 22px" }}>📊</span>
+              {expanded && <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>لوحة التحكم الرئيسية</span>}
+            </div>
+
+            {buttons.filter((b) => b.key !== "exit").map((b) => {
+              const Icon = b.icon;
+              const active = isButtonActive(b);
+              return (
+                <div
+                  key={b.key}
+                  onClick={() => onNavItemClick(b.key)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: expanded ? 12 : 0, justifyContent: expanded ? "flex-start" : "center",
+                    padding: expanded ? "10px 12px" : "10px 0", borderRadius: expanded ? 10 : 0, fontSize: 13, fontWeight: 700,
+                    color: active ? (themeStyles.accentGold || "#d69a5f") : (themeStyles.subText || "#9a9aa3"),
+                    background: active ? "rgba(214,154,95,0.16)" : "transparent",
+                    border: active ? `1px solid ${themeStyles.accentGold || "#d69a5f"}55` : "1px solid transparent",
+                    cursor: "pointer", marginBottom: 3, whiteSpace: "nowrap"
+                  }}
+                >
+                  <span style={{ width: 22, textAlign: "center", flex: "0 0 22px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon size={15} />
+                  </span>
+                  {expanded && <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{b.label}</span>}
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ padding: expanded ? 12 : "12px 0", borderTop: `1px solid ${themeStyles.border || "#232328"}`, display: "flex", justifyContent: expanded ? "flex-start" : "center" }}>
+            <div
+              onClick={() => onNavItemClick("exit")}
+              style={{ display: "flex", alignItems: "center", gap: expanded ? 10 : 0, cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              <div style={{ width: 34, height: 34, borderRadius: "50%", background: themeStyles.inputBg || "#222228", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>👤</div>
+              {expanded && (
+                <div>
+                  <b style={{ fontSize: 12.5, display: "block", color: themeStyles.text || "#fff" }}>المشرف العام</b>
+                  <span style={{ fontSize: 10.5, color: themeStyles.subText || "#9a9aa3" }}>تسجيل الخروج</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* مساحة المحتوى */}
+        <div style={{ flex: 1, minWidth: 0, padding: "24px 30px", overflowY: "auto" }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * =========================================================
+ * 🖥️ محتوى لوحة التحكم في الوضع العادي الجديد: تقارير سريعة فقط
+ * (شبكة الأزرار بقت في القائمة الجانبية بدل ما تتكرر هنا)
+ * =========================================================
+ */
+function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, themeStyles }) {
+  const kpis = [
+    { icon: TrendingUp, val: netProfit, lb: t.netProfit || "صافي الأرباح حتى اليوم", sub: t.netProfitSub || "إجمالي أرباح العقود والتحصيلات الصافية" },
+    { icon: CalendarClock, val: monthlyDues, lb: t.monthlyDues || "مستحقات هذا الشهر", sub: t.monthlyDuesSub || "المطلوب تحصيله حالياً" },
+    { icon: Wallet, val: totalPortfolio, lb: t.totalPortfolio || "إجمالي الأقساط المتبقية", sub: t.totalPortfolioSub || "المبالغ المتبقية في ذمة العملاء" },
+  ];
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: 20, margin: "0 0 4px 0", fontWeight: 800, color: themeStyles.text || "#fff" }}>لوحة التحكم الرئيسية</h1>
+        <span style={{ fontSize: 12.5, color: themeStyles.subText || "#9a9aa3" }}>التقرير المالي العام والمؤشرات التنفيذية للنشاط</span>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        {kpis.map((k, idx) => {
+          const Icon = k.icon;
+          return (
+            <div key={idx} style={{
+              background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#232328"}`,
+              borderRadius: 16, padding: "18px 20px", textAlign: "center",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center"
+            }}>
+              <Icon size={22} color={themeStyles.accentGold || "#d69a5f"} />
+              <div style={{ fontSize: 22, fontWeight: 800, color: themeStyles.text || "#fff", marginTop: 6 }}>
+                {Number(k.val || 0).toLocaleString()} <span style={{ fontSize: 13, color: themeStyles.accentGold || "#d69a5f" }}>{t.currency || "ج.م"}</span>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: 5 }}>{k.lb}</div>
+              <div style={{ fontSize: 11, color: themeStyles.subText || "#9a9aa3", marginTop: 3 }}>{k.sub}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
