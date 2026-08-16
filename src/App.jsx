@@ -1156,11 +1156,11 @@ function DesktopSidebarShell({
 
 /**
  * =========================================================
- * 🖥️ محتوى لوحة التحكم في الوضع العادي الجديد: تقارير سريعة فقط
- * (شبكة الأزرار بقت في القائمة الجانبية بدل ما تتكرر هنا)
+ * 🖥️ محتوى لوحة التحكم في الوضع العادي:
+ * (الكروت الثلاثية العلوية + الرسم البياني الشهري + كروت المصروفات والرواتب ورأس المال)
  * =========================================================
  */
-function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, themeStyles }) {
+function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, themeStyles, onNavigate }) {
   const kpis = [
     { icon: TrendingUp, val: netProfit, lb: t.netProfit || "صافي الأرباح حتى اليوم", sub: t.netProfitSub || "إجمالي أرباح العقود والتحصيلات الصافية" },
     { icon: CalendarClock, val: monthlyDues, lb: t.monthlyDues || "مستحقات هذا الشهر", sub: t.monthlyDuesSub || "المطلوب تحصيله حالياً" },
@@ -1168,33 +1168,198 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, theme
   ];
 
   return (
-    <div>
+    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+      {/* 1. العنوان الرئيسي */}
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 20, margin: "0 0 4px 0", fontWeight: 800, color: themeStyles.text || "#fff" }}>لوحة التحكم الرئيسية</h1>
-        <span style={{ fontSize: 12.5, color: themeStyles.subText || "#9a9aa3" }}>التقرير المالي العام والمؤشرات التنفيذية للنشاط</span>
+        <h1 style={{ fontSize: 20, margin: "0 0 4px 0", fontWeight: 800, color: themeStyles.text || "#ffffff" }}>
+          لوحة التحكم الرئيسية
+        </h1>
+        <span style={{ fontSize: 12.5, color: themeStyles.subText || "#8a8a94" }}>
+          التقرير المالي العام والمؤشرات التنفيذية للنشاط
+        </span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+      {/* 2. كروت المؤشرات الثلاثية المنسقة في المنتصف */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
         {kpis.map((k, idx) => {
           const Icon = k.icon;
           return (
-            <div key={idx} style={{
-              background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#232328"}`,
-              borderRadius: 16, padding: "18px 20px", textAlign: "center",
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center"
-            }}>
-              <Icon size={22} color={themeStyles.accentGold || "#d69a5f"} />
-              <div style={{ fontSize: 22, fontWeight: 800, color: themeStyles.text || "#fff", marginTop: 6 }}>
-                {Number(k.val || 0).toLocaleString()} <span style={{ fontSize: 13, color: themeStyles.accentGold || "#d69a5f" }}>{t.currency || "ج.م"}</span>
+            <div
+              key={idx}
+              style={{
+                background: themeStyles.card || "#18181c",
+                border: `1px solid ${themeStyles.border || "#232328"}`,
+                borderRadius: 16,
+                padding: "18px 20px",
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              <div style={{ fontSize: 24, fontWeight: 800, color: themeStyles.text || "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+                {Number(k.val || 0).toLocaleString()}{" "}
+                <span style={{ fontSize: 13, color: themeStyles.accentGold || "#d69a5f" }}>{t.currency || "ج.م"}</span>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: 5 }}>{k.lb}</div>
-              <div style={{ fontSize: 11, color: themeStyles.subText || "#9a9aa3", marginTop: 3 }}>{k.sub}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: 5 }}>
+                {k.lb}
+              </div>
+              <div style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", marginTop: 3 }}>
+                {k.sub}
+              </div>
             </div>
           );
         })}
       </div>
+
+      {/* 3. شبكة الرسم البياني + كروت الملخص الجانبية */}
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+        
+        {/* أ) بطاقة الرسم البياني الشهري */}
+        <div style={{
+          background: themeStyles.card || "#18181c",
+          border: `1px solid ${themeStyles.border || "#232328"}`,
+          borderRadius: 16,
+          padding: 20,
+          display: "flex",
+          flexDirection: "column"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, borderBottom: `1px solid ${themeStyles.border || "#222228"}`, paddingBottom: 10 }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>
+              📊 حركة التحصيلات والأرباح الشهرية
+            </h3>
+            <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94" }}>تحديث لحظي مباشر</span>
+          </div>
+
+          <div style={{ width: "100%", height: 180, display: "flex", alignItems: "flex-end", gap: 14, paddingTop: 20 }}>
+            {/* مايو */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", gap: 6 }}>
+              <div style={{ width: "100%", maxWidth: 38, background: "#202026", borderRadius: "8px 8px 4px 4px", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 140 }}>
+                <div style={{ width: "100%", height: "45%", background: "linear-gradient(180deg, #d69a5f 0%, #b06a35 100%)", borderRadius: "6px 6px 0 0" }}></div>
+              </div>
+              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>مايو</span>
+            </div>
+
+            {/* يونيو */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", gap: 6 }}>
+              <div style={{ width: "100%", maxWidth: 38, background: "#202026", borderRadius: "8px 8px 4px 4px", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 140 }}>
+                <div style={{ width: "100%", height: "65%", background: "linear-gradient(180deg, #d69a5f 0%, #b06a35 100%)", borderRadius: "6px 6px 0 0" }}></div>
+              </div>
+              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>يونيو</span>
+            </div>
+
+            {/* يوليو */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", gap: 6 }}>
+              <div style={{ width: "100%", maxWidth: 38, background: "#202026", borderRadius: "8px 8px 4px 4px", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 140 }}>
+                <div style={{ width: "100%", height: "80%", background: "linear-gradient(180deg, #d69a5f 0%, #b06a35 100%)", borderRadius: "6px 6px 0 0" }}></div>
+              </div>
+              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>يوليو</span>
+            </div>
+
+            {/* أغسطس */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", gap: 6 }}>
+              <div style={{ width: "100%", maxWidth: 38, background: "#202026", borderRadius: "8px 8px 4px 4px", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 140 }}>
+                <div style={{ width: "100%", height: "95%", background: "linear-gradient(180deg, #d69a5f 0%, #b06a35 100%)", borderRadius: "6px 6px 0 0" }}></div>
+              </div>
+              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>أغسطس</span>
+            </div>
+
+            {/* المصروفات */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", gap: 6 }}>
+              <div style={{ width: "100%", maxWidth: 38, background: "#202026", borderRadius: "8px 8px 4px 4px", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 140 }}>
+                <div style={{ width: "100%", height: "35%", background: "linear-gradient(180deg, #ef4444 0%, #991b1b 100%)", borderRadius: "6px 6px 0 0" }}></div>
+              </div>
+              <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 700 }}>المصروفات</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ب) كروت الملخص الجانبية */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* كارت 1: المصروفات العامة */}
+          <div
+            onClick={() => onNavigate && onNavigate("treasuryExpenses")}
+            style={{
+              background: themeStyles.card || "#18181c",
+              border: `1px solid ${themeStyles.border || "#232328"}`,
+              borderRadius: 14,
+              padding: "14px 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              cursor: "pointer"
+            }}
+          >
+            <div>
+              <h4 style={{ margin: "0 0 3px 0", fontSize: 13, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>
+                المصروفات العامة
+              </h4>
+              <p style={{ margin: 0, fontSize: 11, color: themeStyles.subText || "#8a8a94" }}>
+                إجمالي المصروفات المسجلة
+              </p>
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#fca5a5", fontVariantNumeric: "tabular-nums" }}>
+              0 ج.م
+            </div>
+          </div>
+
+          {/* كارت 2: رواتب وسلف الموظفين */}
+          <div
+            onClick={() => onNavigate && onNavigate("treasuryEmployees")}
+            style={{
+              background: themeStyles.card || "#18181c",
+              border: `1px solid ${themeStyles.border || "#232328"}`,
+              borderRadius: 14,
+              padding: "14px 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              cursor: "pointer"
+            }}
+          >
+            <div>
+              <h4 style={{ margin: "0 0 3px 0", fontSize: 13, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>
+                رواتب وسلف الموظفين
+              </h4>
+              <p style={{ margin: 0, fontSize: 11, color: themeStyles.subText || "#8a8a94" }}>
+                الرواتب والحركات النشطة
+              </p>
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#93c5fd", fontVariantNumeric: "tabular-nums" }}>
+              0 ج.م
+            </div>
+          </div>
+
+          {/* كارت 3: رأس مال الشركة */}
+          <div
+            onClick={() => onNavigate && onNavigate("treasuryPartners")}
+            style={{
+              background: themeStyles.card || "#18181c",
+              border: `1px solid ${themeStyles.border || "#232328"}`,
+              borderRadius: 14,
+              padding: "14px 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              cursor: "pointer"
+            }}
+          >
+            <div>
+              <h4 style={{ margin: "0 0 3px 0", fontSize: 13, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>
+                رأس مال الشركة
+              </h4>
+              <p style={{ margin: 0, fontSize: 11, color: themeStyles.subText || "#8a8a94" }}>
+                صافي استثمارات الشركاء
+              </p>
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", fontVariantNumeric: "tabular-nums" }}>
+              10,100 ج.م
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
-
-export default App;
