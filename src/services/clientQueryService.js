@@ -94,3 +94,36 @@ export const findContractsByPhone = (contracts = [], phone = "") => {
   const cleanPhone = phone.trim();
   return contracts.filter((c) => (c.phone || "").trim() === cleanPhone);
 };
+// تطبيع وتوحيد شكل بيانات العقود القادمة من السحابة (أسماء الحقول متعددة الصيغ) لصيغة واحدة موحدة
+export const normalizeContracts = (list = []) => {
+  return (list || []).map((c) => {
+    const cDate = c.contractDate || c.contract_date || c.created_at || "";
+    const fInst = c.first_installment_date || c.firstPayDate || c.firstInstallmentDate || "";
+    const gName = c.guarantor_name || c.guarantorName || c.guarantor || "";
+    const gPhone = c.guarantor_phone || c.guarantorPhone || "";
+    const natId = c.national_id || c.nationalId || "";
+    const addr = c.address || "";
+
+    return {
+      ...c,
+      id: c.id,
+      name: c.clientName || c.client_name || c.name || "عميل بدون اسم",
+      phone: c.clientPhone || c.client_phone || c.phone || "",
+      national_id: natId,
+      nationalId: natId,
+      address: addr,
+      item: c.itemName || c.item_name || c.item || "",
+      contractDate: cDate,
+      contract_date: cDate,
+      firstPayDate: fInst,
+      first_installment_date: fInst,
+      firstInstallmentDate: fInst,
+      guarantor: gName,
+      guarantor_name: gName,
+      guarantorName: gName,
+      guarantorPhone: gPhone,
+      guarantor_phone: gPhone,
+      status: c.status || (c.is_deleted ? "archived" : "active")
+    };
+  });
+};
