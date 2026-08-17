@@ -114,6 +114,10 @@ export function App() {
   const [showCentralRecordsModal, setShowCentralRecordsModal] = useState(false);
   const [showCalcModal, setShowCalcModal] = useState(false);
 
+  // 🔗 "وصول مباشر" جاي من مركز السجلات: بيقول للشاشة اللي هتفتح تعرض إيه بالظبط
+  // (تبويب الأرشيف / نافذة الجدول الشامل / سجل السداد الشامل) بمجرد ما تفتح
+  const [recordDeepLink, setRecordDeepLink] = useState(null);
+
   // 🌟 نافذة التنبيه المخصصة بوسط الشاشة
   const [successModal, setSuccessModal] = useState({ open: false, title: "", msg: "" });
 
@@ -308,10 +312,25 @@ export function App() {
       />
     );
   } else if (currentScreen === "clientQuery") {
-    screenElement = <ClientQueryScreen onBack={handleBack} t={t} themeStyles={themeStyles} />;
+    screenElement = (
+      <ClientQueryScreen
+        onBack={handleBack}
+        t={t}
+        themeStyles={themeStyles}
+        deepLink={recordDeepLink}
+        onDeepLinkHandled={() => setRecordDeepLink(null)}
+      />
+    );
   } else if (currentScreen === "pay") {
     screenElement = (
-      <InstallmentsScreen contracts={clientsList} onBack={handleBack} t={t} themeStyles={themeStyles} />
+      <InstallmentsScreen
+        contracts={clientsList}
+        onBack={handleBack}
+        t={t}
+        themeStyles={themeStyles}
+        deepLink={recordDeepLink}
+        onDeepLinkHandled={() => setRecordDeepLink(null)}
+      />
     );
   } else if (currentScreen === "monthlyDues") {
     screenElement = (
@@ -654,8 +673,24 @@ export function App() {
         isOpen={showCentralRecordsModal}
         onClose={() => setShowCentralRecordsModal(false)}
         onSelectRecord={(recordId) => {
-          if (recordId === "active_contracts" || recordId === "all_clients_register" || recordId === "archived_contracts") {
+          // 🗂️ كل سجل من السبعة بيوديك لمكانه الحقيقي جوا التطبيق مباشرة
+          if (recordId === "active_contracts") {
             navigateTo("clientQuery");
+          } else if (recordId === "archived_contracts") {
+            setRecordDeepLink("archive");
+            navigateTo("clientQuery");
+          } else if (recordId === "all_clients_register") {
+            setRecordDeepLink("excel");
+            navigateTo("clientQuery");
+          } else if (recordId === "payment_records") {
+            setRecordDeepLink("payments");
+            navigateTo("pay");
+          } else if (recordId === "employees_register") {
+            navigateTo("treasuryEmployees");
+          } else if (recordId === "expenses_register") {
+            navigateTo("treasuryExpenses");
+          } else if (recordId === "profits_register") {
+            navigateTo("treasuryDistribute");
           }
         }}
         t={t}
