@@ -998,7 +998,7 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, theme
     </div>
   );
 }
-=======
+
 /**
  * =========================================================
  * 🖥️ قشرة الديسكتوب الجديدة (الوضع العادي):
