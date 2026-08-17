@@ -22,6 +22,7 @@ import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
 import { RecycleBinModal } from "./components/modals/RecycleBinModal";
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
 import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
+import { AllClientsRegisterScreen } from "./components/clientQuery/AllClientsRegisterScreen";
 import DeleteClientScreen from "./components/DeleteClientScreen";
 import {
   TreasuryMainScreen,
@@ -331,6 +332,10 @@ export function App() {
         deepLink={recordDeepLink}
         onDeepLinkHandled={() => setRecordDeepLink(null)}
       />
+    );
+  } else if (currentScreen === "allClientsRegister") {
+    screenElement = (
+      <AllClientsRegisterScreen contracts={clientsList} onBack={handleBack} t={t} themeStyles={themeStyles} />
     );
   } else if (currentScreen === "monthlyDues") {
     screenElement = (
@@ -680,8 +685,7 @@ export function App() {
             setRecordDeepLink("archive");
             navigateTo("clientQuery");
           } else if (recordId === "all_clients_register") {
-            setRecordDeepLink("excel");
-            navigateTo("clientQuery");
+            navigateTo("allClientsRegister");
           } else if (recordId === "payment_records") {
             setRecordDeepLink("payments");
             navigateTo("pay");
