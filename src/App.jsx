@@ -1163,19 +1163,6 @@ function DesktopSidebarShell({
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
               >
-                <FileText size={15} color="#34d399" />
-                <div style={{ flex: 1 }}>
-                  <div>سجل العقود النشطة</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>إدارة مبيعات التقسيط الحالية</div>
-                </div>
-              </div>
-
-              <div
-                onClick={() => { onNavItemClick("allClientsRegister"); setActiveDropdown(null); }}
-                style={dropdownItemStyle}
-                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-              >
                 <Users size={15} color="#60a5fa" />
                 <div style={{ flex: 1 }}>
                   <div>سجل بيانات العملاء الشامل</div>
