@@ -14,6 +14,8 @@ import { fetchAllClientsContracts } from "./services/clientFetchService";
 import { supabase } from "./supabaseClient";
 import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
+import { AllClientsRegisterModal } from "./components/clientQuery/AllClientsRegisterModal";
+import { ArchivedContractsView } from "./components/clientQuery/ArchivedContractsView";
 import { SettingsScreen } from "./components/SettingsScreen";
 import InstallmentsScreen from "./components/installments/InstallmentsScreen";
 import MonthlyDues from "./components/MonthlyDues";
@@ -113,6 +115,8 @@ export function App() {
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
   const [showCentralRecordsModal, setShowCentralRecordsModal] = useState(false);
   const [showCalcModal, setShowCalcModal] = useState(false);
+  const [showAllClientsModal, setShowAllClientsModal] = useState(false);
+  const [showArchivedModal, setShowArchivedModal] = useState(false);
 
   // 🌟 نافذة التنبيه المخصصة بوسط الشاشة
   const [successModal, setSuccessModal] = useState({ open: false, title: "", msg: "" });
@@ -128,6 +132,8 @@ export function App() {
           if (showRecycleBinModal) { setShowRecycleBinModal(false); return; }
           if (showGlobalSearchModal) { setShowGlobalSearchModal(false); return; }
           if (showCentralRecordsModal) { setShowCentralRecordsModal(false); return; }
+          if (showAllClientsModal) { setShowAllClientsModal(false); return; }
+          if (showArchivedModal) { setShowArchivedModal(false); return; }
           if (showLangModal) { setShowLangModal(false); return; }
           if (showThemeModal) { setShowThemeModal(false); return; }
           if (showCalcModal) { setShowCalcModal(false); return; }
@@ -177,6 +183,57 @@ export function App() {
   ];
 
   const currentLangObj = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
+
+  // تطبيع وتنسيق بيانات العقود لفتح شيت Excel وجدول الأرشيف مباشرة
+  const normalizedContracts = useMemo(() => {
+    return (clientsList || []).map((c) => {
+      const cDate = c.contractDate || c.contract_date || c.created_at || "";
+      const fInst = c.first_installment_date || c.firstPayDate || c.firstInstallmentDate || "";
+      const gName = c.guarantor_name || c.guarantorName || c.guarantor || "";
+      const gPhone = c.guarantor_phone || c.guarantorPhone || "";
+      const natId = c.national_id || c.nationalId || "";
+      const addr = c.address || "";
+      const sPrice = Number(c.sale_price ?? c.salePrice ?? c.sale ?? c.total ?? 0);
+      const cPrice = Number(c.cost_price ?? c.costPrice ?? c.cost ?? 0);
+      const dPayment = Number(c.down_payment ?? c.downPayment ?? c.down ?? 0);
+      const mInst = Number(c.monthly_installment ?? c.monthlyInstallment ?? c.monthly ?? 0);
+
+      const instArr = Array.isArray(c.installments) ? c.installments : (Array.isArray(c.payments) ? c.payments : []);
+      const paidFromInst = instArr
+        .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
+        .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+      const tPaid = paidFromInst > 0 ? paidFromInst : Number(c.totalPaid || c.total_paid || 0);
+      const rem = Math.max(0, sPrice - dPayment - tPaid);
+
+      return {
+        ...c,
+        id: c.id,
+        name: c.clientName || c.client_name || c.name || "عميل بدون اسم",
+        phone: c.clientPhone || c.client_phone || c.phone || "",
+        national_id: natId,
+        nationalId: natId,
+        address: addr,
+        item: c.itemName || c.item_name || c.item || "",
+        cost: cPrice,
+        sale: sPrice,
+        down: dPayment,
+        monthly: mInst,
+        totalPaid: tPaid,
+        remaining: rem,
+        contractDate: cDate,
+        contract_date: cDate,
+        firstPayDate: fInst,
+        first_installment_date: fInst,
+        firstInstallmentDate: fInst,
+        guarantor: gName,
+        guarantor_name: gName,
+        guarantorName: gName,
+        guarantorPhone: gPhone,
+        guarantor_phone: gPhone,
+        status: c.status || (rem <= 0 ? "archived" : (c.is_deleted ? "archived" : "active"))
+      };
+    });
+  }, [clientsList]);
 
   const netProfit = useMemo(() => {
     const totalCollectedProfits = (clientsList || []).reduce((acc, curr) => {
@@ -593,6 +650,8 @@ export function App() {
           onOpenLang={() => setShowLangModal(true)}
           onOpenSearch={() => setShowGlobalSearchModal(true)}
           onOpenCalc={() => setShowCalcModal(true)}
+          onOpenAllClientsRegister={() => setShowAllClientsModal(true)}
+          onOpenArchivedRegister={() => setShowArchivedModal(true)}
           onSwitchToPro={() => setDesktopMode("pro")}
         >
           {currentScreen === "dashboard" ? (
@@ -655,13 +714,93 @@ export function App() {
         isOpen={showCentralRecordsModal}
         onClose={() => setShowCentralRecordsModal(false)}
         onSelectRecord={(recordId) => {
-          if (recordId === "active_contracts" || recordId === "all_clients_register" || recordId === "archived_contracts") {
-            navigateTo("clientQuery");
+          setShowCentralRecordsModal(false);
+          if (recordId === "active_contracts" || recordId === "all_clients_register") {
+            setShowAllClientsModal(true);
+          } else if (recordId === "archived_contracts") {
+            setShowArchivedModal(true);
+          } else if (recordId === "payment_records" || recordId === "payments_register") {
+            navigateTo("pay");
+          } else if (recordId === "expenses_register") {
+            navigateTo("treasuryExpenses");
+          } else if (recordId === "employees_register") {
+            navigateTo("treasuryEmployees");
+          } else if (recordId === "partners_register") {
+            navigateTo("treasuryPartners");
+          } else if (recordId === "profits_register" || recordId === "distribution_register") {
+            navigateTo("treasuryDistribute");
           }
         }}
         t={t}
         themeStyles={themeStyles}
       />
+
+      {/* 📊 نافذة سجل العملاء الشامل المباشرة (شيت Excel) */}
+      <AllClientsRegisterModal
+        isOpen={showAllClientsModal}
+        onClose={() => setShowAllClientsModal(false)}
+        contracts={normalizedContracts}
+        t={t}
+        themeStyles={themeStyles}
+      />
+
+      {/* 📁 نافذة أرشيف العقود المسددة بالكامل المباشرة */}
+      {showArchivedModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(6px)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "15px",
+            boxSizing: "border-box"
+          }}
+          dir={isRTL ? "rtl" : "ltr"}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "1380px",
+              maxHeight: "92vh",
+              background: themeStyles.card || "#1a1a1c",
+              border: `1px solid ${themeStyles.border || "#333333"}`,
+              borderRadius: "16px",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: `1px solid ${themeStyles.border || "#333333"}`, background: themeStyles.inputBg || "#141416" }}>
+              <button type="button" onClick={() => setShowArchivedModal(false)} style={{ display: "flex", alignItems: "center", gap: "6px", background: themeStyles.card || "#222224", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.text || "#ffffff", padding: "6px 14px", borderRadius: "8px", cursor: "pointer", fontWeight: 700, fontSize: "13px" }}>
+                <ArrowRight size={16} style={{ transform: isRTL ? "none" : "rotate(180deg)" }} /> رجوع
+              </button>
+              <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>
+                أرشيف العقود المسددة بالكامل
+              </h2>
+              <button type="button" onClick={() => setShowArchivedModal(false)} style={{ width: "34px", height: "34px", borderRadius: "50%", background: themeStyles.card || "#222224", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.subText || "#aaaaaa", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
+              <ArchivedContractsView contracts={normalizedContracts} t={t} themeStyles={themeStyles} />
+            </div>
+
+            <div style={{ padding: "12px 20px", borderTop: `1px solid ${themeStyles.border || "#333333"}`, background: themeStyles.inputBg || "#141416" }}>
+              <button type="button" onClick={() => setShowArchivedModal(false)} style={{ width: "100%", background: themeStyles.card || "#222224", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.accentGold || "#d69a5f", borderRadius: "10px", padding: "10px", fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <ArrowRight size={16} style={{ transform: isRTL ? "none" : "rotate(180deg)" }} /> خروج والعودة للشاشة الرئيسية
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 🌟 نافذة التنبيه المخصصة بمنتصف الشاشة */}
       {successModal.open && (
@@ -1085,7 +1224,7 @@ function DesktopSidebarShell({
               </div>
 
               <div
-                onClick={() => { onNavItemClick("clientQuery"); setActiveDropdown(null); }}
+                onClick={() => { onOpenAllClientsRegister && onOpenAllClientsRegister(); setActiveDropdown(null); }}
                 style={dropdownItemStyle}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -1093,12 +1232,12 @@ function DesktopSidebarShell({
                 <FileText size={15} color="#34d399" />
                 <div style={{ flex: 1 }}>
                   <div>سجل العقود النشطة</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>إدارة مبيعات التقسيط الحالية</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>عرض جدول العقود الشغالة مباشرة</div>
                 </div>
               </div>
 
               <div
-                onClick={() => { onNavItemClick("clientQuery"); setActiveDropdown(null); }}
+                onClick={() => { onOpenAllClientsRegister && onOpenAllClientsRegister(); setActiveDropdown(null); }}
                 style={dropdownItemStyle}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -1292,7 +1431,7 @@ function DesktopSidebarShell({
               </div>
 
               <div
-                onClick={() => { onNavItemClick("clientQuery"); setActiveDropdown(null); }}
+                onClick={() => { onOpenArchivedRegister && onOpenArchivedRegister(); setActiveDropdown(null); }}
                 style={dropdownItemStyle}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -1300,7 +1439,7 @@ function DesktopSidebarShell({
                 <CheckCircle size={15} color="#34d399" />
                 <div style={{ flex: 1 }}>
                   <div>أرشيف العقود المسددة بالكامل</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>العقود المنتهية والمخالصة</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>عرض وطباعة العقود المنتهية</div>
                 </div>
               </div>
 
