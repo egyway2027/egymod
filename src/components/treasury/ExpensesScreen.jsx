@@ -155,7 +155,7 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
   };
 
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: "4px 20px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: "0 20px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
       {/* 1. الشريط العلوي الرئيسي */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px", paddingBottom: "4px", borderBottom: `1px solid ${themeStyles.border || "#232328"}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -311,48 +311,35 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
               <CustomDatePicker value={date} onChange={setDate} themeStyles={themeStyles} />
             </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: "12.5px", color: "#b0b0b8", marginBottom: "6px", fontWeight: 700 }}>بند المصروف الرئيسي *</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#2c2c34"}`, borderRadius: "11px", padding: "11px 14px", color: "#ffffff", outline: "none", fontSize: "13.5px", fontWeight: 600, cursor: "pointer", boxSizing: "border-box" }}
-              >
-                <option value="إيجار المحل">إيجار المحل</option>
-                <option value="كهرباء ومياه وغاز">كهرباء ومياه وغاز</option>
-                <option value="رواتب ونثريات">رواتب ونثريات</option>
-                <option value="صيانة وإصلاحات">صيانة وإصلاحات</option>
-                <option value="بوفيه وضيافة">بوفيه وضيافة</option>
-                <option value="مصروفات نقل وبضاعة">مصروفات نقل وبضاعة</option>
-                <option value="مصروفات أخرى">مصروفات أخرى</option>
-              </select>
-            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", color: "#b0b0b8", marginBottom: "4px", fontWeight: 700 }}>بند المصروف الرئيسي *</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#2c2c34"}`, borderRadius: "10px", padding: "9px 10px", color: "#ffffff", outline: "none", fontSize: "12.5px", fontWeight: 600, cursor: "pointer", boxSizing: "border-box" }}
+                >
+                  <option value="إيجار المحل">إيجار المحل</option>
+                  <option value="كهرباء ومياه وغاز">كهرباء ومياه وغاز</option>
+                  <option value="رواتب ونثريات">رواتب ونثريات</option>
+                  <option value="صيانة وإصلاحات">صيانة وإصلاحات</option>
+                  <option value="بوفيه وضيافة">بوفيه وضيافة</option>
+                  <option value="مصروفات نقل وبضاعة">مصروفات نقل وبضاعة</option>
+                  <option value="مصروفات أخرى">مصروفات أخرى</option>
+                </select>
+              </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: "12.5px", color: "#b0b0b8", marginBottom: "6px", fontWeight: 700 }}>المبلغ المطلوب تسجيله (ج.م) *</label>
-              <input
-                type="number"
-                step="1"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0"
-                required
-                style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#2c2c34"}`, borderRadius: "11px", padding: "11px 14px", color: "#ffffff", outline: "none", fontSize: "16px", fontWeight: 800, boxSizing: "border-box" }}
-              />
-              
-              {/* أزرار الإضافة السريعة */}
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px", alignItems: "center" }}>
-                <span style={{ fontSize: "10.5px", color: "#888888", marginLeft: "4px" }}>إضافة سريعة:</span>
-                {[50, 100, 200, 500, 1000].map((val) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => addQuickAmount(val)}
-                    style={{ background: "#131317", border: `1px solid ${themeStyles.border || "#2e2e38"}`, color: themeStyles.accentGold || "#d69a5f", padding: "4px 9px", borderRadius: "8px", fontSize: "11px", fontWeight: 800, cursor: "pointer" }}
-                  >
-                    +{val}
-                  </button>
-                ))}
+              <div>
+                <label style={{ display: "block", fontSize: "11px", color: "#b0b0b8", marginBottom: "4px", fontWeight: 700 }}>المبلغ المطلوب تسجيله (ج.م) *</label>
+                <input
+                  type="number"
+                  step="1"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0"
+                  required
+                  style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#2c2c34"}`, borderRadius: "10px", padding: "9px 10px", color: "#ffffff", outline: "none", fontSize: "14px", fontWeight: 800, boxSizing: "border-box" }}
+                />
               </div>
             </div>
 
