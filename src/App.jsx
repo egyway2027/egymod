@@ -331,8 +331,7 @@ export function App() {
       setRecordDeepLink("archive");
       navigateTo("clientQuery");
     } else if (key === "payRecords") {
-      setRecordDeepLink("payments");
-      navigateTo("pay");
+      setShowAllPaymentsModal(true);
     } else if (key === "allClientsRegister") {
       setShowAllClientsRegisterModal(true);
     } else if (key === "exit") {
@@ -1203,7 +1202,7 @@ function DesktopSidebarShell({
               </div>
 
               <div
-                onClick={() => { setShowAllPaymentsModal(true); setActiveDropdown(null); }}
+                onClick={() => { onNavItemClick("payRecords"); setActiveDropdown(null); }}
                 style={dropdownItemStyle}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
