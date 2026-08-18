@@ -1248,6 +1248,16 @@ function DesktopSidebarShell({
                 </div>
               </div>
 
+              <div
+                onClick={() => { onOpenRecords(); setActiveDropdown(null); }}
+                style={{ ...dropdownItemStyle, borderTop: `1px solid ${themeStyles.border || "#25252c"}`, marginTop: 4, color: themeStyles.accentGold || "#d69a5f" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.18)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <FolderKanban size={15} />
+                <div style={{ flex: 1, fontWeight: 800 }}>عرض جميع السجلات في نافذة موحدة</div>
+                <ArrowRight size={13} />
+              </div>
             </div>
           )}
         </div>
@@ -1307,17 +1317,6 @@ function DesktopSidebarShell({
                   <div>إدارة وحذف حسابات العملاء</div>
                   <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>حذف عميل بالكامل من النظام</div>
                 </div>
-              </div>
-
-              <div
-                onClick={() => { onOpenBin(); setActiveDropdown(null); }}
-                style={{ ...dropdownItemStyle, borderTop: `1px solid ${themeStyles.border || "#25252c"}`, marginTop: 4, color: "#fca5a5" }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.18)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-              >
-                <Trash2 size={15} />
-                <div style={{ flex: 1, fontWeight: 800 }}>فتح سلة المهملات الشاملة</div>
-                <ArrowRight size={13} />
               </div>
             </div>
           )}
