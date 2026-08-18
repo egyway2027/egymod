@@ -129,7 +129,7 @@ export function EmployeesMergedScreen({ onBack, t = {}, themeStyles = {} }) {
   };
 
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1050px", margin: "0 auto", padding: "16px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: "0 20px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
       {/* الشريط العلوي */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
         <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "6px", background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.accentGold || "#e8cd9c", padding: "8px 16px", borderRadius: "10px", cursor: "pointer", fontWeight: 700, fontSize: "13px" }}>
@@ -165,22 +165,22 @@ export function EmployeesMergedScreen({ onBack, t = {}, themeStyles = {} }) {
             <div>
               {/* إضافة / تعديل موظف */}
               <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "16px", padding: "20px", marginBottom: "20px" }}>
-                <form onSubmit={handleSaveEmp} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px" }}>
-                  <div>
+                <form onSubmit={handleSaveEmp} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", width: "100%", boxSizing: "border-box" }}>
+                  <div style={{ minWidth: 0 }}>
                     <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>اسم الموظف *</label>
-                    <input type="text" value={empForm.name} onChange={(e) => setEmpForm({ ...empForm, name: e.target.value })} required placeholder="أدخل اسم الموظف..." style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px" }} />
+                    <input type="text" value={empForm.name} onChange={(e) => setEmpForm({ ...empForm, name: e.target.value })} required placeholder="أدخل اسم الموظف..." style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }} />
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>التليفون</label>
-                    <input type="text" value={empForm.phone} onChange={(e) => setEmpForm({ ...empForm, phone: e.target.value })} placeholder="01xxxxxxxxx" style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px" }} />
+                    <input type="text" value={empForm.phone} onChange={(e) => setEmpForm({ ...empForm, phone: e.target.value })} placeholder="01xxxxxxxxx" style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }} />
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>الوظيفة</label>
-                    <input type="text" value={empForm.job} onChange={(e) => setEmpForm({ ...empForm, job: e.target.value })} placeholder="موظف مبيعات / تحصيل" style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px" }} />
+                    <input type="text" value={empForm.job} onChange={(e) => setEmpForm({ ...empForm, job: e.target.value })} placeholder="موظف مبيعات / تحصيل" style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }} />
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>الراتب الأساسي *</label>
-                    <input type="number" step="1" value={empForm.salary} onChange={(e) => setEmpForm({ ...empForm, salary: e.target.value })} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", fontWeight: 800 }} />
+                    <input type="number" step="1" value={empForm.salary} onChange={(e) => setEmpForm({ ...empForm, salary: e.target.value })} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", fontWeight: 800, boxSizing: "border-box" }} />
                   </div>
                   <div style={{ gridColumn: "1 / -1" }}>
                     <button type="submit" style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f, #7a4a1f)", color: "#ffffff", border: "none", borderRadius: "10px", padding: "12px", fontSize: "15px", fontWeight: 800, cursor: "pointer" }}>
@@ -272,10 +272,10 @@ export function EmployeesMergedScreen({ onBack, t = {}, themeStyles = {} }) {
                     </select>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                    <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", width: "100%", boxSizing: "border-box" }}>
+                    <div style={{ minWidth: 0 }}>
                       <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>نوع الحركة *</label>
-                      <select value={transType} onChange={(e) => setType(e.target.value)} style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px" }}>
+                      <select value={transType} onChange={(e) => setType(e.target.value)} style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", boxSizing: "border-box" }}>
                         <option value="صرف راتب شهري">صرف راتب شهري</option>
                         <option value="سلفة نقدية">سلفة نقدية</option>
                         <option value="مكافأة حافز">مكافأة / حافز</option>
@@ -283,9 +283,9 @@ export function EmployeesMergedScreen({ onBack, t = {}, themeStyles = {} }) {
                       </select>
                     </div>
 
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>المبلغ (ج.م) *</label>
-                      <input type="number" step="1" value={transAmount} onChange={(e) => setAmount(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", fontWeight: 800 }} />
+                      <input type="number" step="1" value={transAmount} onChange={(e) => setAmount(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", fontWeight: 800, boxSizing: "border-box" }} />
                     </div>
                   </div>
 
