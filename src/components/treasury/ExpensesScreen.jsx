@@ -96,230 +96,455 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
     return filteredExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
   }, [filteredExpenses]);
 
+  // 📊 إحصائيات لوحة التحكم اللحظية للمصروفات
+  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const currentMonthStr = useMemo(() => todayStr.slice(0, 7), [todayStr]);
+
+  const todayExpenses = useMemo(() => {
+    return expenses.filter((e) => (e.date || "").startsWith(todayStr));
+  }, [expenses, todayStr]);
+
+  const todaySum = useMemo(() => {
+    return todayExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+  }, [todayExpenses]);
+
+  const monthExpenses = useMemo(() => {
+    return expenses.filter((e) => (e.date || "").startsWith(currentMonthStr));
+  }, [expenses, currentMonthStr]);
+
+  const monthSum = useMemo(() => {
+    return monthExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+  }, [monthExpenses]);
+
+  const categoryBreakdown = useMemo(() => {
+    const map = {};
+    let total = 0;
+    expenses.forEach((e) => {
+      const cat = e.category || "مصروفات أخرى";
+      const amt = Number(e.amount || 0);
+      map[cat] = (map[cat] || 0) + amt;
+      total += amt;
+    });
+
+    const colors = {
+      "إيجار المحل": "#d69a5f",
+      "كهرباء ومياه وغاز": "#38bdf8",
+      "رواتب ونثريات": "#a855f7",
+      "صيانة وإصلاحات": "#f43f5e",
+      "مصروفات أخرى": "#10b981"
+    };
+
+    return Object.keys(map).map((cat) => ({
+      name: cat,
+      amount: map[cat],
+      percentage: total > 0 ? Math.round((map[cat] / total) * 100) : 0,
+      color: colors[cat] || "#d69a5f"
+    })).sort((a, b) => b.amount - a.amount);
+  }, [expenses]);
+
+  const topCategory = useMemo(() => {
+    return categoryBreakdown[0] || { name: "لا يوجد", percentage: 0 };
+  }, [categoryBreakdown]);
+
+  const recentExpenses = useMemo(() => {
+    return expenses.slice(0, 3);
+  }, [expenses]);
+
+  const addQuickAmount = (val) => {
+    setAmount((prev) => String((parseFloat(prev) || 0) + val));
+  };
+
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1050px", margin: "0 auto", padding: "16px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
-      {/* الشريط العلوي */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            background: themeStyles.card || "#1e1e1e",
-            border: `1px solid ${themeStyles.border || "#333333"}`,
-            color: themeStyles.accentGold || "#e8cd9c",
-            padding: "8px 16px",
-            borderRadius: "10px",
-            cursor: "pointer",
-            fontWeight: 700,
-            fontSize: "13px"
-          }}
-        >
-          <ArrowRight size={16} style={{ transform: isEN ? "rotate(180deg)" : "none" }} />
-          <span>رجوع</span>
-        </button>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1280px", margin: "0 auto", padding: "16px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
+      {/* 1. الشريط العلوي الرئيسي */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", paddingBottom: "16px", borderBottom: `1px solid ${themeStyles.border || "#232328"}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "24px" }}>💸</span>
+          <h2 style={{ color: themeStyles.accentGold || "#e8cd9c", margin: 0, fontSize: "22px", fontWeight: 800 }}>
+            لوحة إدارة المصروفات العامة والتحليل المالي
+          </h2>
+        </div>
 
-        <h2 style={{ color: themeStyles.accentGold || "#e8cd9c", margin: 0, fontSize: "20px", fontWeight: 800 }}>
-          المصروفات العامة
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: themeStyles.card || "#18181c",
+              border: `1px solid ${themeStyles.border || "#333333"}`,
+              color: themeStyles.accentGold || "#e8cd9c",
+              padding: "8px 18px",
+              borderRadius: "10px",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: "13px"
+            }}
+          >
+            <ArrowRight size={16} style={{ transform: isEN ? "rotate(180deg)" : "none" }} />
+            <span>رجوع</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            background: themeStyles.card || "#1e1e1e",
-            border: `1px solid ${themeStyles.border || "#333333"}`,
-            color: themeStyles.subText || "#aaaaaa",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}
-        >
-          <X size={18} />
-        </button>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              width: "38px",
+              height: "38px",
+              borderRadius: "50%",
+              background: themeStyles.card || "#18181c",
+              border: `1px solid ${themeStyles.border || "#333333"}`,
+              color: themeStyles.subText || "#aaaaaa",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
-      {/* زر فتح السجل الشامل */}
-      <div style={{ marginBottom: "16px", maxWidth: "600px", margin: "0 auto 16px auto" }}>
-        <button
-          type="button"
-          onClick={() => setShowExpensesModal(true)}
-          style={{
-            width: "100%",
-            background: `linear-gradient(145deg, ${themeStyles.accentGold || "#d4af37"}, ${themeStyles.accent || "#c5a028"})`,
-            color: "#111111",
-            border: "none",
-            borderRadius: "12px",
-            padding: "14px",
-            fontWeight: 800,
-            fontSize: "15px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px"
-          }}
-        >
-          <FileText size={18} /> [ 🧾 فتح سجل المصروفات الشامل ]
-        </button>
+      {/* 2. شريط فتح السجل المالي الشامل المميز */}
+      <div
+        onClick={() => setShowExpensesModal(true)}
+        style={{
+          background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 50%, #7a4a1f 100%)",
+          borderRadius: "14px",
+          padding: "14px 20px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+          boxShadow: "0 8px 24px rgba(176, 106, 53, 0.25)",
+          cursor: "pointer"
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{ width: "44px", height: "44px", background: "rgba(0,0,0,0.25)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px" }}>
+            📊
+          </div>
+          <div>
+            <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#ffffff", margin: 0 }}>
+              سجل المصروفات المالي الشامل (الأرشيف العام)
+            </h3>
+            <p style={{ fontSize: "11.5px", color: "rgba(255,255,255,0.85)", margin: "3px 0 0 0" }}>
+              عرض تفصيلي لجميع السجلات والفلترة المتقدمة حسب التاريخ والبنود وطباعة الكشوفات
+            </p>
+          </div>
+        </div>
+        <div style={{ background: "#111113", color: themeStyles.accentGold || "#e8cd9c", padding: "8px 18px", borderRadius: "9px", fontWeight: 800, fontSize: "12.5px", border: "1px solid rgba(255,255,255,0.15)", whiteSpace: "nowrap" }}>
+          [ 🧾 فتح السجل المالي الشامل ]
+        </div>
       </div>
 
-      {/* نموذج تسجيل المصروف */}
-      <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "16px", padding: "20px", marginBottom: "20px", maxWidth: "600px", margin: "0 auto" }}>
-        <form onSubmit={handleAddExpense} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* 3. كروت المؤشرات المالية الثلاثية (KPIs) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "24px" }}>
+        {/* كارت 1: مصروفات اليوم */}
+        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "16px", padding: "16px 20px", display: "flex", alignItems: "center", gap: "16px", position: "relative", overflow: "hidden", boxShadow: "0 6px 18px rgba(0,0,0,0.35)" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, width: "4px", height: "100%", background: "#38bdf8" }} />
+          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "rgba(56, 189, 248, 0.12)", color: "#38bdf8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", flexShrink: 0 }}>
+            ☀️
+          </div>
           <div>
-            <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>التاريخ *</label>
-            <CustomDatePicker value={date} onChange={setDate} themeStyles={themeStyles} />
+            <div style={{ fontSize: "12px", fontWeight: 700, color: "#9a9aa4", marginBottom: "4px" }}>مصروفات اليوم</div>
+            <div style={{ fontSize: "20px", fontWeight: 900, color: "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+              {todaySum.toLocaleString()} <span style={{ fontSize: "12px", color: "#38bdf8" }}>ج.م</span>
+            </div>
+            <div style={{ fontSize: "10.5px", color: "#777782", marginTop: "2px" }}>
+              {todayExpenses.length} حركات مسجلة خلال وردية اليوم
+            </div>
+          </div>
+        </div>
+
+        {/* كارت 2: مصروفات الشهر */}
+        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "16px", padding: "16px 20px", display: "flex", alignItems: "center", gap: "16px", position: "relative", overflow: "hidden", boxShadow: "0 6px 18px rgba(0,0,0,0.35)" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, width: "4px", height: "100%", background: "#f87171" }} />
+          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "rgba(248, 113, 113, 0.12)", color: "#f87171", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", flexShrink: 0 }}>
+            📅
+          </div>
+          <div>
+            <div style={{ fontSize: "12px", fontWeight: 700, color: "#9a9aa4", marginBottom: "4px" }}>إجمالي مصروفات الشهر الحالي</div>
+            <div style={{ fontSize: "20px", fontWeight: 900, color: "#ffffff", fontVariantNumeric: "tabular-nums" }}>
+              {monthSum.toLocaleString()} <span style={{ fontSize: "12px", color: "#f87171" }}>ج.م</span>
+            </div>
+            <div style={{ fontSize: "10.5px", color: "#777782", marginTop: "2px" }}>
+              {monthExpenses.length} حركات مسجلة خلال الشهر
+            </div>
+          </div>
+        </div>
+
+        {/* كارت 3: البند الأكثر استهلاكاً */}
+        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "16px", padding: "16px 20px", display: "flex", alignItems: "center", gap: "16px", position: "relative", overflow: "hidden", boxShadow: "0 6px 18px rgba(0,0,0,0.35)" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, width: "4px", height: "100%", background: "#d69a5f" }} />
+          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "rgba(214, 154, 95, 0.12)", color: "#d69a5f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", flexShrink: 0 }}>
+            🏆
+          </div>
+          <div>
+            <div style={{ fontSize: "12px", fontWeight: 700, color: "#9a9aa4", marginBottom: "4px" }}>البند الأكثر استهلاكاً</div>
+            <div style={{ fontSize: "17px", fontWeight: 900, color: themeStyles.accentGold || "#e8cd9c" }}>
+              {topCategory.name}
+            </div>
+            <div style={{ fontSize: "10.5px", color: "#777782", marginTop: "2px" }}>
+              يشكل {topCategory.percentage}% من إجمالي ميزانية المصروفات
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. التقسيم الثنائي الرئيسي للوحة التحكم */}
+      <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: "20px" }}>
+        
+        {/* أ) الجانب الأيمن: نموذج تسجيل المصروف */}
+        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "18px", padding: "22px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "15px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", paddingBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}` }}>
+            <span>✍️</span>
+            <span>تسجيل حركة مصروف جديدة بالسحابة</span>
           </div>
 
-          <div>
-            <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>البند *</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px" }}
-            >
-              <option value="إيجار المحل">إيجار المحل</option>
-              <option value="كهرباء ومياه وغاز">كهرباء ومياه وغاز</option>
-              <option value="رواتب ونثريات">رواتب ونثريات</option>
-              <option value="صيانة وإصلاحات">صيانة وإصلاحات</option>
-              <option value="مصروفات أخرى">مصروفات أخرى</option>
-            </select>
-          </div>
+          <form onSubmit={handleAddExpense} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "12.5px", color: "#b0b0b8", marginBottom: "6px", fontWeight: 700 }}>تاريخ المصروف *</label>
+              <CustomDatePicker value={date} onChange={setDate} themeStyles={themeStyles} />
+            </div>
 
-          <div>
-            <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>المبلغ (ج.م) *</label>
-            <input
-              type="number"
-              step="1"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0"
-              required
-              style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px", fontWeight: 800 }}
-            />
-          </div>
+            <div>
+              <label style={{ display: "block", fontSize: "12.5px", color: "#b0b0b8", marginBottom: "6px", fontWeight: 700 }}>بند المصروف الرئيسي *</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#2c2c34"}`, borderRadius: "11px", padding: "11px 14px", color: "#ffffff", outline: "none", fontSize: "13.5px", fontWeight: 600, cursor: "pointer", boxSizing: "border-box" }}
+              >
+                <option value="إيجار المحل">إيجار المحل</option>
+                <option value="كهرباء ومياه وغاز">كهرباء ومياه وغاز</option>
+                <option value="رواتب ونثريات">رواتب ونثريات</option>
+                <option value="صيانة وإصلاحات">صيانة وإصلاحات</option>
+                <option value="بوفيه وضيافة">بوفيه وضيافة</option>
+                <option value="مصروفات نقل وبضاعة">مصروفات نقل وبضاعة</option>
+                <option value="مصروفات أخرى">مصروفات أخرى</option>
+              </select>
+            </div>
 
-          <div>
-            <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>ملاحظات</label>
-            <input
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="تفاصيل المصروف..."
-              style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px" }}
-            />
-          </div>
+            <div>
+              <label style={{ display: "block", fontSize: "12.5px", color: "#b0b0b8", marginBottom: "6px", fontWeight: 700 }}>المبلغ المطلوب تسجيله (ج.م) *</label>
+              <input
+                type="number"
+                step="1"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                required
+                style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#2c2c34"}`, borderRadius: "11px", padding: "11px 14px", color: "#ffffff", outline: "none", fontSize: "16px", fontWeight: 800, boxSizing: "border-box" }}
+              />
+              
+              {/* أزرار الإضافة السريعة */}
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px", alignItems: "center" }}>
+                <span style={{ fontSize: "10.5px", color: "#888888", marginLeft: "4px" }}>إضافة سريعة:</span>
+                {[50, 100, 200, 500, 1000].map((val) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => addQuickAmount(val)}
+                    style={{ background: "#131317", border: `1px solid ${themeStyles.border || "#2e2e38"}`, color: themeStyles.accentGold || "#d69a5f", padding: "4px 9px", borderRadius: "8px", fontSize: "11px", fontWeight: 800, cursor: "pointer" }}
+                  >
+                    +{val}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <div style={{ marginTop: "6px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "12.5px", color: "#b0b0b8", marginBottom: "6px", fontWeight: 700 }}>ملاحظات وبيان المصروف</label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="اكتب تفاصيل الفاتورة أو المستلم..."
+                style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#2c2c34"}`, borderRadius: "11px", padding: "11px 14px", color: "#ffffff", outline: "none", fontSize: "13.5px", boxSizing: "border-box" }}
+              />
+            </div>
+
             <button
               type="submit"
               disabled={submitting}
               style={{
                 width: "100%",
-                background: "linear-gradient(135deg, #d69a5f, #7a4a1f)",
+                background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 100%)",
                 color: "#ffffff",
                 border: "none",
-                borderRadius: "10px",
-                padding: "12px",
-                fontSize: "15px",
+                borderRadius: "12px",
+                padding: "14px",
+                fontSize: "14.5px",
                 fontWeight: 800,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "8px"
+                gap: "8px",
+                marginTop: "6px",
+                boxShadow: "0 6px 20px rgba(176, 106, 53, 0.3)"
               }}
             >
               <Plus size={18} />
-              <span>{submitting ? "جاري الحفظ..." : "تسجيل المصروف بالسحابة"}</span>
+              <span>{submitting ? "جاري الحفظ بالسحابة..." : "حفظ المصروف بالسحابة وتحديث الخزينة"}</span>
             </button>
+          </form>
+        </div>
+
+        {/* ب) الجانب الأيسر: التحليل النسبي + آخر الحركات */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          
+          {/* كارت التحليل النسبي */}
+          <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "18px", padding: "20px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "15px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", paddingBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}` }}>
+              <span>📈</span>
+              <span>التحليل النسبي وتوزيع المصروفات حسب البند</span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "14px" }}>
+              {categoryBreakdown.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#888894", fontSize: "13px", padding: "20px 0" }}>لا توجد بيانات مسجلة بعد</div>
+              ) : (
+                categoryBreakdown.slice(0, 4).map((cat, idx) => (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 700 }}>
+                      <span style={{ color: "#ffffff" }}>{cat.name}</span>
+                      <span style={{ color: cat.color }}>{cat.amount.toLocaleString()} ج.م ({cat.percentage}%)</span>
+                    </div>
+                    <div style={{ width: "100%", height: "8px", background: "#121215", borderRadius: "6px", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${cat.percentage}%`, background: cat.color, borderRadius: "6px" }} />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </form>
+
+          {/* كارت آخر الحركات المسجلة */}
+          <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "18px", padding: "20px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "15px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>
+                <span>🕒</span>
+                <span>آخر الحركات المسجلة</span>
+              </div>
+              <span style={{ fontSize: "11px", color: "#888894", fontWeight: 600 }}>تحديث لحظي</span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "14px" }}>
+              {recentExpenses.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#888894", fontSize: "13px", padding: "20px 0" }}>لا توجد مصروفات مسجلة بعد</div>
+              ) : (
+                recentExpenses.map((exp) => (
+                  <div key={exp.id} style={{ background: "#131317", border: `1px solid ${themeStyles.border || "#23232a"}`, borderRadius: "12px", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(214, 154, 95, 0.12)", color: themeStyles.accentGold || "#d69a5f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>
+                        💸
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "13px", fontWeight: 800, color: "#ffffff" }}>{exp.category}</div>
+                        <div style={{ fontSize: "11px", color: "#888894" }}>{exp.date} {exp.notes ? `• ${exp.notes}` : ""}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ fontSize: "14.5px", fontWeight: 800, color: "#f87171" }}>- {Number(exp.amount).toLocaleString()} ج.م</div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteExpense(exp.id)}
+                        style={{ background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.25)", color: "#fca5a5", padding: "4px 8px", borderRadius: "7px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+        </div>
+
       </div>
 
-      {/* 🧾 نافذة سجل المصروفات الشامل (Modal) */}
+      {/* 5. 🧾 نافذة سجل المصروفات المالي الشامل (Modal كامل الشاشة) */}
       {showExpensesModal && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", boxSizing: "border-box" }} dir={isEN ? "ltr" : "rtl"}>
-          <div style={{ width: "95vw", maxWidth: "1350px", height: "90vh", minHeight: "650px", background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "18px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.85)" }}>
+          <div style={{ width: "95vw", maxWidth: "1350px", height: "90vh", minHeight: "650px", background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "18px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.85)" }}>
             
             {/* هيدر النافذة المنبثقة */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${themeStyles.border || "#333"}`, background: themeStyles.inputBg || "#141414" }}>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", display: "flex", alignItems: "center", gap: "8px" }}>
-                <FileText size={18} /> سجل المصروفات الشامل (الإجمالي: {totalFilteredSum.toLocaleString()} ج.م)
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: `1px solid ${themeStyles.border || "#282830"}`, background: themeStyles.inputBg || "#121215" }}>
+              <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", display: "flex", alignItems: "center", gap: "8px" }}>
+                <FileText size={19} /> سجل المصروفات المالي الشامل (الإجمالي: {totalFilteredSum.toLocaleString()} ج.م)
               </h3>
-              <button type="button" onClick={() => setShowExpensesModal(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", background: themeStyles.card || "#222", border: `1px solid ${themeStyles.border || "#333"}`, color: "#aaa", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <X size={16} />
+              <button type="button" onClick={() => setShowExpensesModal(false)} style={{ width: "34px", height: "34px", borderRadius: "50%", background: themeStyles.card || "#222", border: `1px solid ${themeStyles.border || "#333"}`, color: "#aaa", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <X size={17} />
               </button>
             </div>
 
-            <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px", background: themeStyles.inputBg || "#141414", padding: "12px", borderRadius: "10px", border: `1px solid ${themeStyles.border || "#333"}` }}>
-                <span style={{ color: themeStyles.subText || "#aaa", fontSize: "13px", fontWeight: 700 }}>تصفية التاريخ:</span>
+            <div style={{ padding: "24px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column" }}>
+              {/* شريط الفلترة */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", background: themeStyles.inputBg || "#141414", padding: "12px 18px", borderRadius: "12px", border: `1px solid ${themeStyles.border || "#333"}`, flexWrap: "wrap", gap: "12px" }}>
+                <span style={{ color: themeStyles.accentGold || "#d4af37", fontSize: "13.5px", fontWeight: 800 }}>تصفية الفترة:</span>
 
-          <div style={{ display: "flex", gap: "10px", alignItems: "center", flex: 1, maxWidth: "380px" }}>
-            <div style={{ flex: 1 }}>
-              <CustomDatePicker value={fromDate} onChange={setFromDate} themeStyles={themeStyles} placeholder="من تاريخ" />
-            </div>
-            <span style={{ color: themeStyles.subText || "#aaaaaa", fontSize: "12px", fontWeight: 700 }}>إلى</span>
-            <div style={{ flex: 1 }}>
-              <CustomDatePicker value={toDate} onChange={setToDate} themeStyles={themeStyles} placeholder="إلى تاريخ" />
-            </div>
-          </div>
-        </div>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ width: "160px" }}>
+                    <CustomDatePicker value={fromDate} onChange={setFromDate} themeStyles={themeStyles} placeholder="من تاريخ" />
+                  </div>
+                  <span style={{ color: themeStyles.subText || "#aaaaaa", fontSize: "12px", fontWeight: 700 }}>إلى</span>
+                  <div style={{ width: "160px" }}>
+                    <CustomDatePicker value={toDate} onChange={setToDate} themeStyles={themeStyles} placeholder="إلى تاريخ" />
+                  </div>
+                </div>
+              </div>
 
-        {loading ? (
-          <div style={{ textAlign: "center", padding: "30px", color: themeStyles.accentGold || "#e8cd9c" }}>
-            <Loader2 size={24} className="animate-spin" /> جاري التحميل...
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text || "#ffffff", textAlign: "right", fontSize: "13.5px" }}>
-              <thead>
-                <tr style={{ background: themeStyles.inputBg || "#141414", color: themeStyles.accentGold || "#e8cd9c", borderBottom: `1px solid ${themeStyles.border || "#333333"}` }}>
-                  <th style={{ padding: "10px" }}>التاريخ</th>
-                  <th style={{ padding: "10px" }}>البند</th>
-                  <th style={{ padding: "10px" }}>المبلغ</th>
-                  <th style={{ padding: "10px" }}>ملاحظات</th>
-                  <th style={{ padding: "10px", textAlign: "center" }}>إجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredExpenses.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ padding: "20px", textAlign: "center", color: themeStyles.subText || "#aaaaaa" }}>
-                      لا توجد مصروفات مسجلة في هذه الفترة.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredExpenses.map((exp) => (
-                    <tr key={exp.id} style={{ borderBottom: `1px solid ${themeStyles.border || "#262626"}` }}>
-                      <td style={{ padding: "10px" }}>{exp.date}</td>
-                      <td style={{ padding: "10px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>{exp.category}</td>
-                      <td style={{ padding: "10px", fontWeight: 800, color: "#f87171" }}>{Number(exp.amount).toLocaleString()} ج.م</td>
-                      <td style={{ padding: "10px", color: themeStyles.subText || "#aaaaaa" }}>{exp.notes || "—"}</td>
-                      <td style={{ padding: "10px", textAlign: "center" }}>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteExpense(exp.id)}
-                          style={{ background: "#3e1c24", border: "1px solid #ef444455", color: "#f87171", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", cursor: "pointer", fontWeight: 700 }}
-                        >
-                          <Trash2 size={12} /> حذف
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+              {loading ? (
+                <div style={{ textAlign: "center", padding: "40px", color: themeStyles.accentGold || "#e8cd9c" }}>
+                  <Loader2 size={24} className="animate-spin" /> جاري التحميل...
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text || "#ffffff", textAlign: "right", fontSize: "13.5px" }}>
+                    <thead>
+                      <tr style={{ background: themeStyles.inputBg || "#121215", color: themeStyles.accentGold || "#e8cd9c", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+                        <th style={{ padding: "12px" }}>التاريخ</th>
+                        <th style={{ padding: "12px" }}>البند الرئيسي</th>
+                        <th style={{ padding: "12px" }}>المبلغ</th>
+                        <th style={{ padding: "12px" }}>البيان والملاحظات</th>
+                        <th style={{ padding: "12px", textAlign: "center" }}>إجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredExpenses.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} style={{ padding: "30px", textAlign: "center", color: themeStyles.subText || "#aaaaaa" }}>
+                            لا توجد مصروفات مسجلة في هذه الفترة.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredExpenses.map((exp) => (
+                          <tr key={exp.id} style={{ borderBottom: `1px solid ${themeStyles.border || "#202026"}` }}>
+                            <td style={{ padding: "12px" }}>{exp.date}</td>
+                            <td style={{ padding: "12px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>{exp.category}</td>
+                            <td style={{ padding: "12px", fontWeight: 800, color: "#f87171" }}>{Number(exp.amount).toLocaleString()} ج.م</td>
+                            <td style={{ padding: "12px", color: themeStyles.subText || "#aaaaaa" }}>{exp.notes || "—"}</td>
+                            <td style={{ padding: "12px", textAlign: "center" }}>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteExpense(exp.id)}
+                                style={{ background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.25)", color: "#fca5a5", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", cursor: "pointer", fontWeight: 700 }}
+                              >
+                                <Trash2 size={12} /> حذف
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
