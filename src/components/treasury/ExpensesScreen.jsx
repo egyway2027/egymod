@@ -266,25 +266,16 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
             </div>
 
             <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px", background: themeStyles.inputBg || "#141414", padding: "12px", borderRadius: "10px", border: `1px solid ${themeStyles.border || "#333"}` }}>
-                <span style={{ color: themeStyles.subText || "#aaa", fontSize: "13px", fontWeight: 700 }}>تصفية التاريخ:</span>
-
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              style={{ background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.text || "#ffffff", padding: "6px 10px", borderRadius: "8px", fontSize: "12px" }}
-            />
-            <span style={{ color: themeStyles.subText || "#aaaaaa", fontSize: "12px" }}>إلى</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              style={{ background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.text || "#ffffff", padding: "6px 10px", borderRadius: "8px", fontSize: "12px" }}
-            />
-          </div>
-        </div>
+              <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto 1fr", alignItems: "center", marginBottom: "16px", gap: "10px", background: themeStyles.inputBg || "#141414", padding: "12px 16px", borderRadius: "12px", border: `1px solid ${themeStyles.border || "#333"}` }}>
+                <span style={{ color: themeStyles.accentGold || "#d4af37", fontSize: "13px", fontWeight: 800, whiteSpace: "nowrap" }}>تصفية التاريخ:</span>
+                <div style={{ minWidth: 0 }}>
+                  <CustomDatePicker value={fromDate} onChange={setFromDate} themeStyles={themeStyles} placeholder="من تاريخ" />
+                </div>
+                <span style={{ color: themeStyles.subText || "#aaaaaa", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>إلى</span>
+                <div style={{ minWidth: 0 }}>
+                  <CustomDatePicker value={toDate} onChange={setToDate} themeStyles={themeStyles} placeholder="إلى تاريخ" />
+                </div>
+              </div>
 
         {loading ? (
           <div style={{ textAlign: "center", padding: "30px", color: themeStyles.accentGold || "#e8cd9c" }}>
