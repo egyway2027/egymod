@@ -246,8 +246,8 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
 
       {/* 🧾 نافذة سجل المصروفات الشامل (Modal) */}
       {showExpensesModal && (
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "15px", boxSizing: "border-box" }} dir={isEN ? "ltr" : "rtl"}>
-          <div style={{ width: "100%", maxWidth: "1100px", maxHeight: "90vh", background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "16px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", boxSizing: "border-box" }} dir={isEN ? "ltr" : "rtl"}>
+          <div style={{ width: "95vw", maxWidth: "1350px", height: "90vh", minHeight: "650px", background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "18px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.85)" }}>
             
             {/* هيدر النافذة المنبثقة */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${themeStyles.border || "#333"}`, background: themeStyles.inputBg || "#141414" }}>
