@@ -1248,6 +1248,20 @@ function DesktopSidebarShell({
                 </div>
               </div>
 
+              <div
+                onClick={() => { onOpenRecords(); setActiveDropdown(null); }}
+                style={{ ...dropdownItemStyle, borderTop: `1px solid ${themeStyles.border || "#25252c"}`, marginTop: 4, color: themeStyles.accentGold || "#d69a5f" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.18)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <FolderKanban size={15} />
+                <div style={{ flex: 1, fontWeight: 800 }}>عرض جميع السجلات في نافذة موحدة</div>
+                <ArrowRight size={13} />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* 2. قائمة سلة المهملات */}
         <div className="topbar-dropdown-container" style={{ position: "relative" }}>
           <button
