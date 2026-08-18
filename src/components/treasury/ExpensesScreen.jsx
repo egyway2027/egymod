@@ -155,12 +155,12 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
   };
 
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: "8px 20px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: "4px 20px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
       {/* 1. الشريط العلوي الرئيسي */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px", paddingBottom: "6px", borderBottom: `1px solid ${themeStyles.border || "#232328"}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "24px" }}>💸</span>
-          <h2 style={{ color: themeStyles.accentGold || "#e8cd9c", margin: 0, fontSize: "22px", fontWeight: 800 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px", paddingBottom: "4px", borderBottom: `1px solid ${themeStyles.border || "#232328"}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ fontSize: "15px" }}>💸</span>
+          <h2 style={{ color: themeStyles.accentGold || "#e8cd9c", margin: 0, fontSize: "14px", fontWeight: 800 }}>
             لوحة إدارة المصروفات العامة والتحليل المالي
           </h2>
         </div>
