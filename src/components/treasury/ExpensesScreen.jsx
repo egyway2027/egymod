@@ -155,9 +155,9 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
   };
 
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: "4px 16px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: "8px 20px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
       {/* 1. الشريط العلوي الرئيسي */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", paddingBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#232328"}` }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px", paddingBottom: "6px", borderBottom: `1px solid ${themeStyles.border || "#232328"}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "24px" }}>💸</span>
           <h2 style={{ color: themeStyles.accentGold || "#e8cd9c", margin: 0, fontSize: "22px", fontWeight: 800 }}>
@@ -213,12 +213,12 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
         onClick={() => setShowExpensesModal(true)}
         style={{
           background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 50%, #7a4a1f 100%)",
-          borderRadius: "14px",
-          padding: "14px 20px",
+          borderRadius: "12px",
+          padding: "9px 18px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "20px",
+          marginBottom: "10px",
           boxShadow: "0 8px 24px rgba(176, 106, 53, 0.25)",
           cursor: "pointer"
         }}
@@ -242,11 +242,11 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
       </div>
 
       {/* 3. كروت المؤشرات المالية الثلاثية (KPIs) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "10px" }}>
         {/* كارت 1: مصروفات اليوم */}
-        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "16px", padding: "16px 20px", display: "flex", alignItems: "center", gap: "16px", position: "relative", overflow: "hidden", boxShadow: "0 6px 18px rgba(0,0,0,0.35)" }}>
+        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "12px", position: "relative", overflow: "hidden", boxShadow: "0 6px 18px rgba(0,0,0,0.35)" }}>
           <div style={{ position: "absolute", top: 0, right: 0, width: "4px", height: "100%", background: "#38bdf8" }} />
-          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "rgba(56, 189, 248, 0.12)", color: "#38bdf8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", flexShrink: 0 }}>
+          <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(56, 189, 248, 0.12)", color: "#38bdf8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>
             ☀️
           </div>
           <div>
@@ -261,9 +261,9 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
         </div>
 
         {/* كارت 2: مصروفات الشهر */}
-        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "16px", padding: "16px 20px", display: "flex", alignItems: "center", gap: "16px", position: "relative", overflow: "hidden", boxShadow: "0 6px 18px rgba(0,0,0,0.35)" }}>
+        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "12px", position: "relative", overflow: "hidden", boxShadow: "0 6px 18px rgba(0,0,0,0.35)" }}>
           <div style={{ position: "absolute", top: 0, right: 0, width: "4px", height: "100%", background: "#f87171" }} />
-          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "rgba(248, 113, 113, 0.12)", color: "#f87171", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", flexShrink: 0 }}>
+          <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(248, 113, 113, 0.12)", color: "#f87171", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>
             📅
           </div>
           <div>
@@ -278,9 +278,9 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
         </div>
 
         {/* كارت 3: البند الأكثر استهلاكاً */}
-        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "16px", padding: "16px 20px", display: "flex", alignItems: "center", gap: "16px", position: "relative", overflow: "hidden", boxShadow: "0 6px 18px rgba(0,0,0,0.35)" }}>
+        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "12px", position: "relative", overflow: "hidden", boxShadow: "0 6px 18px rgba(0,0,0,0.35)" }}>
           <div style={{ position: "absolute", top: 0, right: 0, width: "4px", height: "100%", background: "#d69a5f" }} />
-          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "rgba(214, 154, 95, 0.12)", color: "#d69a5f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", flexShrink: 0 }}>
+          <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(214, 154, 95, 0.12)", color: "#d69a5f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>
             🏆
           </div>
           <div>
@@ -296,16 +296,16 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
       </div>
 
       {/* 4. التقسيم الثنائي الرئيسي للوحة التحكم */}
-      <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: "12px" }}>
         
         {/* أ) الجانب الأيمن: نموذج تسجيل المصروف */}
-        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "18px", padding: "22px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "15px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", paddingBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}` }}>
+        <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "14px", padding: "14px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", paddingBottom: "8px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}` }}>
             <span>✍️</span>
             <span>تسجيل حركة مصروف جديدة بالسحابة</span>
           </div>
 
-          <form onSubmit={handleAddExpense} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <form onSubmit={handleAddExpense} style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
             <div>
               <label style={{ display: "block", fontSize: "12.5px", color: "#b0b0b8", marginBottom: "6px", fontWeight: 700 }}>تاريخ المصروف *</label>
               <CustomDatePicker value={date} onChange={setDate} themeStyles={themeStyles} />
@@ -395,16 +395,16 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
         </div>
 
         {/* ب) الجانب الأيسر: التحليل النسبي + آخر الحركات */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           
           {/* كارت التحليل النسبي */}
-          <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "18px", padding: "20px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "15px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", paddingBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}` }}>
+          <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "14px", padding: "12px 14px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", paddingBottom: "8px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}` }}>
               <span>📈</span>
               <span>التحليل النسبي وتوزيع المصروفات حسب البند</span>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "14px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
               {categoryBreakdown.length === 0 ? (
                 <div style={{ textAlign: "center", color: "#888894", fontSize: "13px", padding: "20px 0" }}>لا توجد بيانات مسجلة بعد</div>
               ) : (
@@ -424,21 +424,21 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
           </div>
 
           {/* كارت آخر الحركات المسجلة */}
-          <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "18px", padding: "20px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}` }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "15px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>
+          <div style={{ background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "14px", padding: "12px 14px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", flex: 1, overflowY: "auto" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "8px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>
                 <span>🕒</span>
                 <span>آخر الحركات المسجلة</span>
               </div>
               <span style={{ fontSize: "11px", color: "#888894", fontWeight: 600 }}>تحديث لحظي</span>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "14px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px" }}>
               {recentExpenses.length === 0 ? (
                 <div style={{ textAlign: "center", color: "#888894", fontSize: "13px", padding: "20px 0" }}>لا توجد مصروفات مسجلة بعد</div>
               ) : (
                 recentExpenses.map((exp) => (
-                  <div key={exp.id} style={{ background: "#131317", border: `1px solid ${themeStyles.border || "#23232a"}`, borderRadius: "12px", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div key={exp.id} style={{ background: "#131317", border: `1px solid ${themeStyles.border || "#23232a"}`, borderRadius: "10px", padding: "7px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(214, 154, 95, 0.12)", color: themeStyles.accentGold || "#d69a5f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>
                         💸
