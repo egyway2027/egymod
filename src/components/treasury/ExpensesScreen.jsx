@@ -175,13 +175,7 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
         <form onSubmit={handleAddExpense} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
             <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>التاريخ *</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              style={{ width: "100%", background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: "14px" }}
-            />
+            <CustomDatePicker value={date} onChange={setDate} themeStyles={themeStyles} />
           </div>
 
           <div>
@@ -269,20 +263,14 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
               <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px", background: themeStyles.inputBg || "#141414", padding: "12px", borderRadius: "10px", border: `1px solid ${themeStyles.border || "#333"}` }}>
                 <span style={{ color: themeStyles.subText || "#aaa", fontSize: "13px", fontWeight: 700 }}>تصفية التاريخ:</span>
 
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              style={{ background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.text || "#ffffff", padding: "6px 10px", borderRadius: "8px", fontSize: "12px" }}
-            />
-            <span style={{ color: themeStyles.subText || "#aaaaaa", fontSize: "12px" }}>إلى</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              style={{ background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.text || "#ffffff", padding: "6px 10px", borderRadius: "8px", fontSize: "12px" }}
-            />
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flex: 1, maxWidth: "380px" }}>
+            <div style={{ flex: 1 }}>
+              <CustomDatePicker value={fromDate} onChange={setFromDate} themeStyles={themeStyles} placeholder="من تاريخ" />
+            </div>
+            <span style={{ color: themeStyles.subText || "#aaaaaa", fontSize: "12px", fontWeight: 700 }}>إلى</span>
+            <div style={{ flex: 1 }}>
+              <CustomDatePicker value={toDate} onChange={setToDate} themeStyles={themeStyles} placeholder="إلى تاريخ" />
+            </div>
           </div>
         </div>
 
@@ -333,6 +321,291 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
           </div>
         )}
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 📅 مكون اختيار التاريخ المخصص (مطابق لشاشة إضافة عميل)
+function CustomDatePicker({ value, onChange, themeStyles = {}, placeholder = "سنة - شهر - يوم" }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = React.useRef(null);
+
+  const initDate = value ? new Date(value) : new Date();
+  const validInit = isNaN(initDate.getTime()) ? new Date() : initDate;
+  const [viewYear, setViewYear] = useState(validInit.getFullYear());
+  const [viewMonth, setViewMonth] = useState(validInit.getMonth());
+
+  useEffect(() => {
+    if (value) {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        setViewYear(d.getFullYear());
+        setViewMonth(d.getMonth());
+      }
+    }
+  }, [value]);
+
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener("mousedown", handleOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
+  const monthNames = [
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+  ];
+
+  const prevMonth = (e) => {
+    e.stopPropagation();
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  };
+
+  const nextMonth = (e) => {
+    e.stopPropagation();
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  };
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay();
+
+  const handleSelectDay = (day) => {
+    const mm = String(viewMonth + 1).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    onChange(`${viewYear}-${mm}-${dd}`);
+    setOpen(false);
+  };
+
+  const handleSetToday = (e) => {
+    e.stopPropagation();
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    onChange(`${yyyy}-${mm}-${dd}`);
+    setOpen(false);
+  };
+
+  const handleClear = (e) => {
+    e.stopPropagation();
+    onChange("");
+    setOpen(false);
+  };
+
+  const isSelected = (day) => {
+    if (!value) return false;
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return false;
+    return (
+      d.getFullYear() === viewYear &&
+      d.getMonth() === viewMonth &&
+      d.getDate() === day
+    );
+  };
+
+  const weekHeaders = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
+
+  return (
+    <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
+      <div
+        onClick={() => setOpen((prev) => !prev)}
+        style={{
+          width: "100%",
+          background: themeStyles.inputBg || "#141414",
+          border: `1px solid ${open ? (themeStyles.accentGold || "#d4af37") : (themeStyles.border || "#333333")}`,
+          borderRadius: "10px",
+          padding: "10px 14px",
+          color: value ? (themeStyles.text || "#ffffff") : (themeStyles.subText || "#888888"),
+          fontSize: "13.5px",
+          fontWeight: value ? 700 : 500,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxSizing: "border-box",
+          userSelect: "none"
+        }}
+      >
+        <span>{value || placeholder}</span>
+        <Calendar size={16} color={themeStyles.subText || "#aaaaaa"} />
+      </div>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            right: 0,
+            zIndex: 10000,
+            width: "280px",
+            background: themeStyles.card || "#19191d",
+            border: `1px solid ${themeStyles.border || "#333333"}`,
+            borderRadius: "14px",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.7)",
+            padding: "14px",
+            boxSizing: "border-box",
+            fontFamily: "inherit"
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "12px",
+              padding: "0 4px"
+            }}
+          >
+            <button
+              type="button"
+              onClick={prevMonth}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: themeStyles.subText || "#aaaaaa",
+                fontSize: "16px",
+                cursor: "pointer",
+                padding: "4px 8px"
+              }}
+            >
+              ❯
+            </button>
+            <span style={{ fontSize: "14px", fontWeight: 800, color: themeStyles.text || "#ffffff" }}>
+              {monthNames[viewMonth]} {viewYear}
+            </span>
+            <button
+              type="button"
+              onClick={nextMonth}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: themeStyles.subText || "#aaaaaa",
+                fontSize: "16px",
+                cursor: "pointer",
+                padding: "4px 8px"
+              }}
+            >
+              ❮
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 1fr)",
+              textAlign: "center",
+              gap: "4px",
+              marginBottom: "8px",
+              fontSize: "11px",
+              fontWeight: 700,
+              color: themeStyles.subText || "#888888"
+            }}
+          >
+            {weekHeaders.map((w, i) => (
+              <span key={i}>{w}</span>
+            ))}
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 1fr)",
+              gap: "4px",
+              textAlign: "center"
+            }}
+          >
+            {Array.from({ length: firstDayIndex }).map((_, i) => (
+              <div key={`empty-${i}`} />
+            ))}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const sel = isSelected(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => handleSelectDay(day)}
+                  style={{
+                    background: sel ? (themeStyles.accentGold || "#d4af37") : "transparent",
+                    color: sel ? "#111111" : (themeStyles.text || "#ffffff"),
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "7px 0",
+                    fontSize: "12.5px",
+                    fontWeight: sel ? 800 : 600,
+                    cursor: "pointer"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!sel) e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!sel) e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginTop: "12px",
+              paddingTop: "10px",
+              borderTop: `1px solid ${themeStyles.border || "#2a2a30"}`
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleClear}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#f87171",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              مسح
+            </button>
+            <button
+              type="button"
+              onClick={handleSetToday}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: themeStyles.accentGold || "#d4af37",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              اليوم
+            </button>
           </div>
         </div>
       )}
