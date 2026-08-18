@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { ArrowRight, X, Trash2, Plus, Calendar, Loader2 } from "lucide-react";
+import { ArrowRight, X, Trash2, Plus, Calendar, Loader2, FileText } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 
 export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
@@ -8,6 +8,7 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showExpensesModal, setShowExpensesModal] = useState(false);
 
   // عناصر النموذج
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -144,9 +145,34 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
         </button>
       </div>
 
+      {/* زر فتح السجل الشامل */}
+      <div style={{ marginBottom: "16px", maxWidth: "600px", margin: "0 auto 16px auto" }}>
+        <button
+          type="button"
+          onClick={() => setShowExpensesModal(true)}
+          style={{
+            width: "100%",
+            background: `linear-gradient(145deg, ${themeStyles.accentGold || "#d4af37"}, ${themeStyles.accent || "#c5a028"})`,
+            color: "#111111",
+            border: "none",
+            borderRadius: "12px",
+            padding: "14px",
+            fontWeight: 800,
+            fontSize: "15px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px"
+          }}
+        >
+          <FileText size={18} /> [ 🧾 فتح سجل المصروفات الشامل ]
+        </button>
+      </div>
+
       {/* نموذج تسجيل المصروف */}
-      <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "16px", padding: "20px", marginBottom: "20px" }}>
-        <form onSubmit={handleAddExpense} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px" }}>
+      <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "16px", padding: "20px", marginBottom: "20px", maxWidth: "600px", margin: "0 auto" }}>
+        <form onSubmit={handleAddExpense} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
             <label style={{ display: "block", fontSize: "13px", color: themeStyles.subText || "#aaaaaa", marginBottom: "6px", fontWeight: 700 }}>التاريخ *</label>
             <input
@@ -197,7 +223,7 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
             />
           </div>
 
-          <div style={{ gridColumn: "1 / -1", marginTop: "6px" }}>
+          <div style={{ marginTop: "6px" }}>
             <button
               type="submit"
               disabled={submitting}
@@ -224,12 +250,24 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
         </form>
       </div>
 
-      {/* سجل المصروفات والفلترة */}
-      <div style={{ background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "16px", padding: "20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
-          <div style={{ fontSize: "16px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>
-            سجل المصروفات (الإجمالي: {totalFilteredSum.toLocaleString()} ج.م)
-          </div>
+      {/* 🧾 نافذة سجل المصروفات الشامل (Modal) */}
+      {showExpensesModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "15px", boxSizing: "border-box" }} dir={isEN ? "ltr" : "rtl"}>
+          <div style={{ width: "100%", maxWidth: "1100px", maxHeight: "90vh", background: themeStyles.card || "#1e1e1e", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "16px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            
+            {/* هيدر النافذة المنبثقة */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${themeStyles.border || "#333"}`, background: themeStyles.inputBg || "#141414" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", display: "flex", alignItems: "center", gap: "8px" }}>
+                <FileText size={18} /> سجل المصروفات الشامل (الإجمالي: {totalFilteredSum.toLocaleString()} ج.م)
+              </h3>
+              <button type="button" onClick={() => setShowExpensesModal(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", background: themeStyles.card || "#222", border: `1px solid ${themeStyles.border || "#333"}`, color: "#aaa", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px", background: themeStyles.inputBg || "#141414", padding: "12px", borderRadius: "10px", border: `1px solid ${themeStyles.border || "#333"}` }}>
+                <span style={{ color: themeStyles.subText || "#aaa", fontSize: "13px", fontWeight: 700 }}>تصفية التاريخ:</span>
 
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <input
@@ -294,7 +332,10 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
             </table>
           </div>
         )}
-      </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
