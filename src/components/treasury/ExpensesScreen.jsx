@@ -155,7 +155,7 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
   };
 
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: "12px 24px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: "4px 16px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
       {/* 1. الشريط العلوي الرئيسي */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", paddingBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#232328"}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
