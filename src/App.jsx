@@ -14,7 +14,7 @@ import { fetchAllClientsContracts } from "./services/clientFetchService";
 import { supabase } from "./supabaseClient";
 import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
-import { AllClientsRegisterScreen } from "./components/clientQuery/AllClientsRegisterScreen";
+import { AllClientsRegisterModal } from "./components/clientQuery/AllClientsRegisterModal";
 import { SettingsScreen } from "./components/SettingsScreen";
 import InstallmentsScreen from "./components/installments/InstallmentsScreen";
 import MonthlyDues from "./components/MonthlyDues";
@@ -278,6 +278,26 @@ export function App() {
   // (تبويب الأرشيف / سجل السداد الشامل) بمجرد ما تفتح
   const [recordDeepLink, setRecordDeepLink] = useState(null);
 
+  // 📋 نافذة "سجل بيانات العملاء الشامل" — تستخدم نفس بيانات clientsList الموجودة بالفعل
+  const [showAllClientsRegisterModal, setShowAllClientsRegisterModal] = useState(false);
+  const allClientsRegisterData = useMemo(() => {
+    return (clientsList || []).map((c) => ({
+      ...c,
+      id: c.id,
+      name: c.client_name || c.clientName || c.name || "عميل بدون اسم",
+      phone: c.client_phone || c.clientPhone || c.phone || "",
+      guarantor: c.guarantor_name || c.guarantorName || c.guarantor || "",
+      guarantor_phone: c.guarantor_phone || c.guarantorPhone || "",
+      item: c.item_name || c.itemName || c.item || "",
+      cost: c.cost_price ?? c.costPrice ?? c.cost ?? 0,
+      sale: c.sale_price ?? c.salePrice ?? c.sale ?? 0,
+      down: c.down_payment ?? c.downPayment ?? c.down ?? 0,
+      monthly: c.monthly_installment ?? c.monthlyInstallment ?? c.monthly ?? 0,
+      contractDate: c.contract_date || c.contractDate || c.created_at || "",
+      firstPayDate: c.first_installment_date || c.firstPayDate || c.firstInstallmentDate || ""
+    }));
+  }, [clientsList]);
+
   // 🧭 دالة موحّدة لتنفيذ إجراء أي زرار قائمة (سواء في شبكة Pro أو في القائمة الجانبية الجديدة)
   const handleMenuAction = (key) => {
     if (key === "whatsapp") {
@@ -292,6 +312,8 @@ export function App() {
     } else if (key === "payRecords") {
       setRecordDeepLink("payments");
       navigateTo("pay");
+    } else if (key === "allClientsRegister") {
+      setShowAllClientsRegisterModal(true);
     } else if (key === "exit") {
       // إجراء الخروج
     } else {
@@ -327,10 +349,6 @@ export function App() {
         deepLink={recordDeepLink}
         onDeepLinkHandled={() => setRecordDeepLink(null)}
       />
-    );
-  } else if (currentScreen === "allClientsRegister") {
-    screenElement = (
-      <AllClientsRegisterScreen contracts={clientsList} onBack={handleBack} t={t} themeStyles={themeStyles} />
     );
   } else if (currentScreen === "pay") {
     screenElement = (
@@ -686,12 +704,14 @@ export function App() {
         onClose={() => setShowCentralRecordsModal(false)}
         onSelectRecord={(recordId) => {
           if (recordId === "active_contracts") {
-            navigateTo("allClientsRegister");
+            setShowCentralRecordsModal(false);
+            setShowAllClientsRegisterModal(true);
           } else if (recordId === "archived_contracts") {
             setRecordDeepLink("archive");
             navigateTo("clientQuery");
           } else if (recordId === "all_clients_register") {
-            navigateTo("allClientsRegister");
+            setShowCentralRecordsModal(false);
+            setShowAllClientsRegisterModal(true);
           } else if (recordId === "payment_records") {
             setRecordDeepLink("payments");
             navigateTo("pay");
@@ -703,6 +723,15 @@ export function App() {
             navigateTo("treasuryDistribute");
           }
         }}
+        t={t}
+        themeStyles={themeStyles}
+      />
+
+      {/* 📋 نافذة سجل بيانات العملاء الشامل (نفس الملف الموجود بالفعل AllClientsRegisterModal.jsx) */}
+      <AllClientsRegisterModal
+        isOpen={showAllClientsRegisterModal}
+        onClose={() => setShowAllClientsRegisterModal(false)}
+        contracts={allClientsRegisterData}
         t={t}
         themeStyles={themeStyles}
       />
