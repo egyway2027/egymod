@@ -8,12 +8,13 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, Power, TrendingUp, Calculator, Globe, Palette, X, MessageSquare, FolderKanban, CheckCircle2
+  UserPlus, CreditCard, Search, CalendarClock, UserX, Trash2, Wallet, Users, UserCog, Settings, Power, TrendingUp, Calculator, Globe, Palette, X, MessageSquare, FolderKanban, CheckCircle2, Archive, LayoutDashboard, Menu, ArrowRight, ChevronDown, FileText, CheckCircle, Clock, DollarSign, AlertTriangle, Briefcase
 } from "lucide-react";
 import { fetchAllClientsContracts } from "./services/clientFetchService";
 import { supabase } from "./supabaseClient";
 import { AddClientScreen } from "./components/AddClientScreen";
 import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
+import { AllClientsRegisterScreen } from "./components/clientQuery/AllClientsRegisterScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import InstallmentsScreen from "./components/installments/InstallmentsScreen";
 import MonthlyDues from "./components/MonthlyDues";
@@ -113,7 +114,6 @@ export function App() {
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
   const [showCentralRecordsModal, setShowCentralRecordsModal] = useState(false);
   const [showCalcModal, setShowCalcModal] = useState(false);
-  const [showAllClientsModal, setShowAllClientsModal] = useState(false);
 
   // 🌟 نافذة التنبيه المخصصة بوسط الشاشة
   const [successModal, setSuccessModal] = useState({ open: false, title: "", msg: "" });
@@ -274,6 +274,10 @@ export function App() {
     }
   }, [desktopMode]);
 
+  // 🔗 "وصول مباشر" جاي من مركز السجلات: بيقول للشاشة اللي هتفتح تعرض إيه بالظبط
+  // (تبويب الأرشيف / سجل السداد الشامل) بمجرد ما تفتح
+  const [recordDeepLink, setRecordDeepLink] = useState(null);
+
   // 🧭 دالة موحّدة لتنفيذ إجراء أي زرار قائمة (سواء في شبكة Pro أو في القائمة الجانبية الجديدة)
   const handleMenuAction = (key) => {
     if (key === "whatsapp") {
@@ -282,6 +286,12 @@ export function App() {
       navigateTo("clientQuery");
     } else if (key === "lateClients") {
       navigateTo("overdue");
+    } else if (key === "clientQueryArchive") {
+      setRecordDeepLink("archive");
+      navigateTo("clientQuery");
+    } else if (key === "payRecords") {
+      setRecordDeepLink("payments");
+      navigateTo("pay");
     } else if (key === "exit") {
       // إجراء الخروج
     } else {
@@ -309,10 +319,29 @@ export function App() {
       />
     );
   } else if (currentScreen === "clientQuery") {
-    screenElement = <ClientQueryScreen onBack={handleBack} t={t} themeStyles={themeStyles} />;
+    screenElement = (
+      <ClientQueryScreen
+        onBack={handleBack}
+        t={t}
+        themeStyles={themeStyles}
+        deepLink={recordDeepLink}
+        onDeepLinkHandled={() => setRecordDeepLink(null)}
+      />
+    );
+  } else if (currentScreen === "allClientsRegister") {
+    screenElement = (
+      <AllClientsRegisterScreen contracts={clientsList} onBack={handleBack} t={t} themeStyles={themeStyles} />
+    );
   } else if (currentScreen === "pay") {
     screenElement = (
-      <InstallmentsScreen contracts={clientsList} onBack={handleBack} t={t} themeStyles={themeStyles} />
+      <InstallmentsScreen
+        contracts={clientsList}
+        onBack={handleBack}
+        t={t}
+        themeStyles={themeStyles}
+        deepLink={recordDeepLink}
+        onDeepLinkHandled={() => setRecordDeepLink(null)}
+      />
     );
   } else if (currentScreen === "monthlyDues") {
     screenElement = (
@@ -594,7 +623,6 @@ export function App() {
           onOpenLang={() => setShowLangModal(true)}
           onOpenSearch={() => setShowGlobalSearchModal(true)}
           onOpenCalc={() => setShowCalcModal(true)}
-          onOpenAllClientsRegister={() => setShowAllClientsModal(true)}
           onSwitchToPro={() => setDesktopMode("pro")}
         >
           {currentScreen === "dashboard" ? (
@@ -604,6 +632,7 @@ export function App() {
               totalPortfolio={totalPortfolio}
               t={t}
               themeStyles={themeStyles}
+              onNavigate={handleMenuAction}
             />
           ) : (
             screenElement
@@ -656,22 +685,24 @@ export function App() {
         isOpen={showCentralRecordsModal}
         onClose={() => setShowCentralRecordsModal(false)}
         onSelectRecord={(recordId) => {
-          setShowCentralRecordsModal(false);
-          if (recordId === "active_contracts" || recordId === "all_clients_register") {
-            setShowAllClientsModal(true);
+          if (recordId === "active_contracts") {
+            navigateTo("allClientsRegister");
           } else if (recordId === "archived_contracts") {
+            setRecordDeepLink("archive");
             navigateTo("clientQuery");
+          } else if (recordId === "all_clients_register") {
+            navigateTo("allClientsRegister");
+          } else if (recordId === "payment_records") {
+            setRecordDeepLink("payments");
+            navigateTo("pay");
+          } else if (recordId === "employees_register") {
+            navigateTo("treasuryEmployees");
+          } else if (recordId === "expenses_register") {
+            navigateTo("treasuryExpenses");
+          } else if (recordId === "profits_register") {
+            navigateTo("treasuryDistribute");
           }
         }}
-        t={t}
-        themeStyles={themeStyles}
-      />
-
-      {/* 📊 نافذة سجل العملاء الشامل المباشرة (شيت Excel) */}
-      <AllClientsRegisterModal
-        isOpen={showAllClientsModal}
-        onClose={() => setShowAllClientsModal(false)}
-        contracts={normalizedContracts}
         t={t}
         themeStyles={themeStyles}
       />
@@ -971,8 +1002,8 @@ function QuickCalculatorModal({ isOpen, onClose, themeStyles = {} }) {
 
 /**
  * =========================================================
- * 🖥️ قشرة الديسكتوب الجديدة (الوضع العادي): شريط علوي + قائمة جانبية قابلة للطي
- * تُستخدم فقط لما isMobile=false و desktopMode="normal". نسخة الموبايل غير مرتبطة بها إطلاقًا.
+ * 🖥️ قشرة الديسكتوب الجديدة (الوضع العادي):
+ * شريط علوي مع القوائم المنسدلة التفاعلية + قائمة جانبية بالتحويم
  * =========================================================
  */
 function DesktopSidebarShell({
@@ -989,14 +1020,23 @@ function DesktopSidebarShell({
   onOpenLang,
   onOpenSearch,
   onOpenCalc,
-  onOpenAllClientsRegister,
   onSwitchToPro,
   children
 }) {
   const [manualOpen, setManualOpen] = useState(false);
   const [hovering, setHovering] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
+  const [activeDropdown, setActiveDropdown] = useState(null);
   const expanded = manualOpen || hovering;
+
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (!e.target.closest(".topbar-dropdown-container")) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
 
   const isButtonActive = (b) => {
     if (b.key === "search") return currentScreen === "clientQuery";
@@ -1004,26 +1044,50 @@ function DesktopSidebarShell({
     return currentScreen === b.key;
   };
 
-  const topbarBtnStyle = {
-    display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none",
-    color: themeStyles.subText || "#9a9aa3", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700,
-    padding: "8px 12px", borderRadius: 9, cursor: "pointer", whiteSpace: "nowrap"
+  const topbarBtnStyle = (isOpen) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    background: isOpen ? (themeStyles.inputBg || "#22222a") : "transparent",
+    border: "none",
+    color: isOpen ? (themeStyles.accentGold || "#d69a5f") : (themeStyles.subText || "#9a9aa3"),
+    fontFamily: "inherit",
+    fontSize: 12.5,
+    fontWeight: 700,
+    padding: "8px 12px",
+    borderRadius: 9,
+    cursor: "pointer",
+    whiteSpace: "nowrap"
+  });
+
+  const dropdownMenuStyle = {
+    position: "absolute",
+    top: "calc(100% + 6px)",
+    right: 0,
+    minWidth: 260,
+    background: themeStyles.card || "#18181c",
+    border: `1px solid ${themeStyles.border || "#2a2a32"}`,
+    borderRadius: 14,
+    boxShadow: "0 14px 36px rgba(0,0,0,0.65)",
+    padding: "8px",
+    zIndex: 1000,
+    display: "flex",
+    flexDirection: "column",
+    gap: 2
   };
 
-  const dropdownWrap = (key, label, icon, onOpen) => (
-    <div style={{ position: "relative" }}>
-      <button
-        type="button"
-        onClick={() => {
-          setOpenDropdown((prev) => (prev === key ? null : key));
-          if (onOpen) onOpen();
-        }}
-        style={{ ...topbarBtnStyle, background: openDropdown === key ? (themeStyles.inputBg || "#22222a") : "transparent" }}
-      >
-        {icon} <span>{label}</span>
-      </button>
-    </div>
-  );
+  const dropdownItemStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "10px 12px",
+    borderRadius: 9,
+    fontSize: 12.5,
+    fontWeight: 700,
+    color: themeStyles.text || "#ffffff",
+    cursor: "pointer",
+    textAlign: "right"
+  };
 
   return (
     <div
@@ -1032,12 +1096,13 @@ function DesktopSidebarShell({
         display: "flex", flexDirection: "column", zIndex: 5, fontFamily: "inherit"
       }}
     >
-      {/* الشريط العلوي */}
+      {/* الشريط العلوي التفاعلي */}
       <div style={{
         height: 60, flex: "0 0 60px", background: themeStyles.card || "#131316",
         borderBottom: `1px solid ${themeStyles.border || "#232328"}`,
-        display: "flex", alignItems: "center", gap: 6, padding: "0 20px"
+        display: "flex", alignItems: "center", gap: 6, padding: "0 20px", position: "relative", zIndex: 80
       }}>
+        {/* اللوجو واسم النظام */}
         <div onClick={onGoDashboard} style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 16, cursor: "pointer" }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#d69a5f,#7a4a1f)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
             <Calculator size={18} color="#fff" />
@@ -1045,15 +1110,283 @@ function DesktopSidebarShell({
           <b style={{ fontSize: 14, fontWeight: 800, color: themeStyles.text || "#fff", whiteSpace: "nowrap" }}>{t.appName || "نظام إدارة الأقساط والمبيعات"}</b>
         </div>
 
-        {dropdownWrap("records", "مركز السجلات", <FolderKanban size={15} />, onOpenRecords)}
-        {dropdownWrap("bin", "سلة المهملات", <Trash2 size={15} />, onOpenBin)}
-        {dropdownWrap("themes", "الثيمات", <Palette size={15} />, onOpenThemes)}
-        {dropdownWrap("lang", (currentLangObj?.flag || "🌐") + " " + (currentLangObj?.name || "اللغة"), <Globe size={15} />, onOpenLang)}
-        <button type="button" onClick={onOpenSearch} style={topbarBtnStyle}><Search size={15} /> <span>البحث الشامل</span></button>
-        <button type="button" onClick={onOpenCalc} style={topbarBtnStyle}><Calculator size={15} /> <span>الآلة الحاسبة</span></button>
+        {/* 1. قائمة مركز السجلات */}
+        <div className="topbar-dropdown-container" style={{ position: "relative" }}>
+          <button
+            type="button"
+            onClick={() => setActiveDropdown(prev => prev === "records" ? null : "records")}
+            style={topbarBtnStyle(activeDropdown === "records")}
+          >
+            <FolderKanban size={15} />
+            <span>مركز السجلات</span>
+            <ChevronDown size={12} style={{ transform: activeDropdown === "records" ? "rotate(180deg)" : "none", transition: "0.2s" }} />
+          </button>
+
+          {activeDropdown === "records" && (
+            <div style={dropdownMenuStyle}>
+              <div style={{ fontSize: 11, color: themeStyles.accentGold || "#d69a5f", fontWeight: 800, padding: "6px 10px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}`, marginBottom: 4 }}>
+                سجلات النظام والعمليات
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("allClientsRegister"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <FileText size={15} color="#34d399" />
+                <div style={{ flex: 1 }}>
+                  <div>سجل العقود النشطة</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>إدارة مبيعات التقسيط الحالية</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("allClientsRegister"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <Users size={15} color="#60a5fa" />
+                <div style={{ flex: 1 }}>
+                  <div>سجل بيانات العملاء الشامل</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>جدول تفصيلي بأسلوب Excel</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("payRecords"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <CreditCard size={15} color="#fbbf24" />
+                <div style={{ flex: 1 }}>
+                  <div>سجل عمليات السداد والتحصيل</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>حركة الخزينة والتحصيلات المباشرة</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("lateClients"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <AlertTriangle size={15} color="#f87171" />
+                <div style={{ flex: 1 }}>
+                  <div>سجل المتأخرين عن السداد</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>العملاء المتأخرون ومواعيد الاستحقاق</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("treasuryExpenses"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <DollarSign size={15} color="#f472b6" />
+                <div style={{ flex: 1 }}>
+                  <div>سجل المصروفات العامة</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>إجمالي وتصنيف المصروفات</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("treasuryEmployees"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <Briefcase size={15} color="#a78bfa" />
+                <div style={{ flex: 1 }}>
+                  <div>سجل شؤون الموظفين والرواتب</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>كشوف المرتبات والسلف النشطة</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("treasuryPartners"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <Users size={15} color="#38bdf8" />
+                <div style={{ flex: 1 }}>
+                  <div>سجل الشركاء ورأس المال</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>حصص واستثمارات الشركاء</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("treasuryDistribute"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <Wallet size={15} color="#4ade80" />
+                <div style={{ flex: 1 }}>
+                  <div>سجل توزيع الأرباح والخزينة</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>حركة الأرباح وتوزيعاتها</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onOpenRecords(); setActiveDropdown(null); }}
+                style={{ ...dropdownItemStyle, borderTop: `1px solid ${themeStyles.border || "#25252c"}`, marginTop: 4, color: themeStyles.accentGold || "#d69a5f" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.18)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <FolderKanban size={15} />
+                <div style={{ flex: 1, fontWeight: 800 }}>عرض جميع السجلات في نافذة موحدة</div>
+                <ArrowRight size={13} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 2. قائمة سلة المهملات */}
+        <div className="topbar-dropdown-container" style={{ position: "relative" }}>
+          <button
+            type="button"
+            onClick={() => setActiveDropdown(prev => prev === "bin" ? null : "bin")}
+            style={topbarBtnStyle(activeDropdown === "bin")}
+          >
+            <Trash2 size={15} />
+            <span>سلة المهملات</span>
+            <ChevronDown size={12} style={{ transform: activeDropdown === "bin" ? "rotate(180deg)" : "none", transition: "0.2s" }} />
+          </button>
+
+          {activeDropdown === "bin" && (
+            <div style={dropdownMenuStyle}>
+              <div style={{ fontSize: 11, color: "#f87171", fontWeight: 800, padding: "6px 10px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}`, marginBottom: 4 }}>
+                العناصر والمحذوفات
+              </div>
+
+              <div
+                onClick={() => { onOpenBin(); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <Trash2 size={15} color="#fca5a5" />
+                <div style={{ flex: 1 }}>
+                  <div>سلة مهملات العقود المحذوفة</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>استرجاع أو حذف نهائي</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onOpenBin(); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <DollarSign size={15} color="#fca5a5" />
+                <div style={{ flex: 1 }}>
+                  <div>سلة مهملات المصروفات</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>استرجاع المصروفات المحذوفة</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("deleteClient"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <UserX size={15} color="#fca5a5" />
+                <div style={{ flex: 1 }}>
+                  <div>إدارة وحذف حسابات العملاء</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>حذف عميل بالكامل من النظام</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onOpenBin(); setActiveDropdown(null); }}
+                style={{ ...dropdownItemStyle, borderTop: `1px solid ${themeStyles.border || "#25252c"}`, marginTop: 4, color: "#fca5a5" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.18)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <Trash2 size={15} />
+                <div style={{ flex: 1, fontWeight: 800 }}>فتح سلة المهملات الشاملة</div>
+                <ArrowRight size={13} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 3. قائمة الأرشيف */}
+        <div className="topbar-dropdown-container" style={{ position: "relative" }}>
+          <button
+            type="button"
+            onClick={() => setActiveDropdown(prev => prev === "archive" ? null : "archive")}
+            style={topbarBtnStyle(activeDropdown === "archive")}
+          >
+            <Archive size={15} />
+            <span>الأرشيف</span>
+            <ChevronDown size={12} style={{ transform: activeDropdown === "archive" ? "rotate(180deg)" : "none", transition: "0.2s" }} />
+          </button>
+
+          {activeDropdown === "archive" && (
+            <div style={dropdownMenuStyle}>
+              <div style={{ fontSize: 11, color: themeStyles.accentGold || "#d69a5f", fontWeight: 800, padding: "6px 10px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}`, marginBottom: 4 }}>
+                السجلات المؤرشفة
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("clientQueryArchive"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <CheckCircle size={15} color="#34d399" />
+                <div style={{ flex: 1 }}>
+                  <div>أرشيف العقود المسددة بالكامل</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>العقود المنتهية والمخالصة</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => { onNavItemClick("clientQueryArchive"); setActiveDropdown(null); }}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <Clock size={15} color="#60a5fa" />
+                <div style={{ flex: 1 }}>
+                  <div>أرشيف الحسابات المسواة والتصفيات</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>سجلات العمليات السابقة</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 4. الثيمات */}
+        <button type="button" onClick={onOpenThemes} style={topbarBtnStyle(false)}>
+          <Palette size={15} /> <span>الثيمات</span>
+        </button>
+
+        {/* 5. اللغة */}
+        <button type="button" onClick={onOpenLang} style={topbarBtnStyle(false)}>
+          <Globe size={15} /> <span>{(currentLangObj?.flag || "🌐") + " " + (currentLangObj?.name || "اللغة")}</span>
+        </button>
+
+        {/* 6. البحث الشامل */}
+        <button type="button" onClick={onOpenSearch} style={topbarBtnStyle(false)}>
+          <Search size={15} /> <span>البحث الشامل</span>
+        </button>
+
+        {/* 7. الآلة الحاسبة */}
+        <button type="button" onClick={onOpenCalc} style={topbarBtnStyle(false)}>
+          <Calculator size={15} /> <span>الآلة الحاسبة</span>
+        </button>
 
         <div style={{ flex: 1 }} />
 
+        {/* مبدل الأوضاع (عادي / Pro) */}
         <div style={{ display: "flex", background: themeStyles.inputBg || "#1a1a20", borderRadius: 20, padding: 3, border: `1px solid ${themeStyles.border || "#2e2e38"}`, marginLeft: 14 }}>
           <button
             type="button"
@@ -1070,12 +1403,17 @@ function DesktopSidebarShell({
           </button>
         </div>
 
-        <div style={{ width: 34, height: 34, borderRadius: "50%", background: themeStyles.inputBg || "#222228", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: themeStyles.text || "#fff" }}>👤</div>
+        {/* أيقونة المستخدم */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.06)", padding: "6px 14px", borderRadius: 12 }}>
+          <div style={{ width: 24, height: 24, borderRadius: "50%", background: themeStyles.inputBg || "#222228", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: themeStyles.text || "#fff" }}>👤</div>
+          <span style={{ fontSize: 12, fontWeight: 800, color: themeStyles.text || "#fff" }}>المشرف العام</span>
+        </div>
       </div>
 
-      {/* الجسم: القائمة الجانبية + المحتوى */}
+      {/* الجسم: القائمة الجانبية + مساحة المحتوى */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
-        {/* القائمة الجانبية القابلة للطي */}
+        
+        {/* القائمة الجانبية بالتحويم الذكي */}
         <div
           onMouseEnter={() => setHovering(true)}
           onMouseLeave={() => setHovering(false)}
@@ -1084,10 +1422,11 @@ function DesktopSidebarShell({
             background: themeStyles.card || "#131316",
             borderLeft: `1px solid ${themeStyles.border || "#232328"}`,
             display: "flex", flexDirection: "column",
-            transition: "width 0.28s cubic-bezier(0.4,0,0.2,1)",
+            transition: "width 0.26s cubic-bezier(0.4,0,0.2,1)",
             overflow: "hidden", flexShrink: 0
           }}
         >
+          {/* رأس القائمة */}
           <div style={{
             display: "flex", alignItems: "center", justifyContent: expanded ? "space-between" : "center",
             padding: expanded ? "12px 14px" : "12px 0", borderBottom: `1px solid ${themeStyles.border || "#232328"}`,
@@ -1103,6 +1442,7 @@ function DesktopSidebarShell({
             </div>
           </div>
 
+          {/* عناصر القائمة الجانبية */}
           <div style={{ padding: expanded ? "10px 8px" : "10px 0", overflowY: expanded ? "auto" : "hidden", flex: 1 }}>
             <div
               onClick={onGoDashboard}
@@ -1144,6 +1484,7 @@ function DesktopSidebarShell({
             })}
           </div>
 
+          {/* ذيل القائمة الجانبية */}
           <div style={{ padding: expanded ? 12 : "12px 0", borderTop: `1px solid ${themeStyles.border || "#232328"}`, display: "flex", justifyContent: expanded ? "flex-start" : "center" }}>
             <div
               onClick={() => onNavItemClick("exit")}
@@ -1378,4 +1719,5 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, theme
     </div>
   );
 }
+
 export default App;
