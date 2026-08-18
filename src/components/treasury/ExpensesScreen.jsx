@@ -155,9 +155,9 @@ export function ExpensesScreen({ onBack, t = {}, themeStyles = {} }) {
   };
 
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1280px", margin: "0 auto", padding: "16px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: "12px 24px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
       {/* 1. الشريط العلوي الرئيسي */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", paddingBottom: "16px", borderBottom: `1px solid ${themeStyles.border || "#232328"}` }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", paddingBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#232328"}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "24px" }}>💸</span>
           <h2 style={{ color: themeStyles.accentGold || "#e8cd9c", margin: 0, fontSize: "22px", fontWeight: 800 }}>
