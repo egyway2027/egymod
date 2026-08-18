@@ -17,6 +17,7 @@ import { ClientQueryScreen } from "./components/clientQuery/ClientQueryScreen";
 import { AllClientsRegisterModal } from "./components/clientQuery/AllClientsRegisterModal";
 import { SettingsScreen } from "./components/SettingsScreen";
 import InstallmentsScreen from "./components/installments/InstallmentsScreen";
+import { AllPaymentsRegisterModal } from "./components/installments/InstallmentsTable";
 import MonthlyDues from "./components/MonthlyDues";
 import OverdueScreen from "./components/overdue/OverdueScreen";
 import { WhatsAppHubModal } from "./components/modals/WhatsAppHubModal";
@@ -278,8 +279,28 @@ export function App() {
   // (تبويب الأرشيف / سجل السداد الشامل) بمجرد ما تفتح
   const [recordDeepLink, setRecordDeepLink] = useState(null);
 
-  // 📋 نافذة "سجل بيانات العملاء الشامل" — تستخدم نفس بيانات clientsList الموجودة بالفعل
+  // 📋 نوافذ السجلات الشاملة المباشرة (العملاء والمدفوعات)
   const [showAllClientsRegisterModal, setShowAllClientsRegisterModal] = useState(false);
+  const [showAllPaymentsModal, setShowAllPaymentsModal] = useState(false);
+
+  // استخراج جميع المدفوعات المسددة من كل العقود لعرضها في سجل التحصيلات الشامل
+  const allPaymentsData = useMemo(() => {
+    return (clientsList || []).flatMap((c) => {
+      const instArr = Array.isArray(c.installments) ? c.installments : (Array.isArray(c.payments) ? c.payments : []);
+      return instArr
+        .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
+        .map((i) => ({
+          ...i,
+          clientName: c.client_name || c.clientName || c.name || "بدون اسم",
+          itemName: c.item_name || c.itemName || c.item || "",
+          amount: Number(i.amount || 0),
+          payDate: i.due_date || i.paid_at || i.date || i.payDate || i.created_at,
+          method: i.payment_method || i.method || "نقداً / كاش",
+          collector: i.collector || i.employee || "المشرف العام"
+        }));
+    });
+  }, [clientsList]);
+
   const allClientsRegisterData = useMemo(() => {
     return (clientsList || []).map((c) => ({
       ...c,
@@ -713,8 +734,8 @@ export function App() {
             setShowCentralRecordsModal(false);
             setShowAllClientsRegisterModal(true);
           } else if (recordId === "payment_records") {
-            setRecordDeepLink("payments");
-            navigateTo("pay");
+            setShowCentralRecordsModal(false);
+            setShowAllPaymentsModal(true);
           } else if (recordId === "employees_register") {
             navigateTo("treasuryEmployees");
           } else if (recordId === "expenses_register") {
@@ -735,6 +756,17 @@ export function App() {
         t={t}
         themeStyles={themeStyles}
       />
+
+      {/* 🧾 نافذة كشف السداد والتحصيل الشامل المباشر */}
+      {showAllPaymentsModal && (
+        <AllPaymentsRegisterModal
+          payments={allPaymentsData}
+          storeInfo={{ name: t.appName || "إيجيمود لإدارة الأقساط" }}
+          onClose={() => setShowAllPaymentsModal(false)}
+          t={t}
+          themeStyles={themeStyles}
+        />
+      )}
 
       {/* 🌟 نافذة التنبيه المخصصة بمنتصف الشاشة */}
       {successModal.open && (
@@ -1171,7 +1203,7 @@ function DesktopSidebarShell({
               </div>
 
               <div
-                onClick={() => { onNavItemClick("pay"); setActiveDropdown(null); }}
+                onClick={() => { setShowAllPaymentsModal(true); setActiveDropdown(null); }}
                 style={dropdownItemStyle}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -1179,7 +1211,7 @@ function DesktopSidebarShell({
                 <CreditCard size={15} color="#fbbf24" />
                 <div style={{ flex: 1 }}>
                   <div>سجل عمليات السداد والتحصيل</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>حركة الخزينة والتحصيلات المباشرة</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>عرض كشف حركة الخزينة الشامل</div>
                 </div>
               </div>
 
