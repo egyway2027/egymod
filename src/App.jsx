@@ -113,6 +113,7 @@ export function App() {
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
   const [showCentralRecordsModal, setShowCentralRecordsModal] = useState(false);
   const [showCalcModal, setShowCalcModal] = useState(false);
+  const [showAllClientsModal, setShowAllClientsModal] = useState(false);
 
   // 🌟 نافذة التنبيه المخصصة بوسط الشاشة
   const [successModal, setSuccessModal] = useState({ open: false, title: "", msg: "" });
@@ -593,6 +594,7 @@ export function App() {
           onOpenLang={() => setShowLangModal(true)}
           onOpenSearch={() => setShowGlobalSearchModal(true)}
           onOpenCalc={() => setShowCalcModal(true)}
+          onOpenAllClientsRegister={() => setShowAllClientsModal(true)}
           onSwitchToPro={() => setDesktopMode("pro")}
         >
           {currentScreen === "dashboard" ? (
@@ -654,10 +656,22 @@ export function App() {
         isOpen={showCentralRecordsModal}
         onClose={() => setShowCentralRecordsModal(false)}
         onSelectRecord={(recordId) => {
-          if (recordId === "active_contracts" || recordId === "all_clients_register" || recordId === "archived_contracts") {
+          setShowCentralRecordsModal(false);
+          if (recordId === "active_contracts" || recordId === "all_clients_register") {
+            setShowAllClientsModal(true);
+          } else if (recordId === "archived_contracts") {
             navigateTo("clientQuery");
           }
         }}
+        t={t}
+        themeStyles={themeStyles}
+      />
+
+      {/* 📊 نافذة سجل العملاء الشامل المباشرة (شيت Excel) */}
+      <AllClientsRegisterModal
+        isOpen={showAllClientsModal}
+        onClose={() => setShowAllClientsModal(false)}
+        contracts={normalizedContracts}
         t={t}
         themeStyles={themeStyles}
       />
@@ -975,6 +989,7 @@ function DesktopSidebarShell({
   onOpenLang,
   onOpenSearch,
   onOpenCalc,
+  onOpenAllClientsRegister,
   onSwitchToPro,
   children
 }) {
