@@ -1248,9 +1248,6 @@ function DesktopSidebarShell({
                 </div>
               </div>
 
-              <div></div>
-        
-
         {/* 2. قائمة سلة المهملات */}
         <div className="topbar-dropdown-container" style={{ position: "relative" }}>
           <button
