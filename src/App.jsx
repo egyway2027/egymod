@@ -335,6 +335,8 @@ export function App() {
       setShowAllPaymentsModal(true);
     } else if (key === "allClientsRegister") {
       setShowAllClientsRegisterModal(true);
+    } else if (key === "expensesRegister" || key === "allExpensesRegister") {
+      setShowAllExpensesModal(true);
     } else if (key === "exit") {
       // إجراء الخروج
     } else {
@@ -1239,7 +1241,7 @@ function DesktopSidebarShell({
               </div>
 
               <div
-                onClick={() => { setShowAllExpensesModal(true); setActiveDropdown(null); }}
+                onClick={() => { onNavItemClick("expensesRegister"); setActiveDropdown(null); }}
                 style={dropdownItemStyle}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
