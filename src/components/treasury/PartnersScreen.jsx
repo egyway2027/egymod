@@ -1,9 +1,4 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { ArrowRight, X, FileText, UserMinus, Loader2 } from "lucide-react";
-import { supabase } from "../../supabaseClient";
-import { useIsMobile } from "../../hooks/useIsMobile";
-
-import React, { useState, useEffect, useMemo } from "react";
 import { ArrowRight, X, FileText, Trash2, Edit3, Loader2 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -80,10 +75,10 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
 
   // حساب نسبة الشريك الجديد التلقائية أثناء الكتابة
   const liveNewPartnerPercent = useMemo(() => {
-    const numCap = Math.round(parseFloat(capital) || 0);
+    const numCap = parseFloat(capital) || 0;
     const newTotal = totalCapitalSum + numCap;
-    if (newTotal <= 0) return 0;
-    return Math.round((numCap / newTotal) * 100);
+    if (newTotal <= 0) return "0";
+    return ((numCap / newTotal) * 100).toFixed(1);
   }, [capital, totalCapitalSum]);
 
   // حساب المسحوبات والسلف لكل شريك بالجدول
@@ -94,7 +89,9 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
         .filter((w) => !w.is_settled)
         .reduce((sum, w) => sum + (Number(w.amount || 0) - Number(w.settled_amount || 0)), 0);
       const settledWithdrawals = pLogs.reduce((sum, w) => sum + Number(w.settled_amount || 0), 0);
-      const sharePct = totalCapitalSum > 0 ? Math.round((Number(p.capital || 0) / totalCapitalSum) * 100) : 0;
+      const sharePct = totalCapitalSum > 0 
+        ? ((Number(p.capital || 0) / totalCapitalSum) * 100).toFixed(1)
+        : "0";
 
       return {
         ...p,
