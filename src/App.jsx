@@ -279,10 +279,11 @@ export function App() {
   // (تبويب الأرشيف / سجل السداد الشامل) بمجرد ما تفتح
   const [recordDeepLink, setRecordDeepLink] = useState(null);
 
-  // 📋 نوافذ السجلات الشاملة المباشرة (العملاء والمدفوعات والمصروفات)
+  // 📋 نوافذ السجلات الشاملة المباشرة (العملاء والمدفوعات والمصروفات والرواتب)
   const [showAllClientsRegisterModal, setShowAllClientsRegisterModal] = useState(false);
   const [showAllPaymentsModal, setShowAllPaymentsModal] = useState(false);
   const [showAllExpensesModal, setShowAllExpensesModal] = useState(false);
+  const [showAllSalariesModal, setShowAllSalariesModal] = useState(false);
 
   // استخراج جميع المدفوعات المسددة من كل العقود لعرضها في سجل التحصيلات الشامل
   const allPaymentsData = useMemo(() => {
@@ -337,6 +338,8 @@ export function App() {
       setShowAllClientsRegisterModal(true);
     } else if (key === "expensesRegister" || key === "allExpensesRegister") {
       setShowAllExpensesModal(true);
+    } else if (key === "salariesRegister" || key === "allSalariesRegister") {
+      setShowAllSalariesModal(true);
     } else if (key === "exit") {
       // إجراء الخروج
     } else {
@@ -739,7 +742,8 @@ export function App() {
             setShowCentralRecordsModal(false);
             setShowAllPaymentsModal(true);
           } else if (recordId === "employees_register") {
-            navigateTo("treasuryEmployees");
+            setShowCentralRecordsModal(false);
+            setShowAllSalariesModal(true);
           } else if (recordId === "expenses_register") {
             setShowCentralRecordsModal(false);
             setShowAllExpensesModal(true);
@@ -776,6 +780,15 @@ export function App() {
         <AllExpensesRegisterModal
           isOpen={showAllExpensesModal}
           onClose={() => setShowAllExpensesModal(false)}
+          themeStyles={themeStyles}
+        />
+      )}
+
+      {/* 💼 نافذة سجل الرواتب والسلف المالي الشامل المباشر */}
+      {showAllSalariesModal && (
+        <AllSalariesRegisterModal
+          isOpen={showAllSalariesModal}
+          onClose={() => setShowAllSalariesModal(false)}
           themeStyles={themeStyles}
         />
       )}
@@ -1254,7 +1267,7 @@ function DesktopSidebarShell({
               </div>
 
               <div
-                onClick={() => { onNavItemClick("treasuryEmployees"); setActiveDropdown(null); }}
+                onClick={() => { onNavItemClick("salariesRegister"); setActiveDropdown(null); }}
                 style={dropdownItemStyle}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -2076,6 +2089,212 @@ function AllExpensesRegisterModal({ isOpen, onClose, themeStyles = {} }) {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// 💼 مكون نافذة سجل شؤون الموظفين والرواتب والسلف المالي الشامل المباشر
+function AllSalariesRegisterModal({ isOpen, onClose, themeStyles = {} }) {
+  const [salaryLog, setSalaryLog] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [searchEmp, setSearchEmp] = useState("");
+  const [filterType, setFilterType] = useState("all");
+
+  const loadSalaryData = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("salary_log")
+        .select("*")
+        .order("date", { ascending: false });
+      if (error) throw error;
+      setSalaryLog(data || []);
+    } catch (err) {
+      console.error("❌ خطأ في جلب سجلات الرواتب والسلف:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadSalaryData();
+    }
+  }, [isOpen]);
+
+  const handleDeleteLog = async (id) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذه الحركة من السجل؟")) return;
+    try {
+      const { error } = await supabase.from("salary_log").delete().eq("id", id);
+      if (error) throw error;
+      setSalaryLog((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      console.error("❌ خطأ في حذف حركة الراتب:", err);
+    }
+  };
+
+  const filteredLog = useMemo(() => {
+    return salaryLog.filter((s) => {
+      if (fromDate && s.date < fromDate) return false;
+      if (toDate && s.date > toDate) return false;
+      if (filterType !== "all" && s.type !== filterType) return false;
+      if (searchEmp.trim()) {
+        const q = searchEmp.toLowerCase();
+        const matchName = (s.employee_name || "").toLowerCase().includes(q);
+        const matchNotes = (s.notes || "").toLowerCase().includes(q);
+        if (!matchName && !matchNotes) return false;
+      }
+      return true;
+    });
+  }, [salaryLog, fromDate, toDate, filterType, searchEmp]);
+
+  const totalFilteredSum = useMemo(() => {
+    return filteredLog.reduce((sum, s) => sum + Number(s.amount || 0), 0);
+  }, [filteredLog]);
+
+  const totalAdvancesSum = useMemo(() => {
+    return filteredLog
+      .filter((s) => s.type?.includes("سلفة"))
+      .reduce((sum, s) => sum + Number(s.amount || 0), 0);
+  }, [filteredLog]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", boxSizing: "border-box" }} dir="rtl">
+      <div style={{ width: "95vw", maxWidth: "1350px", height: "90vh", minHeight: "650px", background: themeStyles.card || "#18181d", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "18px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.85)" }}>
+        
+        {/* رأس النافذة */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: `1px solid ${themeStyles.border || "#282830"}`, background: themeStyles.inputBg || "#121215" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "20px" }}>💼</span>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "16.5px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>
+                سجل شؤون الموظفين والرواتب والسلف الشامل
+              </h3>
+              <span style={{ fontSize: "11px", color: themeStyles.subText || "#8e8e9c" }}>
+                إجمالي الحركات المفلترة: {totalFilteredSum.toLocaleString()} ج.م (منها سلفيات: {totalAdvancesSum.toLocaleString()} ج.م)
+              </span>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} style={{ width: "34px", height: "34px", borderRadius: "50%", background: themeStyles.card || "#222", border: `1px solid ${themeStyles.border || "#333"}`, color: "#aaa", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <X size={17} />
+          </button>
+        </div>
+
+        <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column" }}>
+          
+          {/* شريط الفلترة المتقدم */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", background: themeStyles.inputBg || "#141414", padding: "12px 18px", borderRadius: "12px", border: `1px solid ${themeStyles.border || "#333"}`, flexWrap: "wrap", gap: "12px" }}>
+            
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              <input
+                type="text"
+                value={searchEmp}
+                onChange={(e) => setSearchEmp(e.target.value)}
+                placeholder="🔍 بحث باسم الموظف أو البيان..."
+                style={{ background: themeStyles.card || "#1a1a1e", border: `1px solid ${themeStyles.border || "#333"}`, color: "#fff", padding: "8px 12px", borderRadius: "8px", fontSize: "12.5px", outline: "none", width: "220px" }}
+              />
+
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                style={{ background: themeStyles.card || "#1a1a1e", border: `1px solid ${themeStyles.border || "#333"}`, color: "#fff", padding: "8px 12px", borderRadius: "8px", fontSize: "12.5px", outline: "none", cursor: "pointer" }}
+              >
+                <option value="all">جميع الحركات المالية</option>
+                <option value="سلفة نقدية">سلفة نقدية</option>
+                <option value="صرف راتب شهري">صرف راتب شهري</option>
+                <option value="مكافأة حافز">مكافأة / حافز</option>
+                <option value="خصم جزاء">خصم / جزاء</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              <span style={{ color: themeStyles.accentGold || "#d4af37", fontSize: "13px", fontWeight: 800 }}>الفترة:</span>
+              <div style={{ width: "150px" }}>
+                <CustomDatePickerModal value={fromDate} onChange={setFromDate} themeStyles={themeStyles} placeholder="من تاريخ" />
+              </div>
+              <span style={{ color: themeStyles.subText || "#aaaaaa", fontSize: "12px", fontWeight: 700 }}>إلى</span>
+              <div style={{ width: "150px" }}>
+                <CustomDatePickerModal value={toDate} onChange={setToDate} themeStyles={themeStyles} placeholder="إلى تاريخ" />
+              </div>
+
+              {(fromDate || toDate || searchEmp || filterType !== "all") && (
+                <button
+                  type="button"
+                  onClick={() => { setFromDate(""); setToDate(""); setSearchEmp(""); setFilterType("all"); }}
+                  style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", padding: "6px 12px", borderRadius: "8px", fontSize: "12px", cursor: "pointer", fontWeight: 700 }}
+                >
+                  إلغاء التصفية
+                </button>
+              )}
+            </div>
+
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "40px", color: themeStyles.accentGold || "#e8cd9c" }}>
+              جاري جلب سجلات الموظفين والرواتب بالسحابة...
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text || "#ffffff", textAlign: "right", fontSize: "13px" }}>
+                <thead>
+                  <tr style={{ background: themeStyles.inputBg || "#121215", color: themeStyles.accentGold || "#e8cd9c", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+                    <th style={{ padding: "10px 12px" }}>التاريخ</th>
+                    <th style={{ padding: "10px 12px" }}>اسم الموظف</th>
+                    <th style={{ padding: "10px 12px" }}>نوع الحركة</th>
+                    <th style={{ padding: "10px 12px" }}>المبلغ</th>
+                    <th style={{ padding: "10px 12px" }}>البيان والملاحظات</th>
+                    <th style={{ padding: "10px 12px", textAlign: "center" }}>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredLog.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: "30px", textAlign: "center", color: themeStyles.subText || "#aaaaaa" }}>
+                        لا توجد حركات مسجلة في سجل الرواتب والسلف في هذه الفترة.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredLog.map((s) => (
+                      <tr key={s.id} style={{ borderBottom: `1px solid ${themeStyles.border || "#202026"}` }}>
+                        <td style={{ padding: "10px 12px" }}>{s.date}</td>
+                        <td style={{ padding: "10px 12px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>{s.employee_name}</td>
+                        <td style={{ padding: "10px 12px" }}>
+                          <span style={{
+                            background: s.type?.includes("سلفة") ? "rgba(248, 113, 113, 0.15)" : s.type?.includes("خصم") ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.15)",
+                            color: s.type?.includes("سلفة") || s.type?.includes("خصم") ? "#f87171" : "#10b981",
+                            padding: "3px 8px", borderRadius: "5px", fontSize: "11px", fontWeight: 700
+                          }}>
+                            {s.type}
+                          </span>
+                        </td>
+                        <td style={{ padding: "10px 12px", fontWeight: 800, color: s.type?.includes("سلفة") || s.type?.includes("خصم") ? "#f87171" : "#10b981" }}>
+                          {Number(s.amount).toLocaleString()} ج.م
+                        </td>
+                        <td style={{ padding: "10px 12px", color: themeStyles.subText || "#aaaaaa" }}>{s.notes || "—"}</td>
+                        <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLog(s.id)}
+                            style={{ background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.25)", color: "#fca5a5", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", cursor: "pointer", fontWeight: 700 }}
+                          >
+                            حذف
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
