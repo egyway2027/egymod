@@ -3,6 +3,11 @@ import { ArrowRight, X, FileText, UserMinus, Loader2 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import { useIsMobile } from "../../hooks/useIsMobile";
 
+import React, { useState, useEffect, useMemo } from "react";
+import { ArrowRight, X, FileText, Trash2, Edit3, Loader2 } from "lucide-react";
+import { supabase } from "../../supabaseClient";
+import { useIsMobile } from "../../hooks/useIsMobile";
+
 export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
   const isMobile = useIsMobile();
   const isEN = document.documentElement.lang === "en" || document.documentElement.dir === "ltr";
@@ -12,23 +17,38 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  // التبويب النشط في لوحة العمليات
+  const [activeOpTab, setActiveOpTab] = useState("add"); // "add" | "inc" | "wdr"
+
   // 1. نموذج إضافة شريك جديد
   const [name, setName] = useState("");
   const [capital, setCapital] = useState("");
   const [joinDate, setJoinDate] = useState(() => new Date().toISOString().split("T")[0]);
 
   // 2. نموذج زيادة رأس المال
-  const [increasePartner, setIncreasePartner] = useState("");
+  const [increasePartnerId, setIncreasePartnerId] = useState("");
   const [increaseAmount, setIncreaseAmount] = useState("");
   const [increaseDate, setIncreaseDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [increaseNotes, setIncreaseNotes] = useState("");
 
   // 3. نموذج السحب / السلفة
-  const [withdrawPartner, setWithdrawPartner] = useState("");
+  const [withdrawPartnerId, setWithdrawPartnerId] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawDate, setWithdrawDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [withdrawNotes, setWithdrawNotes] = useState("");
 
-  // جلب كافة بيانات الشركاء والمسحوبات والسلف
+  // النوافذ المنبثقة (Modals)
+  const [showAllLogsModal, setShowAllLogsModal] = useState(false);
+  const [allFromDate, setAllFromDate] = useState("");
+  const [allToDate, setAllToDate] = useState("");
+
+  const [showSingleModal, setShowSingleModal] = useState(false);
+  const [selectedPartnerForLogs, setSelectedPartnerForLogs] = useState(null);
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPartner, setEditingPartner] = useState({ id: null, name: "", capital: "", join_date: "" });
+
+  // جلب كافة بيانات الشركاء والمسحوبات والسلف من السحابة
   const loadPartnersData = async () => {
     try {
       setLoading(true);
@@ -69,7 +89,7 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
   // حساب المسحوبات والسلف لكل شريك بالجدول
   const calculatedPartners = useMemo(() => {
     return partners.map((p) => {
-      const pLogs = withdrawals.filter((w) => String(w.partner_id) === String(p.id));
+      const pLogs = withdrawals.filter((w) => Number(w.partner_id) === Number(p.id));
       const activeAdvance = pLogs
         .filter((w) => !w.is_settled)
         .reduce((sum, w) => sum + (Number(w.amount || 0) - Number(w.settled_amount || 0)), 0);
@@ -85,12 +105,38 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
     });
   }, [partners, withdrawals, totalCapitalSum]);
 
+  // حساب إحصائيات الكروت الأربعة العلوية
+  const partnerStats = useMemo(() => {
+    const totalAdvances = calculatedPartners.reduce((sum, p) => sum + p.activeAdvance, 0);
+    const totalSettled = calculatedPartners.reduce((sum, p) => sum + p.settledWithdrawals, 0);
+    return {
+      totalPartners: partners.length,
+      totalAdvances,
+      totalSettled
+    };
+  }, [calculatedPartners, partners]);
+
+  // تصفية سجلات السحوبات العامة بالتاريخ
+  const filteredAllLogs = useMemo(() => {
+    return withdrawals.filter((w) => {
+      if (allFromDate && w.date < allFromDate) return false;
+      if (allToDate && w.date > allToDate) return false;
+      return true;
+    });
+  }, [withdrawals, allFromDate, allToDate]);
+
+  // سجل سحوبات الشريك المحدد الفردي
+  const singlePartnerLogs = useMemo(() => {
+    if (!selectedPartnerForLogs) return [];
+    return withdrawals.filter((w) => Number(w.partner_id) === Number(selectedPartnerForLogs.id));
+  }, [withdrawals, selectedPartnerForLogs]);
+
   // 1. تنفيذ إضافة شريك جديد
   const handleAddPartner = async (e) => {
     e.preventDefault();
     const capNum = Math.round(parseFloat(capital) || 0);
     if (!name.trim() || capNum <= 0) {
-      alert("يرجى إدخال اسم الشريك ومبلغ استثمار صحيح اكبر من 0");
+      alert("يرجى إدخال اسم الشريك ومبلغ استثمار صحيح أكبر من 0");
       return;
     }
 
@@ -138,7 +184,7 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
   const handleIncreaseCapital = async (e) => {
     e.preventDefault();
     const num = Math.round(parseFloat(increaseAmount) || 0);
-    const partnerObj = partners.find((p) => p.name === increasePartner);
+    const partnerObj = partners.find((p) => Number(p.id) === Number(increasePartnerId));
     if (!partnerObj || num <= 0) return;
 
     try {
@@ -155,7 +201,7 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
         notes: increaseNotes || "ضخ رأس مال إضافي"
       }]);
 
-      setIncreasePartner("");
+      setIncreasePartnerId("");
       setIncreaseAmount("");
       setIncreaseNotes("");
       await loadPartnersData();
@@ -170,7 +216,7 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
   const handleWithdraw = async (e) => {
     e.preventDefault();
     const num = Math.round(parseFloat(withdrawAmount) || 0);
-    const partnerObj = partners.find((p) => p.name === withdrawPartner);
+    const partnerObj = partners.find((p) => Number(p.id) === Number(withdrawPartnerId));
     if (!partnerObj || num <= 0) return;
 
     try {
@@ -179,13 +225,13 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
         partner_id: partnerObj.id,
         partner_name: partnerObj.name,
         amount: num,
-        date: new Date().toISOString().split("T")[0],
+        date: withdrawDate || new Date().toISOString().split("T")[0],
         notes: withdrawNotes || "سحب نقدي تحت حساب الأرباح",
         is_settled: false,
         settled_amount: 0
       }]);
 
-      setWithdrawPartner("");
+      setWithdrawPartnerId("");
       setWithdrawAmount("");
       setWithdrawNotes("");
       await loadPartnersData();
@@ -196,9 +242,36 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
     }
   };
 
-  // 4. تصفية وحذف الشريك
-  const handleSettleAndRemove = async (partnerId, partnerName) => {
-    if (!window.confirm(`هل أنت متأكد من تصفية وحذف حساب الشريك (${partnerName})؟`)) return;
+  // 4. تعديل بيانات الشريك
+  const handleSaveEditPartner = async (e) => {
+    e.preventDefault();
+    if (!editingPartner.id || !editingPartner.name.trim()) return;
+
+    try {
+      setSubmitting(true);
+      const { error } = await supabase
+        .from("partners")
+        .update({
+          name: editingPartner.name.trim(),
+          capital: Number(editingPartner.capital || 0),
+          join_date: editingPartner.join_date
+        })
+        .eq("id", editingPartner.id);
+
+      if (error) throw error;
+      setShowEditModal(false);
+      await loadPartnersData();
+    } catch (err) {
+      console.error("❌ خطأ في تعديل بيانات الشريك:", err);
+      alert("حدث خطأ أثناء حفظ التعديلات بالسحابة.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 5. حذف الشريك نهائياً
+  const handleDeletePartner = async (partnerId, partnerName) => {
+    if (!window.confirm(`هل أنت متأكد من حذف حساب الشريك (${partnerName}) نهائياً من النظام؟`)) return;
     try {
       await supabase.from("partners").delete().eq("id", partnerId);
       await loadPartnersData();
@@ -207,121 +280,427 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
     }
   };
 
+  // 6. حذف حركة سحب من السجل
+  const handleDeleteWithdrawalLog = async (id) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذه الحركة من سجل السحوبات؟")) return;
+    try {
+      await supabase.from("withdrawals_log").delete().eq("id", id);
+      await loadPartnersData();
+    } catch (err) {
+      console.error("❌ خطأ في حذف حركة السحب:", err);
+    }
+  };
+
   return (
-    <div dir={isEN ? "ltr" : "rtl"} style={{ maxWidth: "1050px", margin: "0 auto", padding: isMobile ? "10px 8px" : "16px", fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
-      {/* الشريط العلوي */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "12px" : "20px" }}>
-        <button type="button" onClick={onBack} style={{ display: "flex", alignItems: "center", gap: "6px", background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, color: themeStyles.accentGold || "#d69a5f", padding: isMobile ? "6px 12px" : "8px 16px", borderRadius: "10px", cursor: "pointer", fontWeight: 700, fontSize: isMobile ? "12px" : "13px" }}>
-          <ArrowRight size={isMobile ? 14 : 16} style={{ transform: isEN ? "rotate(180deg)" : "none" }} />
+    <div dir={isEN ? "ltr" : "rtl"} style={{ width: "100%", maxWidth: "100%", margin: "0", padding: isMobile ? "8px 10px" : "10px 20px", fontFamily: "'Cairo', 'Tajawal', sans-serif", boxSizing: "border-box" }}>
+      
+      {/* 1. الشريط العلوي */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px", paddingBottom: "10px", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+        <div style={{ fontSize: isMobile ? "16px" : "19px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", display: "flex", alignItems: "center", gap: "8px" }}>
+          <span>👥</span>
+          <span>لوحة إدارة الشركاء والحصص ورأس المال</span>
+        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            background: themeStyles.card || "#18181d",
+            border: `1px solid ${themeStyles.border || "#282830"}`,
+            color: themeStyles.accentGold || "#e8cd9c",
+            padding: "6px 16px",
+            borderRadius: "8px",
+            fontWeight: 700,
+            fontSize: "12px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px"
+          }}
+        >
+          <ArrowRight size={15} style={{ transform: isEN ? "rotate(180deg)" : "none" }} />
           <span>رجوع</span>
         </button>
-
-        <h2 style={{ color: themeStyles.accentGold || "#d69a5f", margin: 0, fontSize: isMobile ? "16px" : "20px", fontWeight: 800 }}>الشركاء ورأس المال</h2>
-
-        <button type="button" onClick={onBack} style={{ width: isMobile ? "32px" : "36px", height: isMobile ? "32px" : "36px", borderRadius: "50%", background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, color: themeStyles.subText || "#888888", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <X size={16} />
-        </button>
       </div>
 
-      {/* كارت رأس المال الإجمالي */}
-      <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "12px" : "20px", textAlign: "center", marginBottom: isMobile ? "12px" : "20px" }}>
-        <div style={{ fontSize: isMobile ? "11px" : "13px", color: themeStyles.subText || "#888888" }}>إجمالي رأس مال الشركة الفعلي</div>
-        <div style={{ fontSize: isMobile ? "20px" : "28px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginTop: "4px" }}>{totalCapitalSum.toLocaleString()} ج.م</div>
-      </div>
-
-      {/* جدول الشركاء الحقيقي الشامل */}
-      <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "12px 10px" : "20px", marginBottom: isMobile ? "12px" : "20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? "10px" : "14px", flexWrap: "wrap", gap: "8px" }}>
-          <div style={{ fontSize: isMobile ? "14px" : "16px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>جدول حسابات الشركاء والنسب</div>
-
-          <button type="button" style={{ background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.accentGold || "#d69a5f", padding: isMobile ? "4px 8px" : "6px 12px", borderRadius: "8px", fontSize: isMobile ? "11px" : "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontWeight: 700 }}>
-            <FileText size={isMobile ? 12 : 14} />
-            <span>جميع سجلات السحوبات</span>
-          </button>
+      {/* 2. كروت المؤشرات المالية الأربعة */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: "12px", marginBottom: "14px" }}>
+        
+        {/* كارت 1: إجمالي رأس المال */}
+        <div style={{ background: themeStyles.card || "#18181d", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "14px", padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", minHeight: "90px", boxShadow: "0 4px 14px rgba(0,0,0,0.3)" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "#d69a5f" }} />
+          <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", marginBottom: "2px" }}>إجمالي رأس المال الفعلي</div>
+          <div style={{ fontSize: "18px", fontWeight: 900, color: "#fff", fontVariantNumeric: "tabular-nums", lineHeight: 1.2 }}>
+            {totalCapitalSum.toLocaleString()} <span style={{ fontSize: "11px", color: themeStyles.accentGold || "#d69a5f" }}>ج.م</span>
+          </div>
+          <div style={{ fontSize: "10px", color: "#727280", marginTop: "3px" }}>المبلغ الكلي المستثمر بالنشاط</div>
         </div>
 
-        {loading ? (
-          <div style={{ textAlign: "center", padding: "30px", color: themeStyles.accentGold || "#d69a5f" }}>
-            <Loader2 size={24} className="animate-spin" /> جاري التحميل...
+        {/* كارت 2: عدد الشركاء */}
+        <div style={{ background: themeStyles.card || "#18181d", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "14px", padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", minHeight: "90px", boxShadow: "0 4px 14px rgba(0,0,0,0.3)" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "#38bdf8" }} />
+          <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", marginBottom: "2px" }}>عدد الشركاء النشطين</div>
+          <div style={{ fontSize: "18px", fontWeight: 900, color: "#fff", fontVariantNumeric: "tabular-nums", lineHeight: 1.2 }}>
+            {partnerStats.totalPartners} <span style={{ fontSize: "11px", color: "#38bdf8" }}>شركاء</span>
           </div>
-        ) : isMobile ? (
-          /* عرض الشركاء على شكل كروت مدمجة لمنع انضغاط الجدول */
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {calculatedPartners.length === 0 ? (
-              <div style={{ padding: "20px", textAlign: "center", color: themeStyles.subText || "#888888", fontSize: "13px" }}>
-                لا يوجد شركاء مسجلين حالياً.
-              </div>
-            ) : (
-              calculatedPartners.map((p) => (
-                <div key={p.id} style={{ background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "10px 12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", borderBottom: `1px solid ${themeStyles.border || "#262626"}`, paddingBottom: "6px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span style={{ fontWeight: 800, color: themeStyles.text || "#ffffff", fontSize: "14px" }}>{p.name}</span>
-                      <span style={{ background: "rgba(214, 154, 95, 0.15)", color: themeStyles.accentGold || "#d69a5f", padding: "2px 6px", borderRadius: "6px", fontSize: "11px", fontWeight: 800 }}>{p.sharePct}%</span>
-                    </div>
-                    <button type="button" onClick={() => handleSettleAndRemove(p.id, p.name)} style={{ background: "#3e1c24", border: "1px solid #ef444455", color: "#f87171", padding: "3px 6px", borderRadius: "6px", fontSize: "10px", cursor: "pointer", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                      <UserMinus size={11} />
-                      <span>تصفية</span>
-                    </button>
-                  </div>
+          <div style={{ fontSize: "10px", color: "#727280", marginTop: "3px" }}>جميع الحصص مفعلة ومربوطة</div>
+        </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", fontSize: "11.5px" }}>
-                    <div>
-                      <span style={{ color: themeStyles.subText || "#888" }}>رأس المال: </span>
-                      <span style={{ fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>{Number(p.capital).toLocaleString()} ج.م</span>
-                    </div>
-                    <div>
-                      <span style={{ color: themeStyles.subText || "#888" }}>الانضمام: </span>
-                      <span style={{ color: themeStyles.text || "#fff" }}>{p.join_date}</span>
-                    </div>
-                    <div>
-                      <span style={{ color: themeStyles.subText || "#888" }}>مسحوبات: </span>
-                      <span style={{ color: themeStyles.text || "#fff" }}>{p.settledWithdrawals.toLocaleString()} ج.م</span>
-                    </div>
-                    <div>
-                      <span style={{ color: themeStyles.subText || "#888" }}>سلفة قائمة: </span>
-                      <span style={{ color: "#f87171", fontWeight: 800 }}>{p.activeAdvance.toLocaleString()} ج.م</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+        {/* كارت 3: السلف القائمة */}
+        <div style={{ background: themeStyles.card || "#18181d", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "14px", padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", minHeight: "90px", boxShadow: "0 4px 14px rgba(0,0,0,0.3)" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "#f87171" }} />
+          <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", marginBottom: "2px" }}>إجمالي السلف القائمة (غير مسواة)</div>
+          <div style={{ fontSize: "18px", fontWeight: 900, color: "#fff", fontVariantNumeric: "tabular-nums", lineHeight: 1.2 }}>
+            {partnerStats.totalAdvances.toLocaleString()} <span style={{ fontSize: "11px", color: "#f87171" }}>ج.م</span>
           </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text || "#ffffff", textAlign: "right", fontSize: "13.5px" }}>
+          <div style={{ fontSize: "10px", color: "#727280", marginTop: "3px" }}>تُخصم من الأرباح عند التوزيع</div>
+        </div>
+
+        {/* كارت 4: المسحوبات المسواة */}
+        <div style={{ background: themeStyles.card || "#18181d", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "14px", padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", minHeight: "90px", boxShadow: "0 4px 14px rgba(0,0,0,0.3)" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "#10b981" }} />
+          <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", marginBottom: "2px" }}>إجمالي المسحوبات المسواة</div>
+          <div style={{ fontSize: "18px", fontWeight: 900, color: "#fff", fontVariantNumeric: "tabular-nums", lineHeight: 1.2 }}>
+            {partnerStats.totalSettled.toLocaleString()} <span style={{ fontSize: "11px", color: "#10b981" }}>ج.م</span>
+          </div>
+          <div style={{ fontSize: "10px", color: "#727280", marginTop: "3px" }}>أرباح تم تسليمها وتصفيتها</div>
+        </div>
+
+      </div>
+
+      {/* 3. التقسيم الرئيسي (النموذج يميناً 380px والجدول يساراً 1fr) */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "380px 1fr", gap: "14px" }}>
+
+        {/* أ) الجانب الأيمن: لوحة العمليات والتبويبات */}
+        <div style={{ background: themeStyles.card || "#18181d", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "14px", padding: "14px", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", display: "flex", flexDirection: "column" }}>
+          
+          <div style={{ display: "flex", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "10px", padding: "3px", gap: "3px", marginBottom: "14px" }}>
+            <button
+              type="button"
+              onClick={() => setActiveOpTab("add")}
+              style={{
+                flex: 1,
+                background: activeOpTab === "add" ? "linear-gradient(135deg, #d69a5f 0%, #b06a35 50%, #7a4a1f 100%)" : "transparent",
+                color: activeOpTab === "add" ? "#ffffff" : "#8e8e9c",
+                border: "none",
+                padding: "7px 6px",
+                borderRadius: "7px",
+                fontSize: "11.5px",
+                fontWeight: 800,
+                cursor: "pointer",
+                textAlign: "center"
+              }}
+            >
+              + إضافة شريك
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveOpTab("inc")}
+              style={{
+                flex: 1,
+                background: activeOpTab === "inc" ? "linear-gradient(135deg, #d69a5f 0%, #b06a35 50%, #7a4a1f 100%)" : "transparent",
+                color: activeOpTab === "inc" ? "#ffffff" : "#8e8e9c",
+                border: "none",
+                padding: "7px 6px",
+                borderRadius: "7px",
+                fontSize: "11.5px",
+                fontWeight: 800,
+                cursor: "pointer",
+                textAlign: "center"
+              }}
+            >
+              ↑ زيادة رأس مال
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveOpTab("wdr")}
+              style={{
+                flex: 1,
+                background: activeOpTab === "wdr" ? "linear-gradient(135deg, #d69a5f 0%, #b06a35 50%, #7a4a1f 100%)" : "transparent",
+                color: activeOpTab === "wdr" ? "#ffffff" : "#8e8e9c",
+                border: "none",
+                padding: "7px 6px",
+                borderRadius: "7px",
+                fontSize: "11.5px",
+                fontWeight: 800,
+                cursor: "pointer",
+                textAlign: "center"
+              }}
+            >
+              ↓ تسجيل سحب
+            </button>
+          </div>
+
+          {/* تبويب 1: إضافة شريك جديد */}
+          {activeOpTab === "add" && (
+            <form onSubmit={handleAddPartner} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>اسم الشريك بالكامل *</label>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="أدخل اسم الشريك..." required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "12.5px", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>مبلغ الاستثمار الابتدائي (ج.م) *</label>
+                <input type="number" step="1" value={capital} onChange={(e) => setCapital(e.target.value)} placeholder="0" required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "13px", fontWeight: 800, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>تاريخ الانضمام *</label>
+                <input type="date" value={joinDate} onChange={(e) => setJoinDate(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "12.5px", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div style={{ background: "#131317", border: "1px dashed rgba(214, 154, 95, 0.5)", borderRadius: "8px", padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "12px", color: "#8e8e9c" }}>النسبة التلقائية المتوقعة:</span>
+                <strong style={{ fontSize: "15px", color: themeStyles.accentGold || "#e8cd9c" }}>{liveNewPartnerPercent}%</strong>
+              </div>
+              <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 50%, #7a4a1f 100%)", color: "#fff", border: "none", borderRadius: "8px", padding: "10px", fontSize: "13px", fontWeight: 800, cursor: "pointer", marginTop: "4px" }}>
+                {submitting ? "جاري الحفظ..." : "حفظ الشريك الجديد بالسحابة"}
+              </button>
+            </form>
+          )}
+
+          {/* تبويب 2: زيادة رأس مال شريك حالي */}
+          {activeOpTab === "inc" && (
+            <form onSubmit={handleIncreaseCapital} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>اختيار الشريك *</label>
+                <select value={increasePartnerId} onChange={(e) => setIncreasePartnerId(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "12.5px", outline: "none", boxSizing: "border-box" }}>
+                  <option value="">-- اختار الشريك --</option>
+                  {partners.map((p) => <option key={p.id} value={p.id}>{p.name} (#PART-{p.id})</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>مبلغ الضخ الإضافي (ج.م) *</label>
+                <input type="number" step="1" value={increaseAmount} onChange={(e) => setIncreaseAmount(e.target.value)} placeholder="0" required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "13px", fontWeight: 800, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>تاريخ الزيادة *</label>
+                <input type="date" value={increaseDate} onChange={(e) => setIncreaseDate(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "12.5px", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>ملاحظات وبيان الضخ</label>
+                <input type="text" value={increaseNotes} onChange={(e) => setIncreaseNotes(e.target.value)} placeholder="مثال: زيادة استثمار لتوسعة النشاط" style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "12.5px", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 50%, #7a4a1f 100%)", color: "#fff", border: "none", borderRadius: "8px", padding: "10px", fontSize: "13px", fontWeight: 800, cursor: "pointer", marginTop: "4px" }}>
+                {submitting ? "جاري الحفظ..." : "تسجيل الزيادة وتحديث الحصص"}
+              </button>
+            </form>
+          )}
+
+          {/* تبويب 3: تسجيل سحب / سلفة لشريك */}
+          {activeOpTab === "wdr" && (
+            <form onSubmit={handleWithdraw} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>اختيار الشريك *</label>
+                <select value={withdrawPartnerId} onChange={(e) => setWithdrawPartnerId(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "12.5px", outline: "none", boxSizing: "border-box" }}>
+                  <option value="">-- اختار الشريك --</option>
+                  {partners.map((p) => <option key={p.id} value={p.id}>{p.name} (#PART-{p.id})</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>مبلغ السحب (ج.م) *</label>
+                <input type="number" step="1" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="0" required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "13px", fontWeight: 800, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>تاريخ السحب *</label>
+                <input type="date" value={withdrawDate} onChange={(e) => setWithdrawDate(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "12.5px", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>سبب السحب والملاحظات</label>
+                <input type="text" value={withdrawNotes} onChange={(e) => setWithdrawNotes(e.target.value)} placeholder="مثال: سحب تحت حساب أرباح الفترة" style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "12.5px", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 50%, #7a4a1f 100%)", color: "#fff", border: "none", borderRadius: "8px", padding: "10px", fontSize: "13px", fontWeight: 800, cursor: "pointer", marginTop: "4px" }}>
+                {submitting ? "جاري الحفظ..." : "تسجيل حركة السحب بالخزينة"}
+              </button>
+            </form>
+          )}
+
+        </div>
+
+        {/* ب) الجانب الأيسر: جدول حسابات الشركاء والنسب */}
+        <div style={{ background: themeStyles.card || "#18181d", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "14px", padding: "14px", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", display: "flex", flexDirection: "column" }}>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", paddingBottom: "8px", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+            <div style={{ fontSize: "14px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>📊</span>
+              <span>جدول حسابات الشركاء والنسب اللحظية</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAllLogsModal(true)}
+              style={{
+                background: themeStyles.inputBg || "#121215",
+                border: `1px solid ${themeStyles.border || "#383844"}`,
+                color: themeStyles.accentGold || "#e8cd9c",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                fontSize: "11.5px",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "5px"
+              }}
+            >
+              <FileText size={14} />
+              <span>سجل كافة السحوبات والحركات</span>
+            </button>
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "40px", color: themeStyles.accentGold || "#e8cd9c" }}>
+              <Loader2 size={24} className="animate-spin" /> جاري التحميل...
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text || "#ffffff", textAlign: "right", fontSize: "12.5px" }}>
+                <thead>
+                  <tr style={{ background: themeStyles.inputBg || "#121215", color: themeStyles.accentGold || "#e8cd9c", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+                    <th style={{ padding: "9px 10px", fontWeight: 800 }}>كود واسم الشريك</th>
+                    <th style={{ padding: "9px 10px", fontWeight: 800 }}>تاريخ الانضمام</th>
+                    <th style={{ padding: "9px 10px", fontWeight: 800 }}>رأس المال الحالي</th>
+                    <th style={{ padding: "9px 10px", fontWeight: 800 }}>مسحوبات مسواة</th>
+                    <th style={{ padding: "9px 10px", fontWeight: 800 }}>سلفة قائمة</th>
+                    <th style={{ padding: "9px 10px", fontWeight: 800 }}>النسبة اللحظية</th>
+                    <th style={{ padding: "9px 10px", fontWeight: 800, textAlign: "center" }}>إجراءات سريعة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {calculatedPartners.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: "center", padding: "30px", color: "#8e8e9c" }}>لا يوجد شركاء مسجلين حالياً</td>
+                    </tr>
+                  ) : (
+                    calculatedPartners.map((p) => (
+                      <tr key={p.id} style={{ borderBottom: `1px solid ${themeStyles.border || "#202026"}` }}>
+                        <td style={{ padding: "9px 10px" }}>
+                          <div>
+                            <strong style={{ color: themeStyles.accentGold || "#e8cd9c", display: "block" }}>{p.name}</strong>
+                            <span style={{ fontSize: "10px", color: "#8e8e9c" }}>#PART-{p.id}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "9px 10px", color: "#8e8e9c" }}>{p.join_date}</td>
+                        <td style={{ padding: "9px 10px", fontWeight: 800 }}>{Number(p.capital).toLocaleString()} ج.م</td>
+                        <td style={{ padding: "9px 10px", color: "#8e8e9c" }}>{p.settledWithdrawals.toLocaleString()} ج.م</td>
+                        <td style={{ padding: "9px 10px" }}>
+                          <span style={{
+                            background: p.activeAdvance > 0 ? "rgba(248, 113, 113, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                            color: p.activeAdvance > 0 ? "#f87171" : "#8e8e9c",
+                            padding: "2px 7px",
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            fontWeight: 800,
+                            display: "inline-block"
+                          }}>
+                            {p.activeAdvance.toLocaleString()} ج.م
+                          </span>
+                        </td>
+                        <td style={{ padding: "9px 10px" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: "85px" }}>
+                            <span style={{ fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>{p.sharePct}%</span>
+                            <div style={{ width: "100%", height: "5px", background: "#121216", borderRadius: "3px", overflow: "hidden" }}>
+                              <div style={{ width: `${p.sharePct}%`, height: "100%", background: "linear-gradient(90deg, #d69a5f, #b06a35)", borderRadius: "3px" }} />
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: "9px 10px", textAlign: "center", whiteSpace: "nowrap" }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPartnerForLogs(p);
+                              setShowSingleModal(true);
+                            }}
+                            style={{ background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38bdf8", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, cursor: "pointer", marginLeft: "3px" }}
+                          >
+                            🧾 سجل سحوباته
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingPartner({ id: p.id, name: p.name, capital: p.capital, join_date: p.join_date });
+                              setShowEditModal(true);
+                            }}
+                            style={{ background: "rgba(232, 205, 156, 0.08)", border: "1px solid rgba(232, 205, 156, 0.3)", color: themeStyles.accentGold || "#e8cd9c", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, cursor: "pointer", marginLeft: "3px" }}
+                          >
+                            ✏️ تعديل
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePartner(p.id, p.name)}
+                            style={{ background: "rgba(248, 113, 113, 0.08)", border: "1px solid rgba(248, 113, 113, 0.25)", color: "#f87171", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}
+                          >
+                            حذف
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div style={{ fontSize: "11px", color: "#8e8e9c", marginTop: "14px", lineHeight: "1.5", borderTop: `1px solid ${themeStyles.border || "#282830"}`, paddingTop: "8px" }}>
+            * النسبة اللحظية إرشادية بناءً على رأس المال اليوم. نسبة توزيع الأرباح الفعلية تُحسب تلقائياً بجدول توزيع الأرباح وفق نظام (Capital-Days).
+          </div>
+        </div>
+
+      </div>
+
+      {/* نافذة 1: سجل كافة سحوبات الشركاء العام (مع فلترة التواريخ) */}
+      {showAllLogsModal && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "15px" }}>
+          <div style={{ width: "100%", maxWidth: "700px", background: themeStyles.card || "#18181d", border: `1px solid ${themeStyles.border || "#383844"}`, borderRadius: "14px", padding: "18px 20px", boxShadow: "0 16px 40px rgba(0,0,0,0.8)", boxSizing: "border-box", maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "10px", marginBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+              <span style={{ fontSize: "14.5px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", display: "flex", alignItems: "center", gap: "6px" }}>
+                🧾 سجل كافة مسحوبات وسلفيات الشركاء
+              </span>
+              <button type="button" onClick={() => setShowAllLogsModal(false)} style={{ background: "transparent", border: "none", color: "#aaa", fontSize: "16px", cursor: "pointer" }}><X size={17} /></button>
+            </div>
+
+            {/* شريط الفلترة بالتاريخ */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#131317", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${themeStyles.border || "#282830"}`, marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
+              <span style={{ fontSize: "12.5px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>تصفية الفترة:</span>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <input type="date" value={allFromDate} onChange={(e) => setAllFromDate(e.target.value)} style={{ background: "#131317", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "6px 10px", color: "#fff", fontSize: "12px", outline: "none" }} />
+                <span style={{ fontSize: "12px", color: "#8e8e9c" }}>إلى</span>
+                <input type="date" value={allToDate} onChange={(e) => setAllToDate(e.target.value)} style={{ background: "#131317", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "6px 10px", color: "#fff", fontSize: "12px", outline: "none" }} />
+                {(allFromDate || allToDate) && (
+                  <button type="button" onClick={() => { setAllFromDate(""); setAllToDate(""); }} style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", cursor: "pointer", fontWeight: 700 }}>إلغاء</button>
+                )}
+              </div>
+            </div>
+
+            <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: "12.5px" }}>
               <thead>
-                <tr style={{ background: themeStyles.inputBg || "#1a1a1a", color: themeStyles.accentGold || "#d69a5f", borderBottom: `1px solid ${themeStyles.border || "#333333"}` }}>
-                  <th style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}` }}>اسم الشريك</th>
-                  <th style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}` }}>تاريخ الانضمام</th>
-                  <th style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}` }}>رأس المال الحالي</th>
-                  <th style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}` }}>مسحوباته المسواة</th>
-                  <th style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}` }}>سلفة قائمة</th>
-                  <th style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}` }}>النسبة اللحظية</th>
-                  <th style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}`, textAlign: "center" }}>إجراءات</th>
+                <tr style={{ background: themeStyles.inputBg || "#121215", color: themeStyles.accentGold || "#e8cd9c", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+                  <th style={{ padding: "8px 10px" }}>التاريخ</th>
+                  <th style={{ padding: "8px 10px" }}>الشريك والكود</th>
+                  <th style={{ padding: "8px 10px" }}>المبلغ</th>
+                  <th style={{ padding: "8px 10px" }}>البيان والملاحظات</th>
+                  <th style={{ padding: "8px 10px" }}>الحالة</th>
+                  <th style={{ padding: "8px 10px", textAlign: "center" }}>إجراء</th>
                 </tr>
               </thead>
               <tbody>
-                {calculatedPartners.length === 0 ? (
+                {filteredAllLogs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ padding: "20px", textAlign: "center", color: themeStyles.subText || "#888888" }}>
-                      لا يوجد شركاء مسجلين حالياً.
-                    </td>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "20px", color: "#8e8e9c" }}>لا توجد مسحوبات مسجلة في هذه الفترة</td>
                   </tr>
                 ) : (
-                  calculatedPartners.map((p) => (
-                    <tr key={p.id} style={{ borderBottom: `1px solid ${themeStyles.border || "#262626"}` }}>
-                      <td style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}`, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>{p.name}</td>
-                      <td style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}`, color: themeStyles.subText || "#888888" }}>{p.join_date}</td>
-                      <td style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}`, fontWeight: 800 }}>{Number(p.capital).toLocaleString()} ج.م</td>
-                      <td style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}`, color: themeStyles.subText || "#888888" }}>{p.settledWithdrawals.toLocaleString()} ج.م</td>
-                      <td style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}`, color: "#f87171", fontWeight: 800 }}>{p.activeAdvance.toLocaleString()} ج.م</td>
-                      <td style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}`, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>{p.sharePct}%</td>
-                      <td style={{ padding: "10px", border: `1px solid ${themeStyles.border || "#262626"}`, textAlign: "center" }}>
-                        <button type="button" onClick={() => handleSettleAndRemove(p.id, p.name)} style={{ background: "#3e1c24", border: "1px solid #ef444455", color: "#f87171", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", cursor: "pointer", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                          <UserMinus size={12} />
-                          <span>تصفية وحذف</span>
-                        </button>
+                  filteredAllLogs.map((w) => (
+                    <tr key={w.id} style={{ borderBottom: `1px solid ${themeStyles.border || "#202026"}` }}>
+                      <td style={{ padding: "8px 10px" }}>{w.date}</td>
+                      <td style={{ padding: "8px 10px", color: themeStyles.accentGold || "#e8cd9c", fontWeight: 800 }}>{w.partner_name} (#PART-{w.partner_id})</td>
+                      <td style={{ padding: "8px 10px", color: w.is_settled ? "#10b981" : "#f87171", fontWeight: 800 }}>{Number(w.amount).toLocaleString()} ج.م</td>
+                      <td style={{ padding: "8px 10px", color: "#8e8e9c" }}>{w.notes || "—"}</td>
+                      <td style={{ padding: "8px 10px" }}>
+                        <span style={{
+                          background: w.is_settled ? "rgba(255, 255, 255, 0.05)" : "rgba(248, 113, 113, 0.15)",
+                          color: w.is_settled ? "#8e8e9c" : "#f87171",
+                          padding: "2px 6px", borderRadius: "4px", fontSize: "10.5px", fontWeight: 700
+                        }}>
+                          {w.is_settled ? "مسواة" : "سلفة قائمة"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                        <button type="button" onClick={() => handleDeleteWithdrawalLog(w.id)} style={{ background: "rgba(248, 113, 113, 0.08)", border: "1px solid rgba(248, 113, 113, 0.25)", color: "#f87171", padding: "3px 7px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>حذف</button>
                       </td>
                     </tr>
                   ))
@@ -329,112 +708,99 @@ export function PartnersScreen({ onBack, t = {}, themeStyles = {} }) {
               </tbody>
             </table>
           </div>
-        )}
-
-        <div style={{ fontSize: isMobile ? "10.5px" : "11.5px", color: themeStyles.subText || "#888888", marginTop: "10px", lineHeight: "1.5" }}>
-          * النسبة اللحظية إرشادية بناءً على رأس المال اليوم. نسبة توزيع الأرباح الفعلية تُحسب بجدول التوزيع حسب رأس مال الشريك وعدد أيامه بالفترة (Capital-Days).
         </div>
-      </div>
+      )}
 
-      {/* النماذج الثلاثة بنفس الترتيب والتنسيق */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(300px, 1fr))", gap: isMobile ? "12px" : "16px" }}>
-        
-        {/* 1. نموذج إضافة شريك جديد */}
-        <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "12px 10px" : "20px" }}>
-          <div style={{ fontSize: isMobile ? "14px" : "15px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginBottom: "10px" }}>إضافة شريك جديد</div>
-          <form onSubmit={handleAddPartner} style={{ display: "flex", flexDirection: "column", gap: isMobile ? "8px" : "12px" }}>
-            <div>
-              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>اسم الشريك *</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} required placeholder="أدخل اسم الشريك..." style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }} />
+      {/* نافذة 2: سجل سحوبات الشريك الفردي المرتبط بـ ID الخاص به */}
+      {showSingleModal && selectedPartnerForLogs && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "15px" }}>
+          <div style={{ width: "100%", maxWidth: "600px", background: themeStyles.card || "#18181d", border: `1px solid ${themeStyles.border || "#383844"}`, borderRadius: "14px", padding: "18px 20px", boxShadow: "0 16px 40px rgba(0,0,0,0.8)", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "10px", marginBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+              <span style={{ fontSize: "14.5px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>
+                🧾 سجل سحوبات: {selectedPartnerForLogs.name} (#PART-{selectedPartnerForLogs.id})
+              </span>
+              <button type="button" onClick={() => setShowSingleModal(false)} style={{ background: "transparent", border: "none", color: "#aaa", fontSize: "16px", cursor: "pointer" }}><X size={17} /></button>
             </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>مبلغ الاستثمار (رأس المال) *</label>
-              <input type="number" step="1" value={capital} onChange={(e) => setCapital(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, boxSizing: "border-box" }} />
+            <div style={{ background: "#131317", border: `1px solid ${themeStyles.border || "#282830"}`, padding: "10px 14px", borderRadius: "8px", marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "12px", color: "#8e8e9c" }}>إجمالي السلف القائمة غير المسواة:</span>
+              <strong style={{ color: "#f87171", fontSize: "15px" }}>{selectedPartnerForLogs.activeAdvance.toLocaleString()} ج.م</strong>
             </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>تاريخ الانضمام *</label>
-              <input type="date" value={joinDate} onChange={(e) => setJoinDate(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }} />
-            </div>
-
-            <div style={{ background: themeStyles.inputBg || "#1a1a1a", border: "1px dashed #d69a5f88", borderRadius: "8px", padding: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: isMobile ? 11.5 : 12.5, color: themeStyles.subText || "#888888" }}>نسبة الشريك التلقائية:</span>
-              <span style={{ fontSize: isMobile ? 14 : 16, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>{liveNewPartnerPercent}%</span>
-            </div>
-
-            <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#000000", border: "none", borderRadius: "8px", padding: isMobile ? "10px" : "12px", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, cursor: "pointer" }}>
-              {submitting ? "جاري الحفظ..." : "حفظ الشريك الجديد"}
-            </button>
-          </form>
+            <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", textAlign: "right", fontSize: "12.5px" }}>
+              <thead>
+                <tr style={{ background: themeStyles.inputBg || "#121215", color: themeStyles.accentGold || "#e8cd9c", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+                  <th style={{ padding: "8px 10px" }}>التاريخ</th>
+                  <th style={{ padding: "8px 10px" }}>المبلغ</th>
+                  <th style={{ padding: "8px 10px" }}>البيان والملاحظات</th>
+                  <th style={{ padding: "8px 10px" }}>الحالة</th>
+                  <th style={{ padding: "8px 10px", textAlign: "center" }}>إجراء</th>
+                </tr>
+              </thead>
+              <tbody>
+                {singlePartnerLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: "center", padding: "20px", color: "#8e8e9c" }}>لا توجد سحوبات مسجلة لهذا الشريك.</td>
+                  </tr>
+                ) : (
+                  singlePartnerLogs.map((w) => (
+                    <tr key={w.id} style={{ borderBottom: `1px solid ${themeStyles.border || "#202026"}` }}>
+                      <td style={{ padding: "8px 10px" }}>{w.date}</td>
+                      <td style={{ padding: "8px 10px", color: w.is_settled ? "#10b981" : "#f87171", fontWeight: 800 }}>{Number(w.amount).toLocaleString()} ج.م</td>
+                      <td style={{ padding: "8px 10px", color: "#8e8e9c" }}>{w.notes || "—"}</td>
+                      <td style={{ padding: "8px 10px" }}>
+                        <span style={{
+                          background: w.is_settled ? "rgba(255, 255, 255, 0.05)" : "rgba(248, 113, 113, 0.15)",
+                          color: w.is_settled ? "#8e8e9c" : "#f87171",
+                          padding: "2px 6px", borderRadius: "4px", fontSize: "10.5px", fontWeight: 700
+                        }}>
+                          {w.is_settled ? "مسواة" : "سلفة قائمة"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                        <button type="button" onClick={() => handleDeleteWithdrawalLog(w.id)} style={{ background: "rgba(248, 113, 113, 0.08)", border: "1px solid rgba(248, 113, 113, 0.25)", color: "#f87171", padding: "3px 7px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>حذف</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+      )}
 
-        {/* 2. زيادة رأس مال شريك حالي */}
-        <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "12px 10px" : "20px" }}>
-          <div style={{ fontSize: isMobile ? "14px" : "15px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginBottom: "4px" }}>زيادة رأس مال شريك حالي</div>
-          <p style={{ fontSize: isMobile ? "10.5px" : "11.5px", color: themeStyles.subText || "#888888", marginTop: 0, marginBottom: "8px", lineHeight: "1.4" }}>
-            منفصلة تماماً عن السلفة. تضاف لرأس المال وتُحسب أرباحه أوتوماتيكياً من تاريخ هذه الزيادة فقط.
-          </p>
-
-          <form onSubmit={handleIncreaseCapital} style={{ display: "flex", flexDirection: "column", gap: isMobile ? "8px" : "12px" }}>
-            <div>
-              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>اسم الشريك *</label>
-              <select value={increasePartner} onChange={(e) => setIncreasePartner(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }}>
-                <option value="">-- اختار اسم الشريك --</option>
-                {partners.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
-              </select>
+      {/* نافذة 3: تعديل بيانات الشريك */}
+      {showEditModal && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "15px" }}>
+          <div style={{ width: "100%", maxWidth: "480px", background: themeStyles.card || "#18181d", border: `1px solid ${themeStyles.border || "#383844"}`, borderRadius: "14px", padding: "18px 20px", boxShadow: "0 16px 40px rgba(0,0,0,0.8)", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "10px", marginBottom: "12px", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+              <span style={{ fontSize: "14.5px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>
+                ✏️ تعديل بيانات: {editingPartner.name} (#PART-{editingPartner.id})
+              </span>
+              <button type="button" onClick={() => setShowEditModal(false)} style={{ background: "transparent", border: "none", color: "#aaa", fontSize: "16px", cursor: "pointer" }}><X size={17} /></button>
             </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>مبلغ الزيادة (ج.م) *</label>
-              <input type="number" step="1" value={increaseAmount} onChange={(e) => setIncreaseAmount(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, boxSizing: "border-box" }} />
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>تاريخ الزيادة *</label>
-              <input type="date" value={increaseDate} onChange={(e) => setIncreaseDate(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }} />
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>ملاحظات</label>
-              <input type="text" value={increaseNotes} onChange={(e) => setIncreaseNotes(e.target.value)} placeholder="مثال: ضخ رأس مال إضافي" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }} />
-            </div>
-
-            <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#000000", border: "none", borderRadius: "8px", padding: isMobile ? "10px" : "12px", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, cursor: "pointer" }}>
-              {submitting ? "جاري الحفظ..." : "تسجيل زيادة رأس المال"}
-            </button>
-          </form>
+            <form onSubmit={handleSaveEditPartner} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>اسم الشريك بالكامل *</label>
+                <input type="text" value={editingPartner.name} onChange={(e) => setEditingPartner({ ...editingPartner, name: e.target.value })} required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "12.5px", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>رأس المال المثبت (ج.م) *</label>
+                <input type="number" step="1" value={editingPartner.capital} onChange={(e) => setEditingPartner({ ...editingPartner, capital: e.target.value })} required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "13px", fontWeight: 800, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "11.5px", fontWeight: 700, color: "#8e8e9c", display: "block", marginBottom: "4px" }}>تاريخ الانضمام *</label>
+                <input type="date" value={editingPartner.join_date} onChange={(e) => setEditingPartner({ ...editingPartner, join_date: e.target.value })} required style={{ width: "100%", background: themeStyles.inputBg || "#121215", border: `1px solid ${themeStyles.border || "#282830"}`, borderRadius: "8px", padding: "8px 10px", color: "#fff", fontSize: "12.5px", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f 0%, #b06a35 50%, #7a4a1f 100%)", color: "#fff", border: "none", borderRadius: "8px", padding: "10px", fontSize: "13px", fontWeight: 800, cursor: "pointer", marginTop: "4px" }}>
+                {submitting ? "جاري الحفظ..." : "حفظ وتحديث بيانات الشريك بالسحابة"}
+              </button>
+            </form>
+          </div>
         </div>
+      )}
 
-        {/* 3. تسجيل سحب مال / سلفة */}
-        <div style={{ background: themeStyles.card || "#141414", border: `1px solid ${themeStyles.border || "#262626"}`, borderRadius: isMobile ? "12px" : "16px", padding: isMobile ? "12px 10px" : "20px" }}>
-          <div style={{ fontSize: isMobile ? "14px" : "15px", fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", marginBottom: "10px" }}>تسجيل سحب مال / سلفة لشريك</div>
-          <form onSubmit={handleWithdraw} style={{ display: "flex", flexDirection: "column", gap: isMobile ? "8px" : "12px" }}>
-            <div>
-              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>اسم الشريك *</label>
-              <select value={withdrawPartner} onChange={(e) => setWithdrawPartner(e.target.value)} required style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }}>
-                <option value="">-- اختار اسم الشريك --</option>
-                {partners.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>مبلغ السحب (ج.م) *</label>
-              <input type="number" step="1" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} required placeholder="0" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, boxSizing: "border-box" }} />
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: isMobile ? "12px" : "13px", color: themeStyles.subText || "#888888", marginBottom: "4px", fontWeight: 700 }}>بيان وسبب السحب</label>
-              <input type="text" value={withdrawNotes} onChange={(e) => setWithdrawNotes(e.target.value)} placeholder="مثال: سحب نقدي تحت حساب الأرباح" style={{ width: "100%", background: themeStyles.inputBg || "#1a1a1a", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "8px", padding: isMobile ? "8px 10px" : "10px 12px", color: themeStyles.text || "#ffffff", outline: "none", fontSize: isMobile ? "13px" : "14px", boxSizing: "border-box" }} />
-            </div>
-
-            <button type="submit" disabled={submitting} style={{ width: "100%", background: "linear-gradient(135deg, #d69a5f, #b06a35)", color: "#000000", border: "none", borderRadius: "8px", padding: isMobile ? "10px" : "12px", fontSize: isMobile ? "13px" : "14px", fontWeight: 800, cursor: "pointer" }}>
-              {submitting ? "جاري الحفظ..." : "تسجيل السحب"}
-            </button>
-          </form>
-        </div>
-
-      </div>
     </div>
   );
 }
