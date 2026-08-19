@@ -1759,6 +1759,192 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, theme
   );
 }
 
+// 📅 مكون اختيار التاريخ المخصص (متوافق 100% مع الواجهة العربية بدون أخطاء المتصفح)
+function CustomDatePickerModal({ value, onChange, themeStyles = {}, placeholder = "سنة - شهر - يوم" }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = React.useRef(null);
+
+  const initDate = value ? new Date(value) : new Date();
+  const validInit = isNaN(initDate.getTime()) ? new Date() : initDate;
+  const [viewYear, setViewYear] = useState(validInit.getFullYear());
+  const [viewMonth, setViewMonth] = useState(validInit.getMonth());
+
+  useEffect(() => {
+    if (value) {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        setViewYear(d.getFullYear());
+        setViewMonth(d.getMonth());
+      }
+    }
+  }, [value]);
+
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener("mousedown", handleOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
+  const monthNames = [
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+  ];
+
+  const prevMonth = (e) => {
+    e.stopPropagation();
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  };
+
+  const nextMonth = (e) => {
+    e.stopPropagation();
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  };
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay();
+
+  const handleSelectDay = (day) => {
+    const mm = String(viewMonth + 1).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    onChange(`${viewYear}-${mm}-${dd}`);
+    setOpen(false);
+  };
+
+  const handleSetToday = (e) => {
+    e.stopPropagation();
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    onChange(`${yyyy}-${mm}-${dd}`);
+    setOpen(false);
+  };
+
+  const handleClear = (e) => {
+    e.stopPropagation();
+    onChange("");
+    setOpen(false);
+  };
+
+  const isSelected = (day) => {
+    if (!value) return false;
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return false;
+    return (
+      d.getFullYear() === viewYear &&
+      d.getMonth() === viewMonth &&
+      d.getDate() === day
+    );
+  };
+
+  const weekHeaders = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
+
+  return (
+    <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
+      <div
+        onClick={() => setOpen((prev) => !prev)}
+        style={{
+          width: "100%",
+          background: themeStyles.card || "#141418",
+          border: `1px solid ${open ? (themeStyles.accentGold || "#d4af37") : (themeStyles.border || "#333333")}`,
+          borderRadius: "10px",
+          padding: "8px 12px",
+          color: value ? (themeStyles.text || "#ffffff") : (themeStyles.subText || "#888888"),
+          fontSize: "12.5px",
+          fontWeight: value ? 700 : 500,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxSizing: "border-box",
+          userSelect: "none"
+        }}
+      >
+        <span>{value || placeholder}</span>
+        <CalendarClock size={15} color={themeStyles.subText || "#aaaaaa"} />
+      </div>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            right: 0,
+            zIndex: 10000,
+            width: "270px",
+            background: themeStyles.card || "#19191d",
+            border: `1px solid ${themeStyles.border || "#333333"}`,
+            borderRadius: "14px",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.7)",
+            padding: "12px",
+            boxSizing: "border-box",
+            fontFamily: "inherit"
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px", padding: "0 4px" }}>
+            <button type="button" onClick={prevMonth} style={{ background: "transparent", border: "none", color: "#aaa", fontSize: "15px", cursor: "pointer", padding: "2px 6px" }}>❯</button>
+            <span style={{ fontSize: "13px", fontWeight: 800, color: "#ffffff" }}>{monthNames[viewMonth]} {viewYear}</span>
+            <button type="button" onClick={nextMonth} style={{ background: "transparent", border: "none", color: "#aaa", fontSize: "15px", cursor: "pointer", padding: "2px 6px" }}>❮</button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", gap: "3px", marginBottom: "6px", fontSize: "10.5px", fontWeight: 700, color: "#888888" }}>
+            {weekHeaders.map((w, i) => (<span key={i}>{w}</span>))}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "3px", textAlign: "center" }}>
+            {Array.from({ length: firstDayIndex }).map((_, i) => (<div key={`empty-${i}`} />))}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const sel = isSelected(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => handleSelectDay(day)}
+                  style={{
+                    background: sel ? (themeStyles.accentGold || "#d4af37") : "transparent",
+                    color: sel ? "#111111" : "#ffffff",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "6px 0",
+                    fontSize: "12px",
+                    fontWeight: sel ? 800 : 600,
+                    cursor: "pointer"
+                  }}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px", paddingTop: "8px", borderTop: `1px solid ${themeStyles.border || "#2a2a30"}` }}>
+            <button type="button" onClick={handleClear} style={{ background: "transparent", border: "none", color: "#f87171", fontSize: "11.5px", fontWeight: 700, cursor: "pointer" }}>مسح</button>
+            <button type="button" onClick={handleSetToday} style={{ background: "transparent", border: "none", color: themeStyles.accentGold || "#d4af37", fontSize: "11.5px", fontWeight: 700, cursor: "pointer" }}>اليوم</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // 💸 مكون نافذة سجل المصروفات المالي الشامل المباشر
 function AllExpensesRegisterModal({ isOpen, onClose, themeStyles = {} }) {
   const [expenses, setExpenses] = useState([]);
@@ -1828,33 +2014,18 @@ function AllExpensesRegisterModal({ isOpen, onClose, themeStyles = {} }) {
         </div>
 
         <div style={{ padding: "24px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column" }}>
-          {/* شريط الفلترة بالتاريخ */}
+          {/* شريط الفلترة بالتقويم المخصص */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", background: themeStyles.inputBg || "#141414", padding: "12px 18px", borderRadius: "12px", border: `1px solid ${themeStyles.border || "#333"}`, flexWrap: "wrap", gap: "12px" }}>
             <span style={{ color: themeStyles.accentGold || "#d4af37", fontSize: "13.5px", fontWeight: 800 }}>تصفية الفترة:</span>
 
             <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                style={{ background: themeStyles.card || "#1a1a1e", border: `1px solid ${themeStyles.border || "#333"}`, color: "#fff", padding: "8px 12px", borderRadius: "8px", fontSize: "13px", outline: "none" }}
-              />
+              <div style={{ width: "160px" }}>
+                <CustomDatePickerModal value={fromDate} onChange={setFromDate} themeStyles={themeStyles} placeholder="من تاريخ" />
+              </div>
               <span style={{ color: themeStyles.subText || "#aaaaaa", fontSize: "12px", fontWeight: 700 }}>إلى</span>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                style={{ background: themeStyles.card || "#1a1a1e", border: `1px solid ${themeStyles.border || "#333"}`, color: "#fff", padding: "8px 12px", borderRadius: "8px", fontSize: "13px", outline: "none" }}
-              />
-              {(fromDate || toDate) && (
-                <button
-                  type="button"
-                  onClick={() => { setFromDate(""); setToDate(""); }}
-                  style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", padding: "6px 12px", borderRadius: "8px", fontSize: "12px", cursor: "pointer", fontWeight: 700 }}
-                >
-                  إلغاء التصفية
-                </button>
-              )}
+              <div style={{ width: "160px" }}>
+                <CustomDatePickerModal value={toDate} onChange={setToDate} themeStyles={themeStyles} placeholder="إلى تاريخ" />
+              </div>
             </div>
           </div>
 
