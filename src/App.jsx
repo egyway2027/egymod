@@ -279,9 +279,10 @@ export function App() {
   // (تبويب الأرشيف / سجل السداد الشامل) بمجرد ما تفتح
   const [recordDeepLink, setRecordDeepLink] = useState(null);
 
-  // 📋 نوافذ السجلات الشاملة المباشرة (العملاء والمدفوعات)
+  // 📋 نوافذ السجلات الشاملة المباشرة (العملاء والمدفوعات والمصروفات)
   const [showAllClientsRegisterModal, setShowAllClientsRegisterModal] = useState(false);
   const [showAllPaymentsModal, setShowAllPaymentsModal] = useState(false);
+  const [showAllExpensesModal, setShowAllExpensesModal] = useState(false);
 
   // استخراج جميع المدفوعات المسددة من كل العقود لعرضها في سجل التحصيلات الشامل
   const allPaymentsData = useMemo(() => {
@@ -738,7 +739,8 @@ export function App() {
           } else if (recordId === "employees_register") {
             navigateTo("treasuryEmployees");
           } else if (recordId === "expenses_register") {
-            navigateTo("treasuryExpenses");
+            setShowCentralRecordsModal(false);
+            setShowAllExpensesModal(true);
           } else if (recordId === "profits_register") {
             navigateTo("treasuryDistribute");
           }
@@ -763,6 +765,15 @@ export function App() {
           storeInfo={{ name: t.appName || "إيجيمود لإدارة الأقساط" }}
           onClose={() => setShowAllPaymentsModal(false)}
           t={t}
+          themeStyles={themeStyles}
+        />
+      )}
+
+      {/* 💸 نافذة سجل المصروفات المالي الشامل المباشر */}
+      {showAllExpensesModal && (
+        <AllExpensesRegisterModal
+          isOpen={showAllExpensesModal}
+          onClose={() => setShowAllExpensesModal(false)}
           themeStyles={themeStyles}
         />
       )}
@@ -1228,7 +1239,7 @@ function DesktopSidebarShell({
               </div>
 
               <div
-                onClick={() => { onNavItemClick("treasuryExpenses"); setActiveDropdown(null); }}
+                onClick={() => { setShowAllExpensesModal(true); setActiveDropdown(null); }}
                 style={dropdownItemStyle}
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(214,154,95,0.12)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -1741,6 +1752,157 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, theme
           </div>
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+// 💸 مكون نافذة سجل المصروفات المالي الشامل المباشر
+function AllExpensesRegisterModal({ isOpen, onClose, themeStyles = {} }) {
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const loadExpenses = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("*")
+        .order("date", { ascending: false });
+      if (error) throw error;
+      setExpenses(data || []);
+    } catch (err) {
+      console.error("❌ خطأ في جلب المصروفات:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadExpenses();
+    }
+  }, [isOpen]);
+
+  const handleDeleteExpense = async (id) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذا المصروف؟")) return;
+    try {
+      const { error } = await supabase.from("expenses").delete().eq("id", id);
+      if (error) throw error;
+      setExpenses((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      console.error("❌ خطأ في حذف المصروف:", err);
+    }
+  };
+
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter((e) => {
+      if (fromDate && e.date < fromDate) return false;
+      if (toDate && e.date > toDate) return false;
+      return true;
+    });
+  }, [expenses, fromDate, toDate]);
+
+  const totalFilteredSum = useMemo(() => {
+    return filteredExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+  }, [filteredExpenses]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", boxSizing: "border-box" }} dir="rtl">
+      <div style={{ width: "95vw", maxWidth: "1350px", height: "90vh", minHeight: "650px", background: themeStyles.card || "#18181c", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "18px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.85)" }}>
+        
+        {/* رأس النافذة */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: `1px solid ${themeStyles.border || "#282830"}`, background: themeStyles.inputBg || "#121215" }}>
+          <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c", display: "flex", alignItems: "center", gap: "8px" }}>
+            <FileText size={19} /> سجل المصروفات المالي الشامل (الإجمالي: {totalFilteredSum.toLocaleString()} ج.م)
+          </h3>
+          <button type="button" onClick={onClose} style={{ width: "34px", height: "34px", borderRadius: "50%", background: themeStyles.card || "#222", border: `1px solid ${themeStyles.border || "#333"}`, color: "#aaa", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <X size={17} />
+          </button>
+        </div>
+
+        <div style={{ padding: "24px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column" }}>
+          {/* شريط الفلترة بالتاريخ */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", background: themeStyles.inputBg || "#141414", padding: "12px 18px", borderRadius: "12px", border: `1px solid ${themeStyles.border || "#333"}`, flexWrap: "wrap", gap: "12px" }}>
+            <span style={{ color: themeStyles.accentGold || "#d4af37", fontSize: "13.5px", fontWeight: 800 }}>تصفية الفترة:</span>
+
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                style={{ background: themeStyles.card || "#1a1a1e", border: `1px solid ${themeStyles.border || "#333"}`, color: "#fff", padding: "8px 12px", borderRadius: "8px", fontSize: "13px", outline: "none" }}
+              />
+              <span style={{ color: themeStyles.subText || "#aaaaaa", fontSize: "12px", fontWeight: 700 }}>إلى</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                style={{ background: themeStyles.card || "#1a1a1e", border: `1px solid ${themeStyles.border || "#333"}`, color: "#fff", padding: "8px 12px", borderRadius: "8px", fontSize: "13px", outline: "none" }}
+              />
+              {(fromDate || toDate) && (
+                <button
+                  type="button"
+                  onClick={() => { setFromDate(""); setToDate(""); }}
+                  style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", padding: "6px 12px", borderRadius: "8px", fontSize: "12px", cursor: "pointer", fontWeight: 700 }}
+                >
+                  إلغاء التصفية
+                </button>
+              )}
+            </div>
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "40px", color: themeStyles.accentGold || "#e8cd9c" }}>
+              جاري جلب سجلات المصروفات بالسحابة...
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text || "#ffffff", textAlign: "right", fontSize: "13.5px" }}>
+                <thead>
+                  <tr style={{ background: themeStyles.inputBg || "#121215", color: themeStyles.accentGold || "#e8cd9c", borderBottom: `1px solid ${themeStyles.border || "#282830"}` }}>
+                    <th style={{ padding: "12px" }}>التاريخ</th>
+                    <th style={{ padding: "12px" }}>البند الرئيسي</th>
+                    <th style={{ padding: "12px" }}>المبلغ</th>
+                    <th style={{ padding: "12px" }}>البيان والملاحظات</th>
+                    <th style={{ padding: "12px", textAlign: "center" }}>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredExpenses.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ padding: "30px", textAlign: "center", color: themeStyles.subText || "#aaaaaa" }}>
+                        لا توجد مصروفات مسجلة في هذه الفترة.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredExpenses.map((exp) => (
+                      <tr key={exp.id} style={{ borderBottom: `1px solid ${themeStyles.border || "#202026"}` }}>
+                        <td style={{ padding: "12px" }}>{exp.date}</td>
+                        <td style={{ padding: "12px", fontWeight: 800, color: themeStyles.accentGold || "#e8cd9c" }}>{exp.category}</td>
+                        <td style={{ padding: "12px", fontWeight: 800, color: "#f87171" }}>{Number(exp.amount).toLocaleString()} ج.م</td>
+                        <td style={{ padding: "12px", color: themeStyles.subText || "#aaaaaa" }}>{exp.notes || "—"}</td>
+                        <td style={{ padding: "12px", textAlign: "center" }}>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteExpense(exp.id)}
+                            style={{ background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.25)", color: "#fca5a5", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", cursor: "pointer", fontWeight: 700 }}
+                          >
+                            <Trash2 size={12} /> حذف
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
