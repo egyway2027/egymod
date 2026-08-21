@@ -548,7 +548,6 @@ export default function Mobile3DView({
             <button style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', cursor: 'pointer' }} onClick={() => handleMenuClick('settings')}>⚙</button>
           </div>
         </div>
-
       </div>
     </div>
   );
