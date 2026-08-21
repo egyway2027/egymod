@@ -457,14 +457,18 @@ export function App() {
   if (isMobile && currentScreen === "dashboard") {
     return (
       <>
-        <Mobile3DView
-          totalRemaining={totalPortfolio.toLocaleString()}
-          monthlyTarget={monthlyDues.toLocaleString()}
-          netProfit={netProfit.toLocaleString()}
-          onOpenScreen={handleMenuAction}
-          onOpenModal={(modalKey) => {
-            if (modalKey === "globalSearch") setShowGlobalSearchModal(true);
-          }}
+        <Mobile3DView 
+          totalRemaining={totalPortfolio.toLocaleString()} 
+          monthlyTarget={monthlyDues.toLocaleString()} 
+          netProfit={netProfit.toLocaleString()} 
+          clientsList={clientsList}
+          t={t}
+          themeStyles={themeStyles}
+          isRTL={isRTL}
+          onOpenScreen={handleMenuAction} 
+          onOpenModal={(modalKey) => { 
+            if (modalKey === "globalSearch") setShowGlobalSearchModal(true); 
+          }} 
         />
 
         {/* النوافذ والمودالات التابعة للشاشة الرئيسية */}
