@@ -16,7 +16,7 @@ import { AllClientsRegisterModal } from "./AllClientsRegisterModal";
 import { ArchivedContractsView } from "./ArchivedContractsView";
 import { ClientDetailCard } from "./ClientDetailCard";
 
-export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t = {}, themeStyles = {} }) {
+export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t = {}, themeStyles = {}, deepLink, onDeepLinkHandled }) {
   const isEN = t?.currency === "EGP" || document.documentElement.lang === "en" || document.documentElement.dir === "ltr";
 
   const [activeTab, setActiveTab] = useState("active"); // "active" | "archive"
@@ -24,6 +24,20 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedContract, setSelectedContract] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    if (deepLink) {
+      if (typeof deepLink === "object" && deepLink !== null) {
+        setSelectedContract(deepLink);
+        setActiveTab("active");
+        if (typeof onDeepLinkHandled === "function") onDeepLinkHandled();
+      } else if (deepLink === "archive") {
+        setActiveTab("archive");
+        setSelectedContract(null);
+        if (typeof onDeepLinkHandled === "function") onDeepLinkHandled();
+      }
+    }
+  }, [deepLink, onDeepLinkHandled]);
 
   // 🔄 الجلب المباشر والتخزين الداخلي
   const [fetchedContracts, setFetchedContracts] = useState([]);
