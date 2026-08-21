@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import { fetchOverdueClients } from '../services/overdueService';
+import { fetchOverdueDataFromCloud } from '../services/overdueService';
 
 export default function Mobile3DView({
   totalRemaining = 0,
@@ -22,10 +22,10 @@ export default function Mobile3DView({
   useEffect(() => {
     async function loadLiveData() {
       try {
-        const [expRes, salRes, overdueList] = await Promise.all([
+        const [expRes, salRes, overdueRes] = await Promise.all([
           supabase.from("expenses").select("amount"),
           supabase.from("salary_log").select("amount"),
-          fetchOverdueClients().catch(() => [])
+          fetchOverdueDataFromCloud().catch(() => ({ success: false, data: [] }))
         ]);
 
         const expSum = (expRes.data || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
@@ -34,16 +34,18 @@ export default function Mobile3DView({
         setTotalExpenses(expSum);
         setTotalSalaries(salSum);
 
+        const overdueList = (overdueRes && overdueRes.data) ? overdueRes.data : [];
+
         if (Array.isArray(overdueList) && overdueList.length > 0) {
           const totalOverdue = overdueList.reduce((sum, item) => sum + Number(item.overdueAmount || 0), 0);
           const first = overdueList[0];
           setOverdueState({
             count: overdueList.length,
-            totalSum: totalOverdue.toLocaleString(),
+            totalSum: Math.round(totalOverdue).toLocaleString(),
             firstClient: {
-              name: first.client_name || first.name || "عميل غير محدد",
+              name: first.clientName || first.client_name || "عميل غير محدد",
               id: first.id ? `(#CNT-${first.id})` : "",
-              amount: Number(first.overdueAmount || 0).toLocaleString() + " ج.م"
+              amount: Math.round(Number(first.overdueAmount || 0)).toLocaleString() + " ج.م"
             }
           });
         } else {
