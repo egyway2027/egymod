@@ -1,18 +1,115 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { supabase } from '../supabaseClient';
 
 export default function Mobile3DView({
-  // تمرير الدوال والبيانات الأساسية القادمة من App.jsx
-  totalRemaining = 18000,
+  totalRemaining = 0,
   monthlyTarget = 0,
   netProfit = 0,
-  monthlyData = [50, 70, 85, 100, 30],
-  employeeDues = 4500,
-  generalExpenses = 1200,
-  overdueClient = { name: "كريم ممدوح السيد (#CNT-105)", desc: "متأخر 18 يوم عن موعد الاستحقاق", amount: "3,500" },
+  clientsList = [],
   onOpenScreen,
   onOpenModal,
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [totalSalaries, setTotalSalaries] = useState(0);
+
+  useEffect(() => {
+    async function loadLiveTreasuryData() {
+      try {
+        const [expRes, salRes] = await Promise.all([
+          supabase.from("expenses").select("amount"),
+          supabase.from("salary_log").select("amount")
+        ]);
+
+        const expSum = (expRes.data || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+        const salSum = (salRes.data || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+
+        setTotalExpenses(expSum);
+        setTotalSalaries(salSum);
+      } catch (err) {
+        console.error("Error fetching live expenses/salaries:", err);
+      }
+    }
+    loadLiveTreasuryData();
+  }, []);
+
+  const overdueData = useMemo(() => {
+    const activeContracts = (clientsList || []).filter(c => !c.is_deleted && c.status !== 'archived');
+    let totalOverdueSum = 0;
+    let lateCount = 0;
+    let firstLateClient = null;
+    const today = new Date();
+
+    activeContracts.forEach(c => {
+      const installments = Array.isArray(c.installments) ? c.installments : [];
+      const unpaidLate = installments.filter(inst => {
+        if (inst.is_paid || inst.status === 'paid') return false;
+        const due = new Date(inst.due_date || inst.date);
+        return due < today;
+      });
+
+      if (unpaidLate.length > 0) {
+        lateCount++;
+        const sumClientLate = unpaidLate.reduce((s, i) => s + Number(i.amount || 0), 0);
+        totalOverdueSum += sumClientLate;
+
+        if (!firstLateClient) {
+          firstLateClient = {
+            name: c.client_name || c.name || "عميل غير محدد",
+            id: c.id ? `(#CNT-${c.id})` : "",
+            amount: sumClientLate.toLocaleString()
+          };
+        }
+      }
+    });
+
+    return {
+      count: lateCount,
+      totalSum: totalOverdueSum.toLocaleString(),
+      firstClient: firstLateClient || { name: "لا يوجد متأخرات حالياً", id: "", amount: "0" }
+    };
+  }, [clientsList]);
+
+  const chartPercentages = useMemo(() => {
+    const now = new Date();
+    const curMonth = now.getMonth();
+    const monthsTotals = [0, 0, 0, 0];
+
+    (clientsList || []).forEach(c => {
+      const insts = Array.isArray(c.installments) ? c.installments : [];
+      insts.forEach(i => {
+        if (i.is_paid || i.status === 'paid' || Number(i.amount) > 0) {
+          const d = new Date(i.paid_at || i.due_date || i.created_at);
+          if (!isNaN(d.getTime())) {
+            const diff = curMonth - d.getMonth();
+            if (diff >= 0 && diff <= 3) {
+              monthsTotals[3 - diff] += Number(i.amount || 0);
+            }
+          }
+        }
+      });
+    });
+
+    const maxVal = Math.max(...monthsTotals, totalExpenses, 1);
+    return {
+      m1: Math.min(100, Math.max(15, Math.round((monthsTotals[0] / maxVal) * 100))),
+      m2: Math.min(100, Math.max(15, Math.round((monthsTotals[1] / maxVal) * 100))),
+      m3: Math.min(100, Math.max(15, Math.round((monthsTotals[2] / maxVal) * 100))),
+      m4: Math.min(100, Math.max(15, Math.round((monthsTotals[3] / maxVal) * 100))),
+      exp: Math.min(100, Math.max(15, Math.round((totalExpenses / maxVal) * 100)))
+    };
+  }, [clientsList, totalExpenses]);
+
+  const monthNames = useMemo(() => {
+    const arMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    const cur = new Date().getMonth();
+    return [
+      arMonths[(cur - 3 + 12) % 12],
+      arMonths[(cur - 2 + 12) % 12],
+      arMonths[(cur - 1 + 12) % 12],
+      arMonths[cur]
+    ];
+  }, []);
 
   const menuItems = [
     { key: 'addClient', icon: '👤+', title: 'إضافة عميل جديد' },
@@ -346,29 +443,24 @@ export default function Mobile3DView({
               <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '8px', fontWeight: 800, padding: '1px 7px', borderRadius: '8px' }}>محدث لحظياً ✓</span>
             </div>
             <div className="mob-bars">
-              {['مايو', 'يونيو', 'يوليو', 'أغسطس'].map((m, idx) => (
-                <div key={m} className="mob-bar-item">
-                  <div className="mob-bar-track"><div className="mob-bar-fill" style={{ height: `${monthlyData[idx] || 50}%` }}></div></div>
-                  <span style={{ fontSize: '8px', color: '#64748b' }}>{m}</span>
-                </div>
-              ))}
-              <div className="mob-bar-item">
-                <div className="mob-bar-track"><div className="mob-bar-fill" style={{ height: `${monthlyData[4] || 30}%`, background: '#dc2626' }}></div></div>
-                <span style={{ fontSize: '8px', color: '#ef4444' }}>مصروفات</span>
-              </div>
+              <div className="mob-bar-item"><div className="mob-bar-track"><div className="mob-bar-fill" style={{ height: `${chartPercentages.m1}%` }}></div></div><span style={{ fontSize: '8px', color: '#64748b' }}>{monthNames[0]}</span></div>
+              <div className="mob-bar-item"><div className="mob-bar-track"><div className="mob-bar-fill" style={{ height: `${chartPercentages.m2}%` }}></div></div><span style={{ fontSize: '8px', color: '#64748b' }}>{monthNames[1]}</span></div>
+              <div className="mob-bar-item"><div className="mob-bar-track"><div className="mob-bar-fill" style={{ height: `${chartPercentages.m3}%` }}></div></div><span style={{ fontSize: '8px', color: '#64748b' }}>{monthNames[2]}</span></div>
+              <div className="mob-bar-item"><div className="mob-bar-track"><div className="mob-bar-fill" style={{ height: `${chartPercentages.m4}%` }}></div></div><span style={{ fontSize: '8px', color: '#64748b' }}>{monthNames[3]}</span></div>
+              <div className="mob-bar-item"><div className="mob-bar-track"><div className="mob-bar-fill" style={{ height: `${chartPercentages.exp}%`, background: '#dc2626' }}></div></div><span style={{ fontSize: '8px', color: '#ef4444' }}>مصروفات</span></div>
             </div>
           </div>
 
           <div className="mob-stats-row">
-            <div className="mob-stat-card" onClick={() => handleMenuClick('employees')}>
+            <div className="mob-stat-card" onClick={() => handleMenuClick('treasuryEmployees')}>
               <h4 style={{ fontSize: '9px', fontWeight: 900, color: '#0f172a', margin: 0 }}>رواتب وسلف الموظفين</h4>
-              <div style={{ fontSize: '15px', fontWeight: 900, color: '#0284c7' }}>{employeeDues}</div>
+              <div style={{ fontSize: '15px', fontWeight: 900, color: '#0284c7' }}>{totalSalaries.toLocaleString()}</div>
               <p style={{ fontSize: '7.5px', fontWeight: 700, color: '#64748b', margin: 0 }}>إجمالي المستحق والسلف</p>
             </div>
 
-            <div className="mob-stat-card" onClick={() => handleMenuClick('treasury')}>
+            <div className="mob-stat-card" onClick={() => handleMenuClick('treasuryExpenses')}>
               <h4 style={{ fontSize: '9px', fontWeight: 900, color: '#0f172a', margin: 0 }}>المصروفات العامة</h4>
-              <div style={{ fontSize: '15px', fontWeight: 900, color: '#ef4444' }}>{generalExpenses}</div>
+              <div style={{ fontSize: '15px', fontWeight: 900, color: '#ef4444' }}>{totalExpenses.toLocaleString()}</div>
               <p style={{ fontSize: '7.5px', fontWeight: 700, color: '#64748b', margin: 0 }}>مصروفات النشاط والتشغيل</p>
             </div>
           </div>
@@ -376,14 +468,14 @@ export default function Mobile3DView({
           <div className="mob-overdue-card" onClick={() => handleMenuClick('overdue')}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
               <span style={{ fontSize: '10px', fontWeight: 900, color: '#0f172a' }}>⚠️ متأخرات السداد والإنذارات</span>
-              <span style={{ fontSize: '8px', color: '#ef4444', fontWeight: 800 }}>3 عملاء بحاجة للمتابعة</span>
+              <span style={{ fontSize: '8px', color: '#ef4444', fontWeight: 800 }}>{overdueData.count} عملاء بحاجة للمتابعة</span>
             </div>
             <div className="mob-overdue-row">
               <div>
-                <div style={{ fontSize: '9.5px', fontWeight: 900, color: '#9f1239' }}>{overdueClient.name}</div>
-                <div style={{ fontSize: '7.5px', fontWeight: 700, color: '#e11d48' }}>{overdueClient.desc}</div>
+                <div style={{ fontSize: '9.5px', fontWeight: 900, color: '#9f1239' }}>{overdueData.firstClient.name} {overdueData.firstClient.id}</div>
+                <div style={{ fontSize: '7.5px', fontWeight: 700, color: '#e11d48' }}>متأخر عن موعد الاستحقاق</div>
               </div>
-              <span style={{ background: '#fee2e2', color: '#991b1b', fontSize: '9px', fontWeight: 900, padding: '2px 8px', borderRadius: '8px', border: '1px solid #fca5a5' }}>{overdueClient.amount}</span>
+              <span style={{ background: '#fee2e2', color: '#991b1b', fontSize: '9px', fontWeight: 900, padding: '2px 8px', borderRadius: '8px', border: '1px solid #fca5a5' }}>{overdueData.firstClient.amount}</span>
             </div>
           </div>
         </div>
