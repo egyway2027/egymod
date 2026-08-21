@@ -31,6 +31,8 @@ export default function Mobile3DView({
       }
     }
     loadLiveTreasuryData();
+  }, []);
+
   // حساب المتأخرات الحقيقية المتطابقة 100% مع شاشة المتأخرات
   const overdueData = useMemo(() => {
     const activeContracts = (clientsList || []).filter(c => !c.is_deleted && c.status !== 'archived');
