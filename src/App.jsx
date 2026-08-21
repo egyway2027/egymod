@@ -415,7 +415,13 @@ export function App() {
     );
   } else if (currentScreen === "monthlyDues") {
     screenElement = (
-      <MonthlyDues clientsList={clientsList} onOpenPaymentModal={() => navigateTo("pay")} onBack={handleBack} />
+      <MonthlyDues 
+        clientsList={clientsList} 
+        onOpenPaymentModal={() => navigateTo("pay")} 
+        onBack={handleBack} 
+        t={t} 
+        themeStyles={themeStyles} 
+      />
     );
   } else if (currentScreen === "deleteClient") {
     screenElement = (
