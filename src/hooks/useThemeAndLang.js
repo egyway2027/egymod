@@ -32,6 +32,13 @@ export function useThemeAndLang() {
 
   const isRTL = currentLang === "ar" || currentLang === "fa" || currentLang === "ur";
 
+  // ضبط اتجاه ولغة الصفحة تلقائياً عند تحميل الصفحة لأول مرة
+  useEffect(() => {
+    const selectedLangObj = LANGUAGES.find((l) => l.code === currentLang);
+    document.documentElement.lang = currentLang;
+    document.documentElement.dir = selectedLangObj?.dir || (isRTL ? "rtl" : "ltr");
+  }, [currentLang, isRTL]);
+
   return {
     currentLang,
     changeLang,
