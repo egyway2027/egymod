@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import { getOverdueContracts } from '../services/overdueService';
 
 export default function Mobile3DView({
   totalRemaining = 0,
@@ -34,35 +33,79 @@ export default function Mobile3DView({
     loadLiveTreasuryData();
   }, []);
 
-  // حساب المتأخرات الحقيقية المتطابقة 100% مع شاشة المتأخرات
+  // حساب المتأخرات الحقيقية مطابقة 100% لمنطق شاشة المتأخرات الأصلية في مشروعك
   const overdueData = useMemo(() => {
-    try {
-      const lateList = typeof getOverdueContracts === 'function'
-        ? getOverdueContracts(clientsList || [])
-        : [];
+    const activeContracts = (clientsList || []).filter(c => !c.is_deleted && c.status !== 'archived');
+    let totalOverdueSum = 0;
+    let lateCount = 0;
+    let firstLateClient = null;
 
-      if (lateList && lateList.length > 0) {
-        const first = lateList[0];
-        const dueAmount = Number(first.dueAmount || first.monthly_installment || first.monthlyInstallment || first.monthly || first.remainingAmount || 0);
-        const days = Number(first.overdueDays || first.daysLate || 0);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        return {
-          count: lateList.length,
-          firstClient: {
-            name: first.client_name || first.clientName || first.name || "عميل غير محدد",
-            id: first.id ? `(#CNT-${first.id})` : "",
-            amount: dueAmount > 0 ? dueAmount.toLocaleString() : "0",
-            days: days > 0 ? `متأخر ${days} يوم عن موعد الاستحقاق` : "متأخر عن موعد الاستحقاق"
+    activeContracts.forEach(c => {
+      const installments = Array.isArray(c.installments) ? c.installments : (Array.isArray(c.payments) ? c.payments : []);
+      const monthly = Number(c.monthly_installment || c.monthlyInstallment || c.monthly || c.monthlyInstallmentAmount || 0);
+      const sale = Number(c.sale_price || c.salePrice || c.sale || c.total || 0);
+      const down = Number(c.down_payment || c.downPayment || c.down || 0);
+
+      const totalPaidInst = installments
+        .filter(i => i.is_paid || i.status === 'paid' || Number(i.amount) > 0)
+        .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+      
+      const totalPaid = totalPaidInst > 0 ? totalPaidInst : Number(c.total_paid || c.totalPaid || 0);
+      const remaining = Math.max(0, sale - down - totalPaid);
+
+      if (remaining <= 0) return;
+
+      // البحث عن الأقساط غير المسددة التي تاريخ استحقاقها قد فات
+      const unpaidLate = installments.filter(inst => {
+        if (inst.is_paid || inst.status === 'paid') return false;
+        const dateStr = inst.due_date || inst.dueDate || inst.date || inst.payDate;
+        if (!dateStr) return false;
+        const dueDate = new Date(dateStr);
+        return new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate()) < today;
+      });
+
+      let clientLateSum = 0;
+      let maxDaysLate = 0;
+
+      if (unpaidLate.length > 0) {
+        clientLateSum = unpaidLate.reduce((s, i) => s + Number(i.amount || monthly || 0), 0);
+        const earliestStr = unpaidLate[0].due_date || unpaidLate[0].dueDate || unpaidLate[0].date || unpaidLate[0].payDate;
+        const earliest = new Date(earliestStr);
+        maxDaysLate = Math.max(1, Math.floor((today - earliest) / (1000 * 60 * 60 * 24)));
+      } else {
+        // التحقق من تاريخ أول قسط أو العقد إذا لم يُنشأ جدول أقساط تفصيلي
+        const rawDate = c.first_installment_date || c.firstPayDate || c.next_due_date || c.contract_date || c.contractDate || c.created_at;
+        if (rawDate) {
+          const fDate = new Date(rawDate);
+          if (!isNaN(fDate.getTime()) && fDate < today) {
+            clientLateSum = monthly > 0 ? Math.min(monthly, remaining) : remaining;
+            maxDaysLate = Math.max(1, Math.floor((today - fDate) / (1000 * 60 * 60 * 24)));
           }
-        };
+        }
       }
-    } catch (e) {
-      console.error("Overdue calculation error:", e);
-    }
+
+      if (clientLateSum > 0) {
+        lateCount++;
+        totalOverdueSum += clientLateSum;
+
+        if (!firstLateClient) {
+          firstLateClient = {
+            name: c.client_name || c.clientName || c.name || "عميل غير محدد",
+            id: c.id ? `(#CNT-${c.id})` : "",
+            amount: clientLateSum.toLocaleString(),
+            days: `متأخر ${maxDaysLate} يوم عن موعد الاستحقاق`
+          };
+        }
+      }
+    });
 
     return {
-      count: 0,
-      firstClient: { name: "لا يوجد متأخرات حالياً", id: "", amount: "0", days: "جميع الحسابات منتظمة" }
+      count: lateCount,
+      totalSum: totalOverdueSum.toLocaleString(),
+      firstClient: firstLateClient || { name: "لا يوجد متأخرات حالياً", id: "", amount: "0", days: "جميع الحسابات منتظمة" }
     };
   }, [clientsList]);
 
