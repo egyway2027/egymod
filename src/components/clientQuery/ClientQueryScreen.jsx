@@ -26,17 +26,49 @@ export function ClientQueryScreen({ contracts = [], onUpdateContract, onBack, t 
   const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
-    if (deepLink) {
-      if (typeof deepLink === "object" && deepLink !== null) {
-        setSelectedContract(deepLink);
-        setActiveTab("active");
-        if (typeof onDeepLinkHandled === "function") onDeepLinkHandled();
-      } else if (deepLink === "archive") {
-        setActiveTab("archive");
-        setSelectedContract(null);
-        if (typeof onDeepLinkHandled === "function") onDeepLinkHandled();
-      }
+    if (!deepLink) return;
+    if (deepLink === "archive") {
+      setActiveTab("archive");
+      setSelectedContract(null);
+    } else if (typeof deepLink === "object") {
+      const raw = deepLink;
+      const cName = raw.client_name || raw.clientName || raw.name || "عميل بدون اسم";
+      const cPhone = raw.client_phone || raw.clientPhone || raw.phone || "";
+      const cItem = raw.item_name || raw.itemName || raw.item || "";
+      const cSale = Number(raw.sale_price ?? raw.salePrice ?? raw.sale ?? 0);
+      const cCost = Number(raw.cost_price ?? raw.costPrice ?? raw.cost ?? 0);
+      const cDown = Number(raw.down_payment ?? raw.downPayment ?? raw.down ?? 0);
+      const cMonthly = Number(raw.monthly_installment ?? raw.monthlyInstallment ?? raw.monthly ?? 0);
+      const cGName = raw.guarantor_name || raw.guarantorName || raw.guarantor || "";
+      const cGPhone = raw.guarantor_phone || raw.guarantorPhone || "";
+      const cNatId = raw.national_id || raw.nationalId || "";
+      const cAddr = raw.address || "";
+      const cDate = raw.contract_date || raw.contractDate || raw.created_at || "";
+      const cFirstPay = raw.first_installment_date || raw.firstPayDate || raw.firstInstallmentDate || "";
+
+      setSelectedContract({
+        ...raw,
+        id: raw.id,
+        name: cName, client_name: cName, clientName: cName,
+        phone: cPhone, client_phone: cPhone, clientPhone: cPhone,
+        item: cItem, item_name: cItem, itemName: cItem,
+        sale: cSale, sale_price: cSale, salePrice: cSale,
+        cost: cCost, cost_price: cCost, costPrice: cCost,
+        down: cDown, down_payment: cDown, downPayment: cDown,
+        monthly: cMonthly, monthly_installment: cMonthly, monthlyInstallment: cMonthly,
+        guarantor: cGName, guarantor_name: cGName, guarantorName: cGName,
+        guarantorPhone: cGPhone, guarantor_phone: cGPhone,
+        national_id: cNatId, nationalId: cNatId,
+        address: cAddr,
+        contractDate: cDate, contract_date: cDate,
+        firstPayDate: cFirstPay, first_installment_date: cFirstPay, firstInstallmentDate: cFirstPay,
+        notes: raw.notes || "",
+        status: raw.status || (raw.is_deleted ? "archived" : "active"),
+        installments: Array.isArray(raw.installments) ? raw.installments : []
+      });
+      setActiveTab("active");
     }
+    if (typeof onDeepLinkHandled === "function") onDeepLinkHandled();
   }, [deepLink, onDeepLinkHandled]);
 
   // 🔄 الجلب المباشر والتخزين الداخلي
