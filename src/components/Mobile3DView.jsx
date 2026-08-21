@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
+import { fetchOverdueClients } from '../services/overdueService';
 
 export default function Mobile3DView({
   totalRemaining = 0,
@@ -12,13 +13,19 @@ export default function Mobile3DView({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [totalSalaries, setTotalSalaries] = useState(0);
+  const [overdueState, setOverdueState] = useState({
+    count: 0,
+    totalSum: "0",
+    firstClient: { name: "لا يوجد متأخرات حالياً", id: "", amount: "0" }
+  });
 
   useEffect(() => {
-    async function loadLiveTreasuryData() {
+    async function loadLiveData() {
       try {
-        const [expRes, salRes] = await Promise.all([
+        const [expRes, salRes, overdueList] = await Promise.all([
           supabase.from("expenses").select("amount"),
-          supabase.from("salary_log").select("amount")
+          supabase.from("salary_log").select("amount"),
+          fetchOverdueClients().catch(() => [])
         ]);
 
         const expSum = (expRes.data || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
@@ -26,69 +33,34 @@ export default function Mobile3DView({
 
         setTotalExpenses(expSum);
         setTotalSalaries(salSum);
+
+        if (Array.isArray(overdueList) && overdueList.length > 0) {
+          const totalOverdue = overdueList.reduce((sum, item) => sum + Number(item.overdueAmount || 0), 0);
+          const first = overdueList[0];
+          setOverdueState({
+            count: overdueList.length,
+            totalSum: totalOverdue.toLocaleString(),
+            firstClient: {
+              name: first.client_name || first.name || "عميل غير محدد",
+              id: first.id ? `(#CNT-${first.id})` : "",
+              amount: Number(first.overdueAmount || 0).toLocaleString() + " ج.م"
+            }
+          });
+        } else {
+          setOverdueState({
+            count: 0,
+            totalSum: "0",
+            firstClient: { name: "لا يوجد متأخرات حالياً", id: "", amount: "0" }
+          });
+        }
       } catch (err) {
-        console.error("Error fetching live expenses/salaries:", err);
+        console.error("Error fetching live data:", err);
       }
     }
-    loadLiveTreasuryData();
-  }, []);
-
-  const overdueData = useMemo(() => {
-    const activeContracts = (clientsList || []).filter(c => !c.is_deleted && c.status !== 'archived');
-    let totalOverdueSum = 0;
-    let lateCount = 0;
-    let firstLateClient = null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const curYear = today.getFullYear();
-    const curMonth = today.getMonth();
-
-    activeContracts.forEach((c) => {
-      const sale = Number(c.sale_price || c.salePrice || c.sale || c.total || 0);
-      const down = Number(c.down_payment || c.downPayment || c.down || 0);
-      const monthly = Number(c.monthly_installment || c.monthlyInstallment || c.monthly || 0);
-
-      const instArr = Array.isArray(c.installments) ? c.installments : [];
-      const totalPaidInst = instArr
-        .filter((i) => i.is_paid || i.status === 'paid' || Number(i.amount) > 0)
-        .reduce((sum, i) => sum + Number(i.amount || 0), 0);
-
-      const remainingDebt = Math.max(0, sale - down - totalPaidInst);
-      if (remainingDebt <= 0 || monthly <= 0) return;
-
-      const paidThisMonth = instArr
-        .filter((i) => {
-          if (!i.is_paid && i.status !== 'paid' && !(Number(i.amount) > 0)) return false;
-          const dateVal = i.paid_at || i.due_date || i.date || i.created_at;
-          if (!dateVal) return false;
-          const d = new Date(dateVal);
-          return d.getFullYear() === curYear && d.getMonth() === curMonth;
-        })
-        .reduce((sum, i) => sum + Number(i.amount || 0), 0);
-
-      const reqThisMonth = Math.min(monthly, remainingDebt);
-      if (paidThisMonth >= reqThisMonth) return;
-
-      const overdueAmount = reqThisMonth - paidThisMonth;
-      lateCount++;
-      totalOverdueSum += overdueAmount;
-
-      if (!firstLateClient) {
-        firstLateClient = {
-          name: c.client_name || c.clientName || c.name || "عميل غير محدد",
-          id: c.id ? `(#CNT-${c.id})` : "",
-          amount: overdueAmount.toLocaleString()
-        };
-      }
-    });
-
-    return {
-      count: lateCount,
-      totalSum: totalOverdueSum.toLocaleString(),
-      firstClient: firstLateClient || { name: "لا يوجد متأخرات حالياً", id: "", amount: "0" }
-    };
+    loadLiveData();
   }, [clientsList]);
+
+  const overdueData = overdueState;
 
   const chartPercentages = useMemo(() => {
     const now = new Date();
