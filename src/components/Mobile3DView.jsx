@@ -33,77 +33,31 @@ export default function Mobile3DView({
     loadLiveTreasuryData();
   }, []);
 
-  // حساب المتأخرات الحقيقية مطابقة 100% لمنطق شاشة المتأخرات الأصلية في مشروعك
   const overdueData = useMemo(() => {
-    const activeContracts = (clientsList || []).filter(c => !Boolean(c.is_deleted) && c.status !== 'archived');
+    const activeContracts = (clientsList || []).filter(c => !c.is_deleted && c.status !== 'archived');
     let totalOverdueSum = 0;
     let lateCount = 0;
     let firstLateClient = null;
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = new Date();
 
     activeContracts.forEach(c => {
-      const sale = Number(c.sale_price || c.salePrice || c.sale || c.total || 0);
-      const down = Number(c.down_payment || c.downPayment || c.down || 0);
-      const monthly = Number(c.monthly_installment || c.monthlyInstallment || c.monthly || c.monthlyInstallmentAmount || 0);
-
-      const installments = Array.isArray(c.installments) ? c.installments : (Array.isArray(c.payments) ? c.payments : []);
-      
-      const paidFromInst = installments
-        .filter(i => i.is_paid === true || i.status === 'paid' || Boolean(i.paid_at))
-        .reduce((sum, i) => sum + Number(i.amount || 0), 0);
-      
-      const totalPaid = paidFromInst > 0 ? paidFromInst : Number(c.total_paid || c.totalPaid || 0);
-      const remaining = Math.max(0, sale - down - totalPaid);
-
-      if (remaining <= 0 && sale > 0) return;
-
+      const installments = Array.isArray(c.installments) ? c.installments : [];
       const unpaidLate = installments.filter(inst => {
-        if (inst.is_paid === true || inst.status === 'paid' || Boolean(inst.paid_at)) return false;
-        const dateStr = inst.due_date || inst.dueDate || inst.date || inst.payDate;
-        if (!dateStr) return false;
-        const dueDate = new Date(dateStr);
-        if (isNaN(dueDate.getTime())) return false;
-        const dueDay = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-        return dueDay < today;
+        if (inst.is_paid || inst.status === 'paid') return false;
+        const due = new Date(inst.due_date || inst.date);
+        return due < today;
       });
 
-      let clientLateSum = 0;
-      let maxDaysLate = 0;
-
       if (unpaidLate.length > 0) {
-        clientLateSum = unpaidLate.reduce((s, i) => s + (Number(i.amount) > 0 ? Number(i.amount) : monthly), 0);
-        if (clientLateSum <= 0 && monthly > 0) clientLateSum = unpaidLate.length * monthly;
-        if (remaining > 0) clientLateSum = Math.min(clientLateSum, remaining);
-
-        const earliestStr = unpaidLate[0].due_date || unpaidLate[0].dueDate || unpaidLate[0].date || unpaidLate[0].payDate;
-        const earliest = new Date(earliestStr);
-        maxDaysLate = Math.max(1, Math.floor((today.getTime() - earliest.getTime()) / (1000 * 60 * 60 * 24)));
-      } else {
-        const rawDate = c.first_installment_date || c.firstPayDate || c.next_due_date || c.contract_date || c.contractDate || c.created_at;
-        if (rawDate) {
-          const fDate = new Date(rawDate);
-          if (!isNaN(fDate.getTime())) {
-            const fDay = new Date(fDate.getFullYear(), fDate.getMonth(), fDate.getDate());
-            if (fDay < today) {
-              clientLateSum = monthly > 0 ? Math.min(monthly, remaining || monthly) : (remaining || 1000);
-              maxDaysLate = Math.max(1, Math.floor((today.getTime() - fDay.getTime()) / (1000 * 60 * 60 * 24)));
-            }
-          }
-        }
-      }
-
-      if (clientLateSum > 0) {
         lateCount++;
-        totalOverdueSum += clientLateSum;
+        const sumClientLate = unpaidLate.reduce((s, i) => s + Number(i.amount || 0), 0);
+        totalOverdueSum += sumClientLate;
 
         if (!firstLateClient) {
           firstLateClient = {
-            name: c.client_name || c.clientName || c.name || "عميل غير محدد",
+            name: c.client_name || c.name || "عميل غير محدد",
             id: c.id ? `(#CNT-${c.id})` : "",
-            amount: clientLateSum.toLocaleString(),
-            days: `متأخر ${maxDaysLate} يوم عن موعد الاستحقاق`
+            amount: sumClientLate.toLocaleString()
           };
         }
       }
@@ -112,7 +66,7 @@ export default function Mobile3DView({
     return {
       count: lateCount,
       totalSum: totalOverdueSum.toLocaleString(),
-      firstClient: firstLateClient || { name: "لا يوجد متأخرات حالياً", id: "", amount: "0", days: "جميع الحسابات منتظمة" }
+      firstClient: firstLateClient || { name: "لا يوجد متأخرات حالياً", id: "", amount: "0" }
     };
   }, [clientsList]);
 
@@ -519,7 +473,7 @@ export default function Mobile3DView({
             <div className="mob-overdue-row">
               <div>
                 <div style={{ fontSize: '9.5px', fontWeight: 900, color: '#9f1239' }}>{overdueData.firstClient.name} {overdueData.firstClient.id}</div>
-                <div style={{ fontSize: '7.5px', fontWeight: 700, color: '#e11d48' }}>{overdueData.firstClient.days}</div>
+                <div style={{ fontSize: '7.5px', fontWeight: 700, color: '#e11d48' }}>متأخر عن موعد الاستحقاق</div>
               </div>
               <span style={{ background: '#fee2e2', color: '#991b1b', fontSize: '9px', fontWeight: 900, padding: '2px 8px', borderRadius: '8px', border: '1px solid #fca5a5' }}>{overdueData.firstClient.amount}</span>
             </div>
@@ -566,6 +520,7 @@ export default function Mobile3DView({
             <button style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', cursor: 'pointer' }} onClick={() => handleMenuClick('settings')}>⚙</button>
           </div>
         </div>
+
       </div>
     </div>
   );
