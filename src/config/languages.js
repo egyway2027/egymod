@@ -25,6 +25,9 @@ export const LANGUAGES = [
   { code: "id", name: "Bahasa Indonesia", flag: "🇮🇩", dir: "ltr" }
 ];
 
+export const languages = LANGUAGES;
+export default LANGUAGES;
+
 export const TRANSLATIONS = {
   ar: {
     appName: "نظام إدارة الأقساط والمبيعات",
