@@ -46,24 +46,34 @@ export function GlobalSearchModal({ isOpen, onClose, contracts = [], clientsList
               {query ? (t.noDataFound || "لا توجد نتائج مطابقة") : (t.startTypingSearch || "ابدأ الكتابة للبحث...")}
             </div>
           ) : (
-            results.map((r) => (
-              <div
-                key={r.id}
-                onClick={() => {
-                  if (typeof onSelectResult === "function") onSelectResult(r);
-                  onClose();
-                }}
-                style={{ background: themeStyles.inputBg || "#1b1b1d", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: onSelectResult ? "pointer" : "default" }}
-              >
-                <div>
-                  <div style={{ fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>{r.client_name || r.clientName || r.name}</div>
-                  <div style={{ fontSize: "12px", color: "#aaa", marginTop: "2px" }}>{r.item_name || r.itemName || r.item} · {r.client_phone || r.clientPhone || r.phone}</div>
+            results.map((r) => {
+              const sale = Number(r.sale_price ?? r.salePrice ?? r.sale ?? r.total ?? 0);
+              const down = Number(r.down_payment ?? r.downPayment ?? r.down ?? 0);
+              const instArr = Array.isArray(r.installments) ? r.installments : (Array.isArray(r.payments) ? r.payments : []);
+              const totalPaidInst = instArr
+                .filter((i) => i.is_paid || i.status === "paid" || Number(i.amount) > 0)
+                .reduce((sum, i) => sum + Number(i.amount || 0), 0);
+              const remainingVal = Math.max(0, sale - down - totalPaidInst);
+
+              return (
+                <div
+                  key={r.id}
+                  onClick={() => {
+                    if (typeof onSelectResult === "function") onSelectResult(r);
+                    onClose();
+                  }}
+                  style={{ background: themeStyles.inputBg || "#1b1b1d", border: `1px solid ${themeStyles.border || "#333333"}`, borderRadius: "10px", padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: onSelectResult ? "pointer" : "default" }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>{r.client_name || r.clientName || r.name}</div>
+                    <div style={{ fontSize: "12px", color: "#aaa", marginTop: "2px" }}>{r.item_name || r.itemName || r.item} · {r.client_phone || r.clientPhone || r.phone}</div>
+                  </div>
+                  <div style={{ fontWeight: 800, color: "#fff", fontSize: "13px" }}>
+                    {(t.remainingShort || "المتبقي")}: {remainingVal.toLocaleString()} {t.currency || "ج.م"}
+                  </div>
                 </div>
-                <div style={{ fontWeight: 800, color: "#fff", fontSize: "13px" }}>
-                  {(t.remainingShort || "المتبقي")}: {Number(r.remaining_amount || r.remainingAmount || r.remaining || 0).toLocaleString()} {t.currency || "ج.م"}
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
