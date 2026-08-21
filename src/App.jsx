@@ -811,7 +811,10 @@ export function App() {
         isOpen={showGlobalSearchModal}
         onClose={() => setShowGlobalSearchModal(false)}
         contracts={clientsList}
-        onSelectResult={() => navigateTo("clientQuery")}
+        onSelectResult={(selected) => {
+          setRecordDeepLink(selected);
+          navigateTo("clientQuery");
+        }}
         t={t}
         themeStyles={themeStyles}
       />
