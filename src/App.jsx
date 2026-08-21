@@ -192,7 +192,7 @@ export function App() {
     { key: "treasuryPartners", label: t.treasuryPartners || "الشركاء ورأس المال", icon: Users, tone: "copper" },
     { key: "treasuryEmployees", label: t.treasuryEmployees || "شؤون الموظفين والرواتب", icon: UserCog, tone: "silver" },
     { key: "settings", label: t.settings || "الإعدادات والصلاحيات", icon: Settings, tone: "tan" },
-    { key: "whatsapp", label: "مركز الواتساب الذكي", icon: MessageSquare, tone: "roseLight" },
+    { key: "whatsapp", label: t.whatsappHub || "مركز الواتساب الذكي", icon: MessageSquare, tone: "roseLight" },
     { key: "exit", label: t.exit || "تسجيل الخروج", icon: Power, tone: "dark" },
   ];
 
@@ -603,17 +603,17 @@ export function App() {
                 <button onClick={() => setShowThemeModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
                   <Palette size={15} /> <span>{t.appThemes || "ثيمات النظام"}</span>
                 </button>
-
+                {/* 3. البحث الشامل */}
                 <button onClick={() => setShowGlobalSearchModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                  <Search size={15} /> <span>البحث الشامل</span>
+                  <Search size={15} /> <span>{t.globalSearch || "البحث الشامل"}</span>
                 </button>
 
                 <button onClick={() => setShowCentralRecordsModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                  <FolderKanban size={15} /> <span>مركز السجلات</span>
+                  <FolderKanban size={15} /> <span>{t.recordsCenter || "مركز السجلات"}</span>
                 </button>
 
                 <button onClick={() => setShowRecycleBinModal(true)} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(239,68,68,0.4)", color: "#fca5a5", padding: "6px 12px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                  <Trash2 size={15} /> <span>سلة المهملات</span>
+                  <Trash2 size={15} /> <span>{t.recycleBin || "سلة المهملات"}</span>
                 </button>
 
                 {/* 🔁 الرجوع للتصميم الجديد (القائمة الجانبية) - ديسكتوب فقط */}
@@ -623,13 +623,13 @@ export function App() {
                     onClick={() => setDesktopMode("normal")}
                     style={{ background: "transparent", border: "none", color: "#fff", fontFamily: "inherit", fontSize: 11.5, fontWeight: 800, padding: "6px 14px", borderRadius: 16, cursor: "pointer" }}
                   >
-                    عادي
+                    {t.normalMode || "عادي"}
                   </button>
                   <button
                     type="button"
                     style={{ background: "rgba(255,255,255,0.18)", border: "none", color: "#fff", fontFamily: "inherit", fontSize: 11.5, fontWeight: 800, padding: "6px 14px", borderRadius: 16, cursor: "pointer" }}
                   >
-                    Pro
+                    {t.proMode || "Pro"}
                   </button>
                 </div>
               </div>
@@ -653,7 +653,7 @@ export function App() {
                 {netProfit.toLocaleString()} <span style={{ fontSize: isMobile ? 9 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
               </div>
               <div style={{ fontSize: isMobile ? 9.5 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 2 }}>
-                {isMobile ? "الأرباح" : (t.netProfit || "صافي الأرباح حتى اليوم")}
+                {isMobile ? (t.profitShort || "الأرباح") : (t.netProfit || "صافي الأرباح حتى اليوم")}
               </div>
               {!isMobile && <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.netProfitSub || "إجمالي أرباح العقود والتحصيلات الصافية"}</div>}
             </div>
@@ -664,7 +664,7 @@ export function App() {
                 {monthlyDues.toLocaleString()} <span style={{ fontSize: isMobile ? 9 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
               </div>
               <div style={{ fontSize: isMobile ? 9.5 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 2 }}>
-                {isMobile ? "المستحقات" : (t.monthlyDues || "مستحقات هذا الشهر")}
+                {isMobile ? (t.duesShort || "المستحقات") : (t.monthlyDues || "مستحقات هذا الشهر")}
               </div>
               {!isMobile && <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.monthlyDuesSub || "المطلوب تحصيله حالياً"}</div>}
             </div>
@@ -686,7 +686,7 @@ export function App() {
                 }, 0).toLocaleString()} <span style={{ fontSize: isMobile ? 9 : 14, color: themeStyles.accentGold || "#d0b689" }}>{t.currency || "ج.م"}</span>
               </div>
               <div style={{ fontSize: isMobile ? 9.5 : 13, fontWeight: 700, color: themeStyles.accentGold || "#d0b689", marginTop: 2 }}>
-                {isMobile ? "المتبقي" : (t.totalPortfolio || "إجمالي الأقساط المتبقية")}
+                {isMobile ? (t.remainingShort || "المتبقي") : (t.totalPortfolio || "إجمالي الأقساط المتبقية")}
               </div>
               {!isMobile && <div style={{ fontSize: 11, color: themeStyles.subText || "#aaaaaa" }}>{t.totalPortfolioSub || "المبالغ المتبقية في ذمة العملاء"}</div>}
             </div>
@@ -784,7 +784,7 @@ export function App() {
           borderRadius: 20, fontSize: 12, fontWeight: 700, zIndex: 99999,
           border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(4px)"
         }}>
-          اضغط رجوع مرة أخرى للخروج من التطبيق
+          {t.exitHint || "اضغط رجوع مرة أخرى للخروج من التطبيق"}
         </div>
       )}
 
@@ -909,7 +909,7 @@ export function App() {
                 cursor: "pointer"
               }}
             >
-              موافق
+              {t.ok || "موافق"}
             </button>
           </div>
         </div>
@@ -937,7 +937,7 @@ export function App() {
                     cursor: "pointer"
                   }}
                 >
-                  الثيمات العادية (30)
+                  {t.regularThemes || "الثيمات العادية"} (30)
                 </button>
                 <button
                   type="button"
@@ -954,7 +954,7 @@ export function App() {
                     boxShadow: activeThemeTab === "pro" ? "0 0 12px rgba(168, 85, 247, 0.4)" : "none"
                   }}
                 >
-                  ثيمات Pro 💎 (Glassmorphism)
+                  {t.proThemes || "ثيمات Pro 💎 (Glassmorphism)"}
                 </button>
               </div>
 
@@ -1005,7 +1005,7 @@ export function App() {
                         fontWeight: 800
                       }}
                     >
-                      {isCurrent ? "نشط الآن ✓" : "تطبيق الثيم"}
+                      {isCurrent ? (t.activeTheme || "نشط الآن ✓") : (t.applyTheme || "تطبيق الثيم")}
                     </button>
                   </div>
                 );
@@ -1131,7 +1131,7 @@ function QuickCalculatorModal({ isOpen, onClose, themeStyles = {} }) {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, borderBottom: `1px solid ${themeStyles.border || "#333"}`, paddingBottom: 8 }}>
           <div style={{ fontWeight: 800, fontSize: 14, color: themeStyles.accentGold || "#d0b689", display: "flex", alignItems: "center", gap: 6 }}>
-            <Calculator size={18} /> آلة حاسبة سريعة
+            <Calculator size={18} /> {t.quickCalculator || "آلة حاسبة سريعة"}
           </div>
           <X size={18} style={{ cursor: "pointer", color: "#aaa" }} onClick={onClose} />
         </div>
@@ -1171,7 +1171,7 @@ function QuickCalculatorModal({ isOpen, onClose, themeStyles = {} }) {
 
         {/* زر نسخ الناتج */}
         <button type="button" onClick={handleCopy} style={{ width: "100%", marginTop: 8, background: copied ? "#14532d" : "#26262a", color: copied ? "#86efac" : "#ffffff", border: "1px solid #3f3f46", borderRadius: 10, padding: 10, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-          {copied ? "تم نسخ الناتج بنجاح ✓" : "نسخ الناتج"}
+          {copied ? (t.copiedResult || "تم نسخ الناتج بنجاح ✓") : (t.copyResult || "نسخ الناتج")}
         </button>
       </div>
     </div>
@@ -2041,8 +2041,8 @@ function CustomDatePickerModal({ value, onChange, themeStyles = {}, placeholder 
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px", paddingTop: "8px", borderTop: `1px solid ${themeStyles.border || "#2a2a30"}` }}>
-            <button type="button" onClick={handleClear} style={{ background: "transparent", border: "none", color: "#f87171", fontSize: "11.5px", fontWeight: 700, cursor: "pointer" }}>مسح</button>
-            <button type="button" onClick={handleSetToday} style={{ background: "transparent", border: "none", color: themeStyles.accentGold || "#d4af37", fontSize: "11.5px", fontWeight: 700, cursor: "pointer" }}>اليوم</button>
+            <button type="button" onClick={handleClear} style={{ background: "transparent", border: "none", color: "#f87171", fontSize: "11.5px", fontWeight: 700, cursor: "pointer" }}>{t.clear || "مسح"}</button>
+            <button type="button" onClick={handleSetToday} style={{ background: "transparent", border: "none", color: themeStyles.accentGold || "#d4af37", fontSize: "11.5px", fontWeight: 700, cursor: "pointer" }}>{t.today || "اليوم"}</button>
           </div>
         </div>
       )}
