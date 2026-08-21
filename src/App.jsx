@@ -1296,7 +1296,7 @@ function DesktopSidebarShell({
             style={topbarBtnStyle(activeDropdown === "records")}
           >
             <FolderKanban size={15} />
-            <span>مركز السجلات</span>
+            <span>{t.recordsCenter || "مركز السجلات"}</span>
             <ChevronDown size={12} style={{ transform: activeDropdown === "records" ? "rotate(180deg)" : "none", transition: "0.2s" }} />
           </button>
 
@@ -1409,7 +1409,7 @@ function DesktopSidebarShell({
             style={topbarBtnStyle(activeDropdown === "bin")}
           >
             <Trash2 size={15} />
-            <span>سلة المهملات</span>
+            <span>{t.recycleBin || "سلة المهملات"}</span>
             <ChevronDown size={12} style={{ transform: activeDropdown === "bin" ? "rotate(180deg)" : "none", transition: "0.2s" }} />
           </button>
 
@@ -1469,7 +1469,7 @@ function DesktopSidebarShell({
             style={topbarBtnStyle(activeDropdown === "archive")}
           >
             <Archive size={15} />
-            <span>الأرشيف</span>
+            <span>{t.archive || "الأرشيف"}</span>
             <ChevronDown size={12} style={{ transform: activeDropdown === "archive" ? "rotate(180deg)" : "none", transition: "0.2s" }} />
           </button>
 
@@ -1510,7 +1510,7 @@ function DesktopSidebarShell({
 
         {/* 4. الثيمات */}
         <button type="button" onClick={onOpenThemes} style={topbarBtnStyle(false)}>
-          <Palette size={15} /> <span>الثيمات</span>
+          <Palette size={15} /> <span>{t.appThemes || "الثيمات"}</span>
         </button>
 
         {/* 5. اللغة */}
@@ -1520,12 +1520,12 @@ function DesktopSidebarShell({
 
         {/* 6. البحث الشامل */}
         <button type="button" onClick={onOpenSearch} style={topbarBtnStyle(false)}>
-          <Search size={15} /> <span>البحث الشامل</span>
+          <Search size={15} /> <span>{t.globalSearch || "البحث الشامل"}</span>
         </button>
 
         {/* 7. الآلة الحاسبة */}
         <button type="button" onClick={onOpenCalc} style={topbarBtnStyle(false)}>
-          <Calculator size={15} /> <span>الآلة الحاسبة</span>
+          <Calculator size={15} /> <span>{t.calculator || "الآلة الحاسبة"}</span>
         </button>
 
         <div style={{ flex: 1 }} />
@@ -1672,10 +1672,10 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExp
       {/* 1. العنوان الرئيسي */}
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 20, margin: "0 0 4px 0", fontWeight: 800, color: themeStyles.text || "#ffffff" }}>
-          لوحة التحكم الرئيسية
+          {t.dashboardTitle || "لوحة التحكم الرئيسية"}
         </h1>
         <span style={{ fontSize: 12.5, color: themeStyles.subText || "#8a8a94" }}>
-          التقرير المالي العام والمؤشرات التنفيذية للنشاط
+          {t.dashboardSubtitle || "التقرير المالي العام والمؤشرات التنفيذية للنشاط"}
         </span>
       </div>
 
@@ -1727,9 +1727,9 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExp
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, borderBottom: `1px solid ${themeStyles.border || "#222228"}`, paddingBottom: 10 }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f" }}>
-              📊 حركة التحصيلات والأرباح الشهرية
+              📊 {t.monthlyCollectionsFlow || "حركة التحصيلات والأرباح الشهرية"}
             </h3>
-            <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94" }}>تحديث لحظي مباشر</span>
+            <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94" }}>{t.liveUpdate || "تحديث لحظي مباشر"}</span>
           </div>
 
           <div style={{ width: "100%", height: 180, display: "flex", alignItems: "flex-end", gap: 14, paddingTop: 20 }}>
@@ -1738,7 +1738,7 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExp
               <div style={{ width: "100%", maxWidth: 38, background: "#202026", borderRadius: "8px 8px 4px 4px", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 140 }}>
                 <div style={{ width: "100%", height: "45%", background: "linear-gradient(180deg, #d69a5f 0%, #b06a35 100%)", borderRadius: "6px 6px 0 0" }}></div>
               </div>
-              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>مايو</span>
+              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>{t.may || "مايو"}</span>
             </div>
 
             {/* يونيو */}
@@ -1746,7 +1746,7 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExp
               <div style={{ width: "100%", maxWidth: 38, background: "#202026", borderRadius: "8px 8px 4px 4px", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 140 }}>
                 <div style={{ width: "100%", height: "65%", background: "linear-gradient(180deg, #d69a5f 0%, #b06a35 100%)", borderRadius: "6px 6px 0 0" }}></div>
               </div>
-              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>يونيو</span>
+              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>{t.june || "يونيو"}</span>
             </div>
 
             {/* يوليو */}
@@ -1754,7 +1754,7 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExp
               <div style={{ width: "100%", maxWidth: 38, background: "#202026", borderRadius: "8px 8px 4px 4px", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 140 }}>
                 <div style={{ width: "100%", height: "80%", background: "linear-gradient(180deg, #d69a5f 0%, #b06a35 100%)", borderRadius: "6px 6px 0 0" }}></div>
               </div>
-              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>يوليو</span>
+              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>{t.july || "يوليو"}</span>
             </div>
 
             {/* أغسطس */}
@@ -1762,7 +1762,7 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExp
               <div style={{ width: "100%", maxWidth: 38, background: "#202026", borderRadius: "8px 8px 4px 4px", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 140 }}>
                 <div style={{ width: "100%", height: "95%", background: "linear-gradient(180deg, #d69a5f 0%, #b06a35 100%)", borderRadius: "6px 6px 0 0" }}></div>
               </div>
-              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>أغسطس</span>
+              <span style={{ fontSize: 11, color: themeStyles.subText || "#8a8a94", fontWeight: 700 }}>{t.august || "أغسطس"}</span>
             </div>
 
             {/* المصروفات */}
@@ -1770,7 +1770,7 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExp
               <div style={{ width: "100%", maxWidth: 38, background: "#202026", borderRadius: "8px 8px 4px 4px", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 140 }}>
                 <div style={{ width: "100%", height: "35%", background: "linear-gradient(180deg, #ef4444 0%, #991b1b 100%)", borderRadius: "6px 6px 0 0" }}></div>
               </div>
-              <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 700 }}>المصروفات</span>
+              <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 700 }}>{t.expensesLabel || "المصروفات"}</span>
             </div>
           </div>
         </div>
@@ -1793,10 +1793,10 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExp
           >
             <div>
               <h4 style={{ margin: "0 0 3px 0", fontSize: 13, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>
-                المصروفات العامة
+                {t.generalExpenses || "المصروفات العامة"}
               </h4>
               <p style={{ margin: 0, fontSize: 11, color: themeStyles.subText || "#8a8a94" }}>
-                إجمالي المصروفات المسجلة
+                {t.expensesRegister || "إجمالي المصروفات المسجلة"}
               </p>
             </div>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#fca5a5", fontVariantNumeric: "tabular-nums" }}>
@@ -1820,10 +1820,10 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExp
           >
             <div>
               <h4 style={{ margin: "0 0 3px 0", fontSize: 13, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>
-                رواتب وسلف الموظفين
+                {t.salariesAndAdvances || "رواتب وسلف الموظفين"}
               </h4>
               <p style={{ margin: 0, fontSize: 11, color: themeStyles.subText || "#8a8a94" }}>
-                الرواتب والحركات النشطة
+                {t.salariesRegister || "الرواتب والحركات النشطة"}
               </p>
             </div>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#93c5fd", fontVariantNumeric: "tabular-nums" }}>
@@ -1847,10 +1847,10 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExp
           >
             <div>
               <h4 style={{ margin: "0 0 3px 0", fontSize: 13, fontWeight: 800, color: themeStyles.text || "#ffffff" }}>
-                رأس مال الشركة
+                {t.companyCapital || "رأس مال الشركة"}
               </h4>
               <p style={{ margin: 0, fontSize: 11, color: themeStyles.subText || "#8a8a94" }}>
-                صافي استثمارات الشركاء
+                {t.treasuryPartners || "صافي استثمارات الشركاء"}
               </p>
             </div>
             <div style={{ fontSize: 16, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", fontVariantNumeric: "tabular-nums" }}>
