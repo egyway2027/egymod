@@ -25,6 +25,7 @@ import { RecycleBinModal } from "./components/modals/RecycleBinModal";
 import { GlobalSearchModal } from "./components/modals/GlobalSearchModal";
 import { CentralRecordsMenu } from "./components/modals/CentralRecordsMenu";
 import DeleteClientScreen from "./components/DeleteClientScreen";
+import Mobile3DView from "./components/Mobile3DView";
 import {
   TreasuryMainScreen,
   PartnersScreen,
@@ -340,6 +341,14 @@ export function App() {
       setShowAllExpensesModal(true);
     } else if (key === "salariesRegister" || key === "allSalariesRegister") {
       setShowAllSalariesModal(true);
+    } else if (key === "centralRecords") {
+      setShowCentralRecordsModal(true);
+    } else if (key === "recycleBin") {
+      setShowRecycleBinModal(true);
+    } else if (key === "themes") {
+      setShowThemeModal(true);
+    } else if (key === "language") {
+      setShowLangModal(true);
     } else if (key === "exit") {
       // إجراء الخروج
     } else {
@@ -424,6 +433,59 @@ export function App() {
         THEME_CATEGORIES={THEME_CATEGORIES}
         onBack={handleBack}
       />
+    );
+  }
+
+  // 📱 عند فتح التطبيق من الموبايل في الشاشة الرئيسية: عرض واجهة 3D Glass الجديدة مباشرة
+  if (isMobile && currentScreen === "dashboard") {
+    return (
+      <>
+        <Mobile3DView
+          totalRemaining={totalPortfolio.toLocaleString()}
+          monthlyTarget={monthlyDues.toLocaleString()}
+          netProfit={netProfit.toLocaleString()}
+          onOpenScreen={handleMenuAction}
+          onOpenModal={(modalKey) => {
+            if (modalKey === "globalSearch") setShowGlobalSearchModal(true);
+          }}
+        />
+
+        {/* النوافذ والمودالات التابعة للشاشة الرئيسية */}
+        <WhatsAppHubModal isOpen={showWhatsAppModal} onClose={() => setShowWhatsAppModal(false)} overdueContracts={clientsList.filter(c => Number(c.remainingAmount ?? c.remaining) > 0)} t={t} themeStyles={themeStyles} />
+        <RecycleBinModal isOpen={showRecycleBinModal} onClose={() => setShowRecycleBinModal(false)} deletedItems={[]} t={t} themeStyles={themeStyles} />
+        <GlobalSearchModal isOpen={showGlobalSearchModal} onClose={() => setShowGlobalSearchModal(false)} contracts={clientsList} onSelectResult={() => navigateTo("clientQuery")} t={t} themeStyles={themeStyles} />
+        <CentralRecordsMenu
+          isOpen={showCentralRecordsModal}
+          onClose={() => setShowCentralRecordsModal(false)}
+          onSelectRecord={(recordId) => {
+            if (recordId === "active_contracts" || recordId === "all_clients_register") {
+              setShowCentralRecordsModal(false);
+              setShowAllClientsRegisterModal(true);
+            } else if (recordId === "archived_contracts") {
+              setRecordDeepLink("archive");
+              navigateTo("clientQuery");
+            } else if (recordId === "payment_records") {
+              setShowCentralRecordsModal(false);
+              setShowAllPaymentsModal(true);
+            } else if (recordId === "employees_register") {
+              setShowCentralRecordsModal(false);
+              setShowAllSalariesModal(true);
+            } else if (recordId === "expenses_register") {
+              setShowCentralRecordsModal(false);
+              setShowAllExpensesModal(true);
+            } else if (recordId === "profits_register") {
+              navigateTo("treasuryDistribute");
+            }
+          }}
+          t={t}
+          themeStyles={themeStyles}
+        />
+        <AllClientsRegisterModal isOpen={showAllClientsRegisterModal} onClose={() => setShowAllClientsRegisterModal(false)} contracts={allClientsRegisterData} t={t} themeStyles={themeStyles} />
+        {showAllPaymentsModal && <AllPaymentsRegisterModal payments={allPaymentsData} storeInfo={{ name: t.appName || "إيجيمود لإدارة الأقساط" }} onClose={() => setShowAllPaymentsModal(false)} t={t} themeStyles={themeStyles} />}
+        {showAllExpensesModal && <AllExpensesRegisterModal isOpen={showAllExpensesModal} onClose={() => setShowAllExpensesModal(false)} themeStyles={themeStyles} />}
+        {showAllSalariesModal && <AllSalariesRegisterModal isOpen={showAllSalariesModal} onClose={() => setShowAllSalariesModal(false)} themeStyles={themeStyles} />}
+        {showCalcModal && <QuickCalculatorModal isOpen={showCalcModal} onClose={() => setShowCalcModal(false)} themeStyles={themeStyles} />}
+      </>
     );
   }
 
