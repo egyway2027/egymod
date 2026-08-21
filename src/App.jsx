@@ -1303,7 +1303,7 @@ function DesktopSidebarShell({
           {activeDropdown === "records" && (
             <div style={dropdownMenuStyle}>
               <div style={{ fontSize: 11, color: themeStyles.accentGold || "#d69a5f", fontWeight: 800, padding: "6px 10px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}`, marginBottom: 4 }}>
-                سجلات النظام والعمليات
+                {t.systemRecords || "سجلات النظام والعمليات"}
               </div>
 
               <div
@@ -1314,8 +1314,8 @@ function DesktopSidebarShell({
               >
                 <Users size={15} color="#60a5fa" />
                 <div style={{ flex: 1 }}>
-                  <div>سجل بيانات العملاء الشامل</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>جدول تفصيلي بأسلوب Excel</div>
+                  <div>{t.allClientsRegisterTitle || "سجل بيانات العملاء الشامل"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>{t.excelDetailedTable || "جدول تفصيلي بأسلوب Excel"}</div>
                 </div>
               </div>
 
@@ -1327,8 +1327,8 @@ function DesktopSidebarShell({
               >
                 <CreditCard size={15} color="#fbbf24" />
                 <div style={{ flex: 1 }}>
-                  <div>سجل عمليات السداد والتحصيل</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>عرض كشف حركة الخزينة الشامل</div>
+                  <div>{t.pay || "سجل عمليات السداد والتحصيل"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>{t.fullTreasuryLog || "عرض كشف حركة الخزينة الشامل"}</div>
                 </div>
               </div>
 
@@ -1340,8 +1340,8 @@ function DesktopSidebarShell({
               >
                 <AlertTriangle size={15} color="#f87171" />
                 <div style={{ flex: 1 }}>
-                  <div>سجل المتأخرين عن السداد</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>العملاء المتأخرون ومواعيد الاستحقاق</div>
+                  <div>{t.lateClients || "سجل المتأخرين عن السداد"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>{t.lateClientsDue || "العملاء المتأخرون ومواعيد الاستحقاق"}</div>
                 </div>
               </div>
 
@@ -1353,8 +1353,8 @@ function DesktopSidebarShell({
               >
                 <DollarSign size={15} color="#f472b6" />
                 <div style={{ flex: 1 }}>
-                  <div>سجل المصروفات العامة</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>إجمالي وتصنيف المصروفات</div>
+                  <div>{t.generalExpenses || "سجل المصروفات العامة"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>{t.expensesCategoryLog || "إجمالي وتصنيف المصروفات"}</div>
                 </div>
               </div>
 
@@ -1366,8 +1366,8 @@ function DesktopSidebarShell({
               >
                 <Briefcase size={15} color="#a78bfa" />
                 <div style={{ flex: 1 }}>
-                  <div>سجل شؤون الموظفين والرواتب</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>كشوف المرتبات والسلف النشطة</div>
+                  <div>{t.treasuryEmployees || "سجل شؤون الموظفين والرواتب"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>{t.salariesAndActiveAdvances || "كشوف المرتبات والسلف النشطة"}</div>
                 </div>
               </div>
 
@@ -1379,8 +1379,8 @@ function DesktopSidebarShell({
               >
                 <Users size={15} color="#38bdf8" />
                 <div style={{ flex: 1 }}>
-                  <div>سجل الشركاء ورأس المال</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>حصص واستثمارات الشركاء</div>
+                  <div>{t.treasuryPartners || "سجل الشركاء ورأس المال"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>{t.partnersSharesInvestments || "حصص واستثمارات الشركاء"}</div>
                 </div>
               </div>
 
@@ -1392,8 +1392,8 @@ function DesktopSidebarShell({
               >
                 <Wallet size={15} color="#4ade80" />
                 <div style={{ flex: 1 }}>
-                  <div>سجل توزيع الأرباح والخزينة</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>حركة الأرباح وتوزيعاتها</div>
+                  <div>{t.treasury || "سجل توزيع الأرباح والخزينة"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888", fontWeight: 500 }}>{t.profitsLogMovement || "حركة الأرباح وتوزيعاتها"}</div>
                 </div>
               </div>
 
@@ -1416,7 +1416,7 @@ function DesktopSidebarShell({
           {activeDropdown === "bin" && (
             <div style={dropdownMenuStyle}>
               <div style={{ fontSize: 11, color: "#f87171", fontWeight: 800, padding: "6px 10px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}`, marginBottom: 4 }}>
-                العناصر والمحذوفات
+                {t.deletedItemsBin || "العناصر والمحذوفات"}
               </div>
 
               <div
@@ -1427,8 +1427,8 @@ function DesktopSidebarShell({
               >
                 <Trash2 size={15} color="#fca5a5" />
                 <div style={{ flex: 1 }}>
-                  <div>سلة مهملات العقود المحذوفة</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>استرجاع أو حذف نهائي</div>
+                  <div>{t.contractsRecycleBin || "سلة مهملات العقود المحذوفة"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>{t.restoreOrPermanentDelete || "استرجاع أو حذف نهائي"}</div>
                 </div>
               </div>
 
@@ -1440,8 +1440,8 @@ function DesktopSidebarShell({
               >
                 <DollarSign size={15} color="#fca5a5" />
                 <div style={{ flex: 1 }}>
-                  <div>سلة مهملات المصروفات</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>استرجاع المصروفات المحذوفة</div>
+                  <div>{t.expensesRecycleBin || "سلة مهملات المصروفات"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>{t.restoreExpenses || "استرجاع المصروفات المحذوفة"}</div>
                 </div>
               </div>
 
@@ -1453,8 +1453,8 @@ function DesktopSidebarShell({
               >
                 <UserX size={15} color="#fca5a5" />
                 <div style={{ flex: 1 }}>
-                  <div>إدارة وحذف حسابات العملاء</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>حذف عميل بالكامل من النظام</div>
+                  <div>{t.deleteClientAccountTitle || "إدارة وحذف حسابات العملاء"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>{t.deleteClientFullSys || "حذف عميل بالكامل من النظام"}</div>
                 </div>
               </div>
             </div>
@@ -1476,7 +1476,7 @@ function DesktopSidebarShell({
           {activeDropdown === "archive" && (
             <div style={dropdownMenuStyle}>
               <div style={{ fontSize: 11, color: themeStyles.accentGold || "#d69a5f", fontWeight: 800, padding: "6px 10px", borderBottom: `1px solid ${themeStyles.border || "#25252c"}`, marginBottom: 4 }}>
-                السجلات المؤرشفة
+                {t.archivedRecordsTitle || "السجلات المؤرشفة"}
               </div>
 
               <div
@@ -1487,8 +1487,8 @@ function DesktopSidebarShell({
               >
                 <CheckCircle size={15} color="#34d399" />
                 <div style={{ flex: 1 }}>
-                  <div>أرشيف العقود المسددة بالكامل</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>العقود المنتهية والمخالصة</div>
+                  <div>{t.archivedContracts || "أرشيف العقود المسددة بالكامل"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>{t.endedSettledContracts || "العقود المنتهية والمخالصة"}</div>
                 </div>
               </div>
 
@@ -1500,8 +1500,8 @@ function DesktopSidebarShell({
               >
                 <Clock size={15} color="#60a5fa" />
                 <div style={{ flex: 1 }}>
-                  <div>أرشيف الحسابات المسواة والتصفيات</div>
-                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>سجلات العمليات السابقة</div>
+                  <div>{t.settledAccountsArchive || "أرشيف الحسابات المسواة والتصفيات"}</div>
+                  <div style={{ fontSize: 10, color: themeStyles.subText || "#888" }}>{t.previousOperationsLog || "سجلات العمليات السابقة"}</div>
                 </div>
               </div>
             </div>
@@ -1536,21 +1536,21 @@ function DesktopSidebarShell({
             type="button"
             style={{ background: "linear-gradient(135deg,#d69a5f,#b06a35)", border: "none", color: "#fff", fontFamily: "inherit", fontSize: 12, fontWeight: 800, padding: "6px 16px", borderRadius: 16, cursor: "pointer" }}
           >
-            عادي
+            {t.normalMode || "عادي"}
           </button>
           <button
             type="button"
             onClick={onSwitchToPro}
             style={{ background: "transparent", border: "none", color: themeStyles.subText || "#9a9aa3", fontFamily: "inherit", fontSize: 12, fontWeight: 800, padding: "6px 16px", borderRadius: 16, cursor: "pointer" }}
           >
-            Pro
+            {t.proMode || "Pro"}
           </button>
         </div>
 
         {/* أيقونة المستخدم */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.06)", padding: "6px 14px", borderRadius: 12 }}>
           <div style={{ width: 24, height: 24, borderRadius: "50%", background: themeStyles.inputBg || "#222228", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: themeStyles.text || "#fff" }}>👤</div>
-          <span style={{ fontSize: 12, fontWeight: 800, color: themeStyles.text || "#fff" }}>المشرف العام</span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: themeStyles.text || "#fff" }}>{t.generalSupervisor || "المشرف العام"}</span>
         </div>
       </div>
 
@@ -1576,7 +1576,7 @@ function DesktopSidebarShell({
             padding: expanded ? "12px 14px" : "12px 0", borderBottom: `1px solid ${themeStyles.border || "#232328"}`,
             height: 56, flex: "0 0 56px"
           }}>
-            {expanded && <span style={{ fontSize: 13.5, fontWeight: 800, color: themeStyles.text || "#fff", whiteSpace: "nowrap" }}>القائمة الرئيسية</span>}
+            {expanded && <span style={{ fontSize: 13.5, fontWeight: 800, color: themeStyles.text || "#fff", whiteSpace: "nowrap" }}>{t.mainMenu || "القائمة الرئيسية"}</span>}
             <div
               onClick={() => setManualOpen((v) => !v)}
               title="طي / فتح القائمة"
@@ -1600,7 +1600,7 @@ function DesktopSidebarShell({
               }}
             >
               <span style={{ fontSize: 16, width: 22, textAlign: "center", flex: "0 0 22px" }}>📊</span>
-              {expanded && <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>لوحة التحكم الرئيسية</span>}
+              {expanded && <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{t.dashboardTitle || "لوحة التحكم الرئيسية"}</span>}
             </div>
 
             {buttons.filter((b) => b.key !== "exit").map((b) => {
@@ -1637,8 +1637,8 @@ function DesktopSidebarShell({
               <div style={{ width: 34, height: 34, borderRadius: "50%", background: themeStyles.inputBg || "#222228", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>👤</div>
               {expanded && (
                 <div>
-                  <b style={{ fontSize: 12.5, display: "block", color: themeStyles.text || "#fff" }}>المشرف العام</b>
-                  <span style={{ fontSize: 10.5, color: themeStyles.subText || "#9a9aa3" }}>تسجيل الخروج</span>
+                  <b style={{ fontSize: 12.5, display: "block", color: themeStyles.text || "#fff" }}>{t.generalSupervisor || "المشرف العام"}</b>
+                  <span style={{ fontSize: 10.5, color: themeStyles.subText || "#9a9aa3" }}>{t.logout || "تسجيل الخروج"}</span>
                 </div>
               )}
             </div>
