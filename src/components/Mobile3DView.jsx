@@ -35,7 +35,7 @@ export default function Mobile3DView({
 
   // حساب المتأخرات الحقيقية مطابقة 100% لمنطق شاشة المتأخرات الأصلية في مشروعك
   const overdueData = useMemo(() => {
-    const activeContracts = (clientsList || []).filter(c => !c.is_deleted && c.status !== 'archived');
+    const activeContracts = (clientsList || []).filter(c => !Boolean(c.is_deleted) && c.status !== 'archived');
     let totalOverdueSum = 0;
     let lateCount = 0;
     let firstLateClient = null;
@@ -44,45 +44,52 @@ export default function Mobile3DView({
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     activeContracts.forEach(c => {
-      const installments = Array.isArray(c.installments) ? c.installments : (Array.isArray(c.payments) ? c.payments : []);
-      const monthly = Number(c.monthly_installment || c.monthlyInstallment || c.monthly || c.monthlyInstallmentAmount || 0);
       const sale = Number(c.sale_price || c.salePrice || c.sale || c.total || 0);
       const down = Number(c.down_payment || c.downPayment || c.down || 0);
+      const monthly = Number(c.monthly_installment || c.monthlyInstallment || c.monthly || c.monthlyInstallmentAmount || 0);
 
-      const totalPaidInst = installments
-        .filter(i => i.is_paid || i.status === 'paid' || Number(i.amount) > 0)
+      const installments = Array.isArray(c.installments) ? c.installments : (Array.isArray(c.payments) ? c.payments : []);
+      
+      const paidFromInst = installments
+        .filter(i => i.is_paid === true || i.status === 'paid' || Boolean(i.paid_at))
         .reduce((sum, i) => sum + Number(i.amount || 0), 0);
       
-      const totalPaid = totalPaidInst > 0 ? totalPaidInst : Number(c.total_paid || c.totalPaid || 0);
+      const totalPaid = paidFromInst > 0 ? paidFromInst : Number(c.total_paid || c.totalPaid || 0);
       const remaining = Math.max(0, sale - down - totalPaid);
 
-      if (remaining <= 0) return;
+      if (remaining <= 0 && sale > 0) return;
 
-      // البحث عن الأقساط غير المسددة التي تاريخ استحقاقها قد فات
       const unpaidLate = installments.filter(inst => {
-        if (inst.is_paid || inst.status === 'paid') return false;
+        if (inst.is_paid === true || inst.status === 'paid' || Boolean(inst.paid_at)) return false;
         const dateStr = inst.due_date || inst.dueDate || inst.date || inst.payDate;
         if (!dateStr) return false;
         const dueDate = new Date(dateStr);
-        return new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate()) < today;
+        if (isNaN(dueDate.getTime())) return false;
+        const dueDay = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+        return dueDay < today;
       });
 
       let clientLateSum = 0;
       let maxDaysLate = 0;
 
       if (unpaidLate.length > 0) {
-        clientLateSum = unpaidLate.reduce((s, i) => s + Number(i.amount || monthly || 0), 0);
+        clientLateSum = unpaidLate.reduce((s, i) => s + (Number(i.amount) > 0 ? Number(i.amount) : monthly), 0);
+        if (clientLateSum <= 0 && monthly > 0) clientLateSum = unpaidLate.length * monthly;
+        if (remaining > 0) clientLateSum = Math.min(clientLateSum, remaining);
+
         const earliestStr = unpaidLate[0].due_date || unpaidLate[0].dueDate || unpaidLate[0].date || unpaidLate[0].payDate;
         const earliest = new Date(earliestStr);
-        maxDaysLate = Math.max(1, Math.floor((today - earliest) / (1000 * 60 * 60 * 24)));
+        maxDaysLate = Math.max(1, Math.floor((today.getTime() - earliest.getTime()) / (1000 * 60 * 60 * 24)));
       } else {
-        // التحقق من تاريخ أول قسط أو العقد إذا لم يُنشأ جدول أقساط تفصيلي
         const rawDate = c.first_installment_date || c.firstPayDate || c.next_due_date || c.contract_date || c.contractDate || c.created_at;
         if (rawDate) {
           const fDate = new Date(rawDate);
-          if (!isNaN(fDate.getTime()) && fDate < today) {
-            clientLateSum = monthly > 0 ? Math.min(monthly, remaining) : remaining;
-            maxDaysLate = Math.max(1, Math.floor((today - fDate) / (1000 * 60 * 60 * 24)));
+          if (!isNaN(fDate.getTime())) {
+            const fDay = new Date(fDate.getFullYear(), fDate.getMonth(), fDate.getDate());
+            if (fDay < today) {
+              clientLateSum = monthly > 0 ? Math.min(monthly, remaining || monthly) : (remaining || 1000);
+              maxDaysLate = Math.max(1, Math.floor((today.getTime() - fDay.getTime()) / (1000 * 60 * 60 * 24)));
+            }
           }
         }
       }
