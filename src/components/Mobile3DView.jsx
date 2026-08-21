@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
+import { getOverdueContracts } from '../services/overdueService';
 
 export default function Mobile3DView({
   totalRemaining = 0,
@@ -35,68 +36,33 @@ export default function Mobile3DView({
 
   // حساب المتأخرات الحقيقية المتطابقة 100% مع شاشة المتأخرات
   const overdueData = useMemo(() => {
-    const activeContracts = (clientsList || []).filter(c => !c.is_deleted && c.status !== 'archived');
-    let totalOverdueSum = 0;
-    let lateCount = 0;
-    let firstLateClient = null;
+    try {
+      const lateList = typeof getOverdueContracts === 'function'
+        ? getOverdueContracts(clientsList || [])
+        : [];
 
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (lateList && lateList.length > 0) {
+        const first = lateList[0];
+        const dueAmount = Number(first.dueAmount || first.monthly_installment || first.monthlyInstallment || first.monthly || first.remainingAmount || 0);
+        const days = Number(first.overdueDays || first.daysLate || 0);
 
-    activeContracts.forEach(c => {
-      const installments = Array.isArray(c.installments) ? c.installments : (Array.isArray(c.payments) ? c.payments : []);
-      const monthly = Number(c.monthly_installment || c.monthlyInstallment || c.monthly || 0);
-
-      // فحص الأقساط غير المسددة التي تجاوزت تاريخ استحقاقها
-      const unpaidLate = installments.filter(inst => {
-        if (inst.is_paid || inst.status === 'paid' || Number(inst.amount) <= 0) return false;
-        const dateStr = inst.due_date || inst.dueDate || inst.date || inst.payDate;
-        if (!dateStr) return false;
-        const dueDate = new Date(dateStr);
-        return dueDate < today;
-      });
-
-      let clientLateSum = 0;
-      let maxDaysLate = 0;
-
-      if (unpaidLate.length > 0) {
-        clientLateSum = unpaidLate.reduce((s, i) => s + Number(i.amount || monthly || 0), 0);
-        const earliest = new Date(unpaidLate[0].due_date || unpaidLate[0].dueDate || unpaidLate[0].date || unpaidLate[0].payDate);
-        maxDaysLate = Math.floor((today - earliest) / (1000 * 60 * 60 * 24));
-      } else if (c.first_installment_date || c.firstPayDate || c.next_due_date) {
-        // فحص في حالة عدم توليد جدول الأقساط بعد والاعتماد على تاريخ أول قسط
-        const fDate = new Date(c.first_installment_date || c.firstPayDate || c.next_due_date);
-        if (!isNaN(fDate.getTime()) && fDate < today) {
-          const totalPaid = Number(c.total_paid || c.totalPaid || 0);
-          const sale = Number(c.sale_price || c.salePrice || c.sale || 0);
-          const down = Number(c.down_payment || c.downPayment || c.down || 0);
-          const remaining = sale - down - totalPaid;
-          if (remaining > 0) {
-            clientLateSum = monthly || remaining;
-            maxDaysLate = Math.floor((today - fDate) / (1000 * 60 * 60 * 24));
+        return {
+          count: lateList.length,
+          firstClient: {
+            name: first.client_name || first.clientName || first.name || "عميل غير محدد",
+            id: first.id ? `(#CNT-${first.id})` : "",
+            amount: dueAmount > 0 ? dueAmount.toLocaleString() : "0",
+            days: days > 0 ? `متأخر ${days} يوم عن موعد الاستحقاق` : "متأخر عن موعد الاستحقاق"
           }
-        }
+        };
       }
-
-      if (clientLateSum > 0) {
-        lateCount++;
-        totalOverdueSum += clientLateSum;
-
-        if (!firstLateClient) {
-          firstLateClient = {
-            name: c.client_name || c.clientName || c.name || "عميل غير محدد",
-            id: c.id ? `(#CNT-${c.id})` : "",
-            amount: clientLateSum.toLocaleString(),
-            days: maxDaysLate > 0 ? `متأخر ${maxDaysLate} يوم عن موعد الاستحقاق` : "متأخر عن موعد الاستحقاق"
-          };
-        }
-      }
-    });
+    } catch (e) {
+      console.error("Overdue calculation error:", e);
+    }
 
     return {
-      count: lateCount,
-      totalSum: totalOverdueSum.toLocaleString(),
-      firstClient: firstLateClient || { name: "لا يوجد متأخرات حالياً", id: "", amount: "0", days: "جميع الحسابات منتظمة" }
+      count: 0,
+      firstClient: { name: "لا يوجد متأخرات حالياً", id: "", amount: "0", days: "جميع الحسابات منتظمة" }
     };
   }, [clientsList]);
 
