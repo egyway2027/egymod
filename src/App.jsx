@@ -42,6 +42,9 @@ import { useIsMobile } from "./hooks/useIsMobile";
 export function App() {
   const { currentScreen, navigateTo, handleBack } = useNavigation("dashboard");
   const [clientsList, setClientsList] = useState([]);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [totalSalaries, setTotalSalaries] = useState(0);
+  const [totalCapital, setTotalCapital] = useState(10100);
 
   const isMobile = useIsMobile();
 
@@ -58,15 +61,26 @@ export function App() {
     let isMounted = true;
     async function loadDashboardData() {
       try {
-        const [contractsRes, installmentsRes, distRes] = await Promise.all([
+        const [contractsRes, installmentsRes, distRes, expRes, salRes, partRes] = await Promise.all([
           supabase.from("contracts").select("*").order("created_at", { ascending: false }),
           supabase.from("installments").select("*").order("created_at", { ascending: true }),
-          supabase.from("distributions_log").select("*")
+          supabase.from("distributions_log").select("*"),
+          supabase.from("expenses").select("amount"),
+          supabase.from("salary_log").select("amount"),
+          supabase.from("partners").select("*")
         ]);
 
         const contractsData = contractsRes.data || [];
         const installmentsData = installmentsRes.data || [];
         const distData = distRes.data || [];
+
+        const expSum = (expRes.data || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+        const salSum = (salRes.data || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+        const partSum = (partRes.data || []).reduce((acc, curr) => {
+          const init = Number(curr.initial_capital || curr.capital || curr.amount || 0);
+          const add = Number(curr.additional_capital || 0);
+          return acc + init + add;
+        }, 0);
 
         const merged = contractsData.map((contract) => {
           const matchedInst = installmentsData.filter(
@@ -81,6 +95,9 @@ export function App() {
 
         if (isMounted) {
           setClientsList(merged);
+          setTotalExpenses(expSum);
+          setTotalSalaries(salSum);
+          if (partSum > 0) setTotalCapital(partSum);
         }
       } catch (err) {
         console.error("❌ خطأ أثناء جلب بيانات الصفحة الرئيسية:", err);
@@ -736,6 +753,9 @@ export function App() {
               netProfit={netProfit}
               monthlyDues={monthlyDues}
               totalPortfolio={totalPortfolio}
+              totalExpenses={totalExpenses}
+              totalSalaries={totalSalaries}
+              totalCapital={totalCapital}
               t={t}
               themeStyles={themeStyles}
               onNavigate={handleMenuAction}
@@ -1630,7 +1650,7 @@ function DesktopSidebarShell({
  * (الكروت الثلاثية العلوية + الرسم البياني الشهري + كروت المصروفات والرواتب ورأس المال)
  * =========================================================
  */
-function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, themeStyles, onNavigate }) {
+function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, totalExpenses = 0, totalSalaries = 0, totalCapital = 10100, t, themeStyles, onNavigate }) {
   const kpis = [
     { icon: TrendingUp, val: netProfit, lb: t.netProfit || "صافي الأرباح حتى اليوم", sub: t.netProfitSub || "إجمالي أرباح العقود والتحصيلات الصافية" },
     { icon: CalendarClock, val: monthlyDues, lb: t.monthlyDues || "مستحقات هذا الشهر", sub: t.monthlyDuesSub || "المطلوب تحصيله حالياً" },
@@ -1770,7 +1790,7 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, theme
               </p>
             </div>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#fca5a5", fontVariantNumeric: "tabular-nums" }}>
-              0 ج.م
+              {Number(totalExpenses).toLocaleString()} {t.currency || "ج.م"}
             </div>
           </div>
 
@@ -1797,7 +1817,7 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, theme
               </p>
             </div>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#93c5fd", fontVariantNumeric: "tabular-nums" }}>
-              0 ج.م
+              {Number(totalSalaries).toLocaleString()} {t.currency || "ج.م"}
             </div>
           </div>
 
@@ -1824,7 +1844,7 @@ function DesktopDashboardHome({ netProfit, monthlyDues, totalPortfolio, t, theme
               </p>
             </div>
             <div style={{ fontSize: 16, fontWeight: 800, color: themeStyles.accentGold || "#d69a5f", fontVariantNumeric: "tabular-nums" }}>
-              10,100 ج.م
+              {Number(totalCapital).toLocaleString()} {t.currency || "ج.م"}
             </div>
           </div>
         </div>
