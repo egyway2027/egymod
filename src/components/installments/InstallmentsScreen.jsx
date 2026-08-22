@@ -295,7 +295,7 @@ export default function InstallmentsScreen({
             gap: 8
           }}
         >
-          <FileText size={18} /> [ 🧾 فتح سجل السداد الشامل لجميع العملاء ]
+          <FileText size={18} /> [ 🧾 {t.openAllPaymentsRegister || "فتح سجل السداد الشامل لجميع العملاء"} ]
         </button>
       </div>
 
@@ -303,7 +303,7 @@ export default function InstallmentsScreen({
         {loading ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "40px", color: themeStyles.accentGold || "#d4af37", gap: "10px" }}>
             <Loader2 size={24} className="animate-spin" />
-            <span style={{ fontWeight: 700 }}>جاري تحميل بيانات الأقساط بالسحابة...</span>
+            <span style={{ fontWeight: 700 }}>{t.loadingCloud || "جاري تحميل بيانات الأقساط بالسحابة..."}</span>
           </div>
         ) : (
           <>
@@ -347,7 +347,7 @@ export default function InstallmentsScreen({
       {activeReceipt && (
         <PaymentModal
           receipt={activeReceipt}
-          storeInfo={{ name: "إيجيمود لإدارة الأقساط" }}
+          storeInfo={{ name: t.appName || "إيجيمود لإدارة الأقساط" }}
           onClose={() => setActiveReceipt(null)}
           themeStyles={themeStyles}
           t={t}
@@ -358,7 +358,7 @@ export default function InstallmentsScreen({
       {showAllPayments && (
         <AllPaymentsRegisterModal
           payments={rows.flatMap((r) => r.payments || [])}
-          storeInfo={{ name: "إيجيمود لإدارة الأقساط" }}
+          storeInfo={{ name: t.appName || "إيجيمود لإدارة الأقساط" }}
           onClose={() => setShowAllPayments(false)}
           t={t}
           themeStyles={themeStyles}
