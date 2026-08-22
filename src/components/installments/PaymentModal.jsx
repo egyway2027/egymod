@@ -6,6 +6,37 @@ const fmtCleanInt = (val) => {
   return String(num);
 };
 
+const getLocalizedPaymentMethod = (method, t) => {
+  const value = String(method || "").trim();
+  if (!value) return t.cashMethod || "Cash";
+
+  if (["نقداً / كاش", "نقدا / كاش", "كاش", "Cash", "cash"].includes(value)) {
+    return t.cashMethod || "Cash";
+  }
+
+  if (["فودافون كاش / إنستا باي", "Vodafone Cash / InstaPay", "wallet"].includes(value)) {
+    return t.walletMethod || "Vodafone Cash / InstaPay";
+  }
+
+  if (["تحويل بنكي", "Bank Transfer", "bank"].includes(value)) {
+    return t.bankTransferMethod || "Bank Transfer";
+  }
+
+  return value;
+};
+
+const getLocalizedCollector = (collector, t) => {
+  const value = String(collector || "").trim();
+
+  if (!value) return t.generalSupervisor || "General Supervisor";
+
+  if (["المشرف العام", "General Supervisor", "Supervisor", "general_supervisor"].includes(value)) {
+    return t.generalSupervisor || "General Supervisor";
+  }
+
+  return value;
+};
+
 export default function PaymentModal({ receipt = {}, storeInfo = {}, onClose, themeStyles = {}, t = {} }) {
   const { client = {}, payment = {} } = receipt;
   const totalPaidSoFar = Number(client.totalPaid || 0);
@@ -92,7 +123,7 @@ export default function PaymentModal({ receipt = {}, storeInfo = {}, onClose, th
     ctx.textAlign = "left"; 
     ctx.fillStyle = themeStyles.text || "#fff"; 
     ctx.font = "bold 15px Cairo, sans-serif";
-    ctx.fillText(`${payment.method || (isEN ? "Cash" : "كاش")} · ${payment.collector || (isEN ? "Supervisor" : "المشرف")}`, 60, 515);
+    ctx.fillText(`${getLocalizedPaymentMethod(payment.method, t)} · ${getLocalizedCollector(payment.collector, t)}`, 60, 515);
 
     ctx.textAlign = "right"; 
     ctx.fillStyle = themeStyles.subText || "#aaa"; 
@@ -168,7 +199,7 @@ export default function PaymentModal({ receipt = {}, storeInfo = {}, onClose, th
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: themeStyles.subText }}>
               <span>{t.methodAndCollector || (isEN ? "Method & Collector" : "طريقة الدفع والمحصل")}:</span>
-              <span style={{ color: themeStyles.text, fontWeight: 700 }}>{payment.method || (isEN ? "Cash" : "كاش")} · {payment.collector || (isEN ? "Supervisor" : "المشرف")}</span>
+              <span style={{ color: themeStyles.text, fontWeight: 700 }}>{getLocalizedPaymentMethod(payment.method, t)} · {getLocalizedCollector(payment.collector, t)}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: themeStyles.subText, marginTop: 4 }}>
               <span>{t.remainingAfterPay || (isEN ? "Remaining After Payment" : "المتبقي بعد هذا القسط")}:</span>
