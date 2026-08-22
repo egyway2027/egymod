@@ -295,7 +295,7 @@ export default function InstallmentsScreen({
             gap: 8
           }}
         >
-          <FileText size={18} /> [ 🧾 {t.openAllPaymentsRegister || "فتح سجل السداد الشامل لجميع العملاء"} ]
+          <FileText size={18} /> [ 🧾 {t.openAllPaymentsRegister || (t.lang === "en" ? "Open Full Payments Register" : "فتح سجل السداد الشامل لجميع العملاء")} ]
         </button>
       </div>
 
