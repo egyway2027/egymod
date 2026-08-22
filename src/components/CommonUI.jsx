@@ -226,7 +226,7 @@ export function BottomExitButton({ onBack, styles = {}, t = {} }) {
           transition: "all 0.25s ease"
         }}
       >
-        <ArrowRight size={16} /> {t.exitBottom || "خروج والعودة للشاشة الرئيسية"}
+        <ArrowRight size={16} /> {t.exitBottom || (t.lang === "en" ? "Exit & Return to Main Dashboard" : "خروج والعودة للشاشة الرئيسية")}
       </button>
     </div>
   );
