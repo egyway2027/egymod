@@ -27,7 +27,11 @@ export function useThemeAndLang() {
   }, [currentThemeId]);
 
   const t = useMemo(() => {
-    return TRANSLATIONS[currentLang] || TRANSLATIONS.en || TRANSLATIONS.ar;
+    const translations = TRANSLATIONS[currentLang] || TRANSLATIONS.en || TRANSLATIONS.ar;
+    return {
+      ...translations,
+      lang: currentLang
+    };
   }, [currentLang]);
 
   const isRTL = currentLang === "ar" || currentLang === "fa" || currentLang === "ur";
