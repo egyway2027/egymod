@@ -18,17 +18,17 @@ export default function InstallmentsTable({
   themeStyles = {}
 }) {
   const isMobile = useIsMobile();
-  const isEN = t?.lang === "en" || document.documentElement?.lang === "en";
+  const isEN = t?.lang === "en" || document.documentElement?.lang === "en" || document.documentElement?.dir === "ltr";
 
   if (!selected || clientPayments.length === 0) return null;
 
   return (
-    <div style={{ marginTop: isMobile ? 12 : 20, paddingTop: isMobile ? 10 : 16, borderTop: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}` }}>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ marginTop: isMobile ? 12 : 20, paddingTop: isMobile ? 10 : 16, borderTop: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}` }}>
       <h3 style={{ fontSize: isMobile ? 13 : 16, fontWeight: 800, color: themeStyles.accentGold, marginTop: isMobile ? 4 : 10, marginBottom: isMobile ? 8 : 16 }}>
         {t.paymentHistoryTitle || (isEN ? "Contract Payment History" : "سجل السداد لهذا العقد")} ({fmtCleanInt(clientPayments.length)} {t.installmentsPaidCount || (isEN ? "Paid" : "أقساط مسددة")})
       </h3>
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text, textAlign: "right", fontSize: isMobile ? 11 : 14 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text, textAlign: isEN ? "left" : "right", fontSize: isMobile ? 11 : 14 }}>
           <thead>
             <tr style={{ background: themeStyles.inputBg || "#141414", color: themeStyles.accentGold, borderBottom: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}` }}>
               <th style={{ padding: isMobile ? "6px 4px" : "10px 12px", whiteSpace: "nowrap" }}>{t.paymentDate || (isEN ? "Date" : "التاريخ")}</th>
@@ -79,7 +79,7 @@ export function AllPaymentsRegisterModal({ payments = [], storeInfo = {}, onClos
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  const isEN = t?.lang === "en" || document.documentElement?.lang === "en";
+  const isEN = t?.lang === "en" || document.documentElement?.lang === "en" || document.documentElement?.dir === "ltr";
 
   const filteredPayments = useMemo(() => {
     return (payments || []).filter(p => {
@@ -100,7 +100,7 @@ export function AllPaymentsRegisterModal({ payments = [], storeInfo = {}, onClos
   }, [filteredPayments]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: isMobile ? 8 : 16 }}>
+    <div dir={isEN ? "ltr" : "rtl"} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: isMobile ? 8 : 16 }}>
       <div style={{ background: themeStyles.card || "#1e1e1e", border: `${themeStyles.borderWidth || "1px"} solid ${themeStyles.border || "#333333"}`, borderRadius: themeStyles.borderRadius || (isMobile ? 14 : 20), width: "100%", maxWidth: 1000, maxHeight: isMobile ? "94vh" : "90vh", overflowY: "auto", padding: isMobile ? "12px 10px" : 24 }}>
         
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? 10 : 16 }}>
@@ -108,7 +108,7 @@ export function AllPaymentsRegisterModal({ payments = [], storeInfo = {}, onClos
             {t.openAllPaymentsRegister || (isEN ? "Payments Register" : "سجل السداد الشامل لجميع العملاء")}
           </h2>
           <button type="button" onClick={onClose} style={{ background: themeStyles.inputBg || "#141414", border: `1px solid ${themeStyles.border || "#333333"}`, color: themeStyles.accentGold, padding: isMobile ? "4px 10px" : "6px 14px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: isMobile ? 11 : 13 }}>
-            {t.back || "رجوع"} ←
+            {t.back || (isEN ? "Back" : "رجوع")} {isEN ? "←" : "←"}
           </button>
         </div>
 
@@ -181,14 +181,14 @@ export function AllPaymentsRegisterModal({ payments = [], storeInfo = {}, onClos
 
         <div id="printable-area" style={{ background: themeStyles.card || "#1e1e1e", padding: isMobile ? "10px 8px" : 16, borderRadius: 12, border: `1px solid ${themeStyles.border || "#333333"}` }}>
           <div style={{ textAlign: "center", marginBottom: isMobile ? 8 : 14 }}>
-            <h2 style={{ fontSize: isMobile ? 15 : 20, fontWeight: 800, color: themeStyles.accentGold, margin: 0 }}>{storeInfo?.name || "إيجيمود لإدارة الأقساط"}</h2>
+            <h2 style={{ fontSize: isMobile ? 15 : 20, fontWeight: 800, color: themeStyles.accentGold, margin: 0 }}>{storeInfo?.name || t.appName || "إيجيمود لإدارة الأقساط"}</h2>
             <div style={{ fontSize: isMobile ? 11 : 13, color: themeStyles.subText, marginTop: 2 }}>
               {t.paymentsRegisterTitle || (isEN ? "Payments Register" : "سجل المدفوعات والتحصيلات")} — {t.totalPaidSoFar || (isEN ? "Total" : "إجمالي التحصيل")}: ({fmtCleanInt(totalCollected)} {t.currency || (isEN ? "EGP" : "ج.م")})
             </div>
           </div>
 
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text, textAlign: "right", fontSize: isMobile ? 11 : 13.5 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", color: themeStyles.text, textAlign: isEN ? "left" : "right", fontSize: isMobile ? 11 : 13.5 }}>
               <thead>
                 <tr style={{ background: themeStyles.inputBg || "#141414", color: themeStyles.accentGold, borderBottom: `2px solid ${themeStyles.accent || "#d4af37"}` }}>
                   <th style={{ padding: isMobile ? "6px 4px" : "10px", border: `1px solid ${themeStyles.border || "#333333"}`, whiteSpace: "nowrap" }}>{t.paymentDate || (isEN ? "Date" : "تاريخ السداد")}</th>
