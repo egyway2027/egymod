@@ -1,9 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
-// رابط مشروع egymod المباشر
-const supabaseUrl = "https://blijuizmqoprlrsuebgo.supabase.co";
-
-// المفتاح العام للواجهة الأمامية
-const supabaseAnonKey = "sb_publishable_rw8Rym37iQoFRWkLXaDbfw_MaKL65Tc";
+// ضع رابط مشروعك الحقيقي ومفتاح anon الخاص بك مكان النصوص المشار إليها
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://jvmowzfktfybjcvqnlcc.supabase.co";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_lqpryj6bARHXiqDveRUrVw_scmwGO-0";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
